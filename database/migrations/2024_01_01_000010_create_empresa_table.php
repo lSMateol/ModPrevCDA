@@ -9,12 +9,15 @@ return new class extends Migration {
     {
         Schema::create('empresa', function (Blueprint $table) {
             $table->id('idemp');
-            $table->string('nonitem', 12)->nullable();
+            $table->string('nonitem', 20)->nullable();
             $table->string('razsoem', 150)->nullable();
+            $table->string('abremp', 20)->nullable();
             $table->string('direm', 150)->nullable();
             $table->string('telem', 10)->nullable();
             $table->string('emaem', 150)->nullable();
             $table->string('nomger', 70)->nullable();
+            $table->string('usuaemp', 60)->nullable();   // ← Usuario NUEVO
+            $table->string('passemp', 255)->nullable();  // ← Contraseña NUEVO
             $table->string('codcons', 50)->nullable();
             $table->unsignedBigInteger('codubi')->nullable();
 

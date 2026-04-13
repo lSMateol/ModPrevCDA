@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('persona', function (Blueprint $table) {
             $table->id('idper');
-            $table->unsignedBigInteger('ndocper')->nullable()->unique();
             $table->unsignedBigInteger('tdocper');
+            $table->unsignedBigInteger('ndocper')->unique();
             $table->string('nomper', 50);
             $table->string('apeper', 50);
             $table->string('dirper', 150)->nullable();
