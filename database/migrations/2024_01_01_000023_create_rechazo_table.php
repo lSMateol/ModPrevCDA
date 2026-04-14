@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('rechazo', function (Blueprint $table) {
-            $table->id('idrec');
+            $table->id('idrec'); //codigo del rechazo
             $table->unsignedBigInteger('iddia');               // diagnóstico rechazado
             $table->unsignedBigInteger('idper_ant');           // inspector anterior
             $table->unsignedBigInteger('idper_nvo')->nullable(); // nuevo inspector asignado

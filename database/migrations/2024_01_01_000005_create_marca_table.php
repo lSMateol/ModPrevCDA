@@ -8,9 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('marca', function (Blueprint $table) {
-            $table->id('idmar');
-            $table->string('nommarlin', 150)->nullable();
-            $table->unsignedBigInteger('depmar')->nullable();
+            $table->id('idmar'); // codigo de la marca
+            $table->string('nommarlin', 150)->nullable(); // nombre de la linea o marca
+            $table->unsignedBigInteger('depmar')->nullable(); //
         });
     }
 

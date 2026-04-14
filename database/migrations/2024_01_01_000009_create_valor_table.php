@@ -8,11 +8,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('valor', function (Blueprint $table) {
-            $table->id('idval');
-            $table->unsignedBigInteger('iddom')->nullable();
-            $table->string('nomval', 100)->nullable();
-            $table->string('parval', 100)->nullable();
-            $table->tinyInteger('actval')->nullable();
+            $table->id('idval'); //codigo del valor
+            $table->unsignedBigInteger('iddom')->nullable(); //codigo del dominio
+            $table->string('nomval', 100)->nullable(); //nombre del valor
+            $table->string('parval', 100)->nullable(); //parametro del valor
+            $table->tinyInteger('actval')->nullable(); //estado del valor
 
             $table->foreign('iddom')->references('iddom')->on('dominio');
         });

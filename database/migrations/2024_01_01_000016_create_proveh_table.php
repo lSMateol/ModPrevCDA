@@ -8,8 +8,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('proveh', function (Blueprint $table) {
-            $table->unsignedBigInteger('idveh')->nullable();
-            $table->unsignedBigInteger('idper')->nullable();
+            $table->unsignedBigInteger('idveh')->nullable(); //codigo de vehiculo
+            $table->unsignedBigInteger('idper')->nullable(); //codigo de persona (propietario o conductor del vehículo)
 
             $table->foreign('idper')->references('idper')->on('persona');
             $table->foreign('idveh')->references('idveh')->on('vehiculo');
