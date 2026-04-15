@@ -2,7 +2,7 @@
 
 return [
     'logos' => [
-        'main' => 'assets/logos/logo-cda.png',
+        'main' => 'assets/logos/logo-cda.webp',
     ],
     'auth' => [
         'backgrounds' => [
