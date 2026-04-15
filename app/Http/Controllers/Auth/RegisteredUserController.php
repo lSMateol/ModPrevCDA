@@ -46,6 +46,20 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        if ($user->hasRole('Administrador')) {
+            return redirect(route('admin.dashboard', absolute: false));
+        } elseif ($user->hasRole('Digitador')) {
+            return redirect(route('digitador.dashboard', absolute: false));
+        } elseif ($user->hasRole('Empresa')) {
+            return redirect(route('empresa.dashboard', absolute: false));
+        }
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->withErrors([
+            'email' => 'Tu nueva cuenta aún no tiene un rol asignado para acceder al sistema. Contacta con el administrador.',
+        ]);
     }
 }

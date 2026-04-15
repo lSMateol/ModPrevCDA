@@ -8,16 +8,16 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('diag', function (Blueprint $table) {
-            $table->id('iddia');
-            $table->dateTime('fecdia')->nullable();
-            $table->unsignedBigInteger('idveh')->nullable();
-            $table->tinyInteger('aprobado')->nullable();
-            $table->unsignedBigInteger('idper')->nullable();
-            $table->dateTime('fecvig')->nullable();
-            $table->unsignedBigInteger('kilomt')->nullable();
-            $table->unsignedBigInteger('idinsp')->nullable();
-            $table->unsignedBigInteger('iding')->nullable();
-            $table->unsignedBigInteger('dpiddia')->nullable();
+            $table->id('iddia'); //codigo del diagnostico
+            $table->dateTime('fecdia')->nullable(); //fecha del diagnostico
+            $table->unsignedBigInteger('idveh')->nullable(); //codigo del vehiculo
+            $table->tinyInteger('aprobado')->nullable(); // aprobado o no aprobado
+            $table->unsignedBigInteger('idper')->nullable(); //codigo del personal
+            $table->dateTime('fecvig')->nullable(); //fecha de vigencia del diagnostico
+            $table->unsignedBigInteger('kilomt')->nullable(); //kilometraje del vehiculo al momento del diagnostico
+            $table->unsignedBigInteger('idinsp')->nullable(); //codigo de la inspeccion
+            $table->unsignedBigInteger('iding')->nullable(); //codigo del ingeniero
+            $table->unsignedBigInteger('dpiddia')->nullable(); //codigo del detalle del diagnostico
             $table->foreign('idveh')->references('idveh')->on('vehiculo');
         });
     }

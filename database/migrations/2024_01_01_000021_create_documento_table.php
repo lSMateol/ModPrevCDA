@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('documento', function (Blueprint $table) {
-            $table->id('iddoc');
+            $table->id('iddoc'); //codigo del documento
             $table->unsignedBigInteger('idveh')->nullable();   // vehículo asociado
             $table->unsignedBigInteger('iddia')->nullable();   // diagnóstico asociado (opcional)
             $table->unsignedBigInteger('idper')->nullable();   // quién subió el archivo

@@ -8,8 +8,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('dominio', function (Blueprint $table) {
-            $table->id('iddom');
-            $table->string('nomdom', 255)->nullable();
+            $table->id('iddom'); //codigo de dominio
+            $table->string('nomdom', 255)->nullable(); //nombre de dominio
         });
     }
 
