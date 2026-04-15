@@ -49,7 +49,6 @@
                     <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Vehículos Empresa</a>
                     <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Historial Mantenimiento</a>
                     
-                    {{-- Solo Administrador y Digitador ven 'Marca' --}}
                     @hasanyrole('Administrador|Digitador')
                         <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Marca</a>
                     @endhasanyrole
@@ -57,8 +56,8 @@
             </div>
             @endhasanyrole
 
-            {{-- 3. ENTIDADES --}}
-            @hasanyrole('Administrador|Digitador')
+            {{-- 3. ENTIDADES - CORREGIDO --}}
+            @role('Administrador')
             <div class="space-y-1">
                 <button @click="openMenu = (openMenu === 'entidades' ? null : 'entidades')" 
                         class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
@@ -69,12 +68,11 @@
                     <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'entidades' ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="openMenu === 'entidades'" x-collapse class="pl-9 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-md">
-                    <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">MUP</a>
-                    <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Propietario</a>
-                    <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Empresas</a>
+                    {{-- Cambié MUP por UMP como mencionaste, verifícalo en tus rutas --}}
+                    <a href="{{ route('admin.dashboard') }}" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">UMP</a>
                 </div>
             </div>
-            @endhasanyrole
+            @endrole
 
             {{-- 4. CONFIGURACIÓN GLOBAL --}}
             @role('Administrador')
@@ -99,7 +97,7 @@
         </div>
     </nav>
 
-    {{-- BOTÓN DE SALIR CONECTADO AL LOGIN DE JULIÁN --}}
+    {{-- BOTÓN DE SALIR --}}
     <div class="p-4 border-t border-gray-700/50">
         <form method="POST" action="{{ route('logout') }}">
             @csrf
