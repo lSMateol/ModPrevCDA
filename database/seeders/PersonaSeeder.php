@@ -1,0 +1,125 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class PersonaSeeder extends Seeder
+{
+    public function run(): void
+    {
+        DB::table('persona')->insert([
+            // Administrador
+            ['idper' => 1, 'ndocper' => 10000001, 'tdocper' => 1, 'nomper' => 'Diego',    'apeper' => 'Agustin',   'telper' => '3001000001', 'codubi' => 1, 'idpef' => 1, 'pass' => md5('admin123'),    'emaper' => 'admin@cda.com',            'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
+            // Digitadores
+            ['idper' => 2, 'ndocper' => 10000002, 'tdocper' => 1, 'nomper' => 'Carlos',   'apeper' => 'Ruiz',      'telper' => '3001000002', 'codubi' => 1, 'idpef' => 2, 'pass' => md5('digitador1'),  'emaper' => 'carlos.ruiz@cda.com',      'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
+            ['idper' => 3, 'ndocper' => 10000003, 'tdocper' => 1, 'nomper' => 'María',    'apeper' => 'Gómez',     'telper' => '3001000003', 'codubi' => 1, 'idpef' => 2, 'pass' => md5('digitador2'),  'emaper' => 'maria.gomez@cda.com',      'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
+            ['idper' => 4, 'ndocper' => 10000004, 'tdocper' => 1, 'nomper' => 'Juan',     'apeper' => 'Perez',     'telper' => '3001000004', 'codubi' => 2, 'idpef' => 2, 'pass' => md5('digitador3'),  'emaper' => 'juan.perez@cda.com',       'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
+               // Personas adicionales para vehículos (propietarios y conductores)
+            [
+                'idper'    => 5,
+                'ndocper'  => 10000005,
+                'tdocper'  => 1,
+                'nomper'   => 'Luis',
+                'apeper'   => 'Martínez',
+                'telper'   => '3001000005',
+                'codubi'   => 1,
+                'idpef'    => 2,          // Suponiendo que 2 = digitador
+                'pass'     => md5('conductor1'),
+                'emaper'   => 'luis.martinez@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 6,
+                'ndocper'  => 10000006,
+                'tdocper'  => 1,
+                'nomper'   => 'Ana',
+                'apeper'   => 'López',
+                'telper'   => '3001000006',
+                'codubi'   => 1,
+                'idpef'    => 2,
+                'pass'     => md5('conductor2'),
+                'emaper'   => 'ana.lopez@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 7,
+                'ndocper'  => 10000007,
+                'tdocper'  => 1,
+                'nomper'   => 'Pedro',
+                'apeper'   => 'Ramírez',
+                'telper'   => '3001000007',
+                'codubi'   => 2,
+                'idpef'    => 2,
+                'pass'     => md5('propietario1'),
+                'emaper'   => 'pedro.ramirez@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 8,
+                'ndocper'  => 10000008,
+                'tdocper'  => 1,
+                'nomper'   => 'Sofía',
+                'apeper'   => 'Castro',
+                'telper'   => '3001000008',
+                'codubi'   => 2,
+                'idpef'    => 2,
+                'pass'     => md5('conductor3'),
+                'emaper'   => 'sofia.castro@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 9,
+                'ndocper'  => 10000009,
+                'tdocper'  => 1,
+                'nomper'   => 'Jorge',
+                'apeper'   => 'Mendoza',
+                'telper'   => '3001000009',
+                'codubi'   => 3,
+                'idpef'    => 2,
+                'pass'     => md5('propietario2'),
+                'emaper'   => 'jorge.mendoza@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 10,
+                'ndocper'  => 10000010,
+                'tdocper'  => 1,
+                'nomper'   => 'Carmen',
+                'apeper'   => 'Rojas',
+                'telper'   => '3001000010',
+                'codubi'   => 3,
+                'idpef'    => 2,
+                'pass'     => md5('propietario3'),
+                'emaper'   => 'carmen.rojas@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+
+            ]);
+    }
+}

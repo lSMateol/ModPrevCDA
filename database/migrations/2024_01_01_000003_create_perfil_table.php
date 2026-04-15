@@ -8,9 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('perfil', function (Blueprint $table) {
-            $table->id('idpef');
-            $table->string('nompef', 255)->nullable();
-            $table->unsignedBigInteger('pagpri')->nullable();
+            $table->id('idpef'); //codigo de perfil
+            $table->string('nompef', 255)->nullable(); //nombre del perfil
+            $table->unsignedBigInteger('pagpri')->nullable(); //pagina principal del perfil
         });
     }
 

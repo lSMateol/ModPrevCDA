@@ -8,9 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('ubica', function (Blueprint $table) {
-            $table->id('codubi');
-            $table->string('nomubi', 255)->nullable();
-            $table->unsignedBigInteger('depubi')->nullable();
+            $table->id('codubi'); //codigo de ubicacion
+            $table->string('nomubi', 255)->nullable(); //nombre de ubicacion
+            $table->unsignedBigInteger('depubi')->nullable(); //departamento de ubicacion
         });
     }
 

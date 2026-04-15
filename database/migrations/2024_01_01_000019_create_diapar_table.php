@@ -8,10 +8,10 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('diapar', function (Blueprint $table) {
-            $table->unsignedBigInteger('iddia')->nullable();
-            $table->unsignedBigInteger('idpar')->nullable();
-            $table->unsignedBigInteger('idper')->nullable();
-            $table->text('valor')->nullable();
+            $table->unsignedBigInteger('iddia')->nullable(); //codigo del diagnostico
+            $table->unsignedBigInteger('idpar')->nullable(); //codigo del parametro
+            $table->unsignedBigInteger('idper')->nullable(); //codigo de la persona
+            $table->text('valor')->nullable(); //valor del parametro para el diagnostico
 
             $table->foreign('iddia')->references('iddia')->on('diag');
             $table->foreign('idpar')->references('idpar')->on('param');
