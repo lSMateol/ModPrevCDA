@@ -2,9 +2,16 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth; // <-- IMPORTANTE: Necesario para la prueba
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// RUTA TEMPORAL DE PRUEBA PARA ROL EMPRESA
+Route::get('/forzar-empresa', function () {
+    Auth::loginUsingId(3); // <-- Usamos el ID 3 que corresponde al rol Empresa
+    return redirect('/dashboard');
 });
 
 Route::get('/dashboard', function () {

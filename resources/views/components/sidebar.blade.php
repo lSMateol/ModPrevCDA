@@ -43,17 +43,22 @@
                 </div>
                 <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'gestion' ? 'rotate-180' : ''"></i>
             </button>
+            
             <div x-show="openMenu === 'gestion'" x-collapse class="pl-9 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-md">
                 <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Vehículos</a>
                 <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Vehículos Empresa</a>
                 <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Historial Mantenimiento</a>
-                <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Marca</a>
+                
+                {{-- Solo Administrador y Digitador ven 'Marca' --}}
+                @if(Auth::user()->hasRole(['Administrador', 'Digitador']))
+                    <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Marca</a>
+                @endif
             </div>
         </div>
         @endif
 
-        {{-- 3. ENTIDADES --}}
-        @if(Auth::check() && Auth::user()->hasRole('Administrador'))
+        {{-- 3. ENTIDADES (Modificado para Digitador) --}}
+        @if(Auth::check() && Auth::user()->hasRole(['Administrador', 'Digitador']))
         <div class="space-y-1">
             <button @click="openMenu = (openMenu === 'entidades' ? null : 'entidades')" 
                     class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
@@ -65,11 +70,13 @@
             </button>
             <div x-show="openMenu === 'entidades'" x-collapse class="pl-9 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-md">
                 <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">MUP</a>
+                <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Propietario</a>
+                <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Empresas</a>
             </div>
         </div>
         @endif
 
-        {{-- 4. CONFIGURACIÓN GLOBAL --}}
+        {{-- 4. CONFIGURACIÓN GLOBAL (Solo Administrador) --}}
         @if(Auth::check() && Auth::user()->hasRole('Administrador'))
         <div class="space-y-1">
             <button @click="openMenu = (openMenu === 'config' ? null : 'config')"
