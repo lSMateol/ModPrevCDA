@@ -3,8 +3,11 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+// ==========================================
+// REDIRECCIÓN INICIAL (Seguridad)
+// ==========================================
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // ==========================================
@@ -25,10 +28,10 @@ Route::get('/dashboard', function () {
 // ==========================================
 Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard'); // Cambiar por vista específica
+        return view('dashboard'); 
     })->name('dashboard');
     
-    // Configuración, usuarios, roles, etc.
+    // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
 // ==========================================
@@ -36,10 +39,10 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
 // ==========================================
 Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digitador.')->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard'); // Cambiar por vista específica
+        return view('dashboard'); 
     })->name('dashboard');
     
-    // Accesos a diagnóstico, vehículos, etc.
+    // Aquí irán tus rutas de vehículos y diagnósticos
 });
 
 // ==========================================
@@ -47,12 +50,15 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
 // ==========================================
 Route::middleware(['auth', 'role:Empresa'])->prefix('empresa')->name('empresa.')->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard'); // Cambiar por vista específica
+        return view('dashboard'); 
     })->name('dashboard');
     
-    // Perfil, visualizar sus diagnósticos, subir archivos
+    // Aquí irán las rutas para que la empresa vea sus certificados
 });
 
+// ==========================================
+// RUTAS DE PERFIL (Comunes a todos)
+// ==========================================
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
