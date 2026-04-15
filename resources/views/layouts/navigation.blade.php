@@ -25,6 +25,12 @@
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                             <div>{{ Auth::user()->name }}</div>
 
+                            @if(Auth::user()->roles->isNotEmpty())
+                                <span class="ml-2 px-2 py-0.5 text-[10px] font-bold rounded shadow-sm text-white bg-[#001834] uppercase tracking-widest">
+                                    {{ Auth::user()->roles->first()->name }}
+                                </span>
+                            @endif
+
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -75,7 +81,14 @@
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
+                <div class="flex items-center justify-between">
+                    <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
+                    @if(Auth::user()->roles->isNotEmpty())
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded shadow-sm text-white bg-[#001834] uppercase tracking-widest">
+                            {{ Auth::user()->roles->first()->name }}
+                        </span>
+                    @endif
+                </div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
 
