@@ -51,7 +51,7 @@
                 </button>
                 
                 <div x-show="openMenu === 'gestion'" x-collapse class="pl-9 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-md">
-                    <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Vehículos</a>
+                    <a href="{{ route('vehiculos.index') }}" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Vehículos</a>
                     <a href="#" class="block text-[10px] py-2 text-gray-400 hover:text-white transition">Empresas</a>
                 </div>
             </div>

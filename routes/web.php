@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DiagnosticoController;
+use App\Http\Controllers\VehiculoController;
 
 // ==========================================
 // REDIRECCIÓN INICIAL (Seguridad)
@@ -73,6 +74,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// ==========================================
+// MODULO GESTION VEHICULAR (Comunes a todos los operativos)
+// ==========================================
+Route::middleware(['auth', 'role:Administrador|Digitador|Empresa'])->group(function () {
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
 });
 
 require __DIR__.'/auth.php';
