@@ -13,16 +13,16 @@
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>
-                <a href="{{ route('admin.mup.conductores') }}" class="flex items-center justify-center bg-gray-100 p-2 rounded-md mr-3 text-sm hover:bg-gray-200 transition">
-                    <iconify-icon icon="lucide:arrow-left"></iconify-icon>
+                <a href="{{ route('admin.mup.usuarios') }}" class="flex items-center justify-center bg-gray-100 p-2 rounded-md text-sm hover:bg-gray-200 transition">
+                    <iconify-icon icon="lucide:arrow-left" style="font-size: 16px; color: var(--primary)"></iconify-icon>
                 </a>
                 Nuevo Perfil del Sistema
             </h1>
             <p>Crea un nuevo rol y define sus alcances, permisos y accesos en el sistema del CDA.</p>
         </div>
         <div class="flex gap-3">
-            <a href="{{ route('admin.mup.conductores') }}" class="mup-btn mup-btn-outline">Cancelar</a>
-            <button type="button" @click="document.getElementById('form-perfil').submit()" class="mup-btn mup-btn-primary">
+            <a href="{{ route('admin.mup.usuarios') }}" class="mup-btn mup-btn-outline">Cancelar</a>
+            <button type="submit" form="form-nuevo-perfil" class="mup-btn mup-btn-primary">
                 <iconify-icon icon="lucide:save"></iconify-icon>
                 Guardar perfil
             </button>
@@ -30,10 +30,10 @@
     </header>
 
     <div class="mup-content-scroll">
-        <div class="max-w-4xl mx-auto space-y-6">
-            <form id="form-perfil" action="{{ route('admin.mup.perfil.store') }}" method="POST">
+        <div class="max-w-[960px] mx-auto space-y-6">
+            <form id="form-nuevo-perfil" action="{{ route('admin.mup.perfil.store') }}" method="POST">
                 @csrf
-                {{-- INFO CARD --}}
+                {{-- CARD: Información del perfil --}}
                 <section class="mup-card">
                     <div class="mup-card-header-soft">
                         <div class="flex items-center gap-3">
@@ -74,7 +74,7 @@
                     </div>
                 </section>
 
-                {{-- PERMISSIONS CARD --}}
+                {{-- CARD: Configuración de permisos --}}
                 <section class="mup-card">
                     <div class="mup-card-body pt-7">
                         <div class="flex justify-between items-start mb-6">
@@ -82,19 +82,19 @@
                                 <div class="mup-card-title text-lg">Configuración de permisos</div>
                                 <div class="mup-card-subtitle">Define qué podrá ver, crear, editar o eliminar este perfil en cada módulo del sistema.</div>
                             </div>
-                            <button type="button" @click="marcarTodos" class="mup-btn mup-btn-outline h-9 px-4 text-xs font-bold">
+                            <button type="button" @click="marcarTodos" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#0d3b5a] rounded-md text-xs font-bold transition">
                                 Marcar todos
                             </button>
                         </div>
 
-                        <div class="flex gap-5 border-b mb-4 text-sm font-medium">
+                        <div class="flex gap-5 border-b mb-6 text-sm font-medium">
                             <div class="text-[#0d3b5a] border-b-2 border-[#0d3b5a] pb-2 cursor-pointer">Módulos principales</div>
                             <div class="text-gray-400 pb-2 cursor-pointer">Reportes y exportaciones</div>
                             <div class="text-gray-400 pb-2 cursor-pointer">Configuración global</div>
                         </div>
 
                         <div class="mup-table-wrap">
-                            <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase py-3">
+                            <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase py-3 px-2">
                                 <div class="col-span-1">Módulo</div>
                                 <div class="text-center">Ver</div>
                                 <div class="text-center">Crear</div>
@@ -103,7 +103,7 @@
                             </div>
 
                             @foreach($modulos as $modulo)
-                            <div class="grid grid-cols-5 py-4 border-t items-center">
+                            <div class="grid grid-cols-5 py-4 border-t items-center px-2">
                                 <div class="text-sm font-medium text-gray-800">{{ $modulo->nompag }}</div>
                                 <div class="flex justify-center">
                                     <input type="checkbox" name="permisos[{{ $modulo->nompag }}][ver]" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]">
@@ -121,16 +121,19 @@
                             @endforeach
                         </div>
 
-                        <div class="mt-8 pt-6 border-t flex flex-wrap gap-5 text-xs text-gray-400">
-                            <div class="flex items-center gap-2">
+                        <div class="legend mt-8 pt-6 border-t flex items-center gap-6 text-xs text-gray-400">
+                            <div class="legend-item flex items-center gap-2">
                                 <div class="w-3.5 h-3.5 rounded bg-green-500"></div>
                                 <span>Permitido (Tilde para habilitar)</span>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="legend-item flex items-center gap-2">
                                 <div class="w-3.5 h-3.5 rounded border border-gray-200"></div>
                                 <span>No permitido</span>
                             </div>
-                            <div>- No aplica en este módulo</div>
+                            <div class="legend-item">
+                                <span>-</span>
+                                <span>No aplica en este módulo</span>
+                            </div>
                         </div>
                     </div>
                 </section>

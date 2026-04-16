@@ -7,11 +7,14 @@ use App\Models\Persona;
 use App\Models\Perfil;
 use App\Models\Valor;
 use App\Models\Pagina;
+use App\Models\User;
+use App\Models\Empresa;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 
 class MupController extends Controller
 {
@@ -153,6 +156,89 @@ class MupController extends Controller
             DB::rollBack();
             Log::error("Error creando perfil: " . $e->getMessage());
             return redirect()->back()->with('error', 'Ocurrió un error al crear el perfil: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Display the Users (MUP) main dashbaord.
+     */
+    public function usuarios()
+    {
+        // 1. Listado de usuarios con su perfil y persona vinculada
+        $usuarios = User::with('persona.perfil', 'empresa')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // 2. Perfiles con conteo de personas (para las tarjetas de insight)
+        $perfiles = Perfil::withCount('personas')->get();
+
+        // 3. Combos para el formulario
+        $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
+        $empresas = Empresa::orderBy('razsoem')->get();
+
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
+    }
+
+    /**
+     * Store a new User + Persona synchronized record.
+     */
+    public function storeUsuario(Request $request)
+    {
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required',
+            'ndocper' => 'required|numeric|unique:persona,ndocper',
+            'emaper' => 'required|email|unique:persona,emaper',
+            'telper' => 'nullable|string',
+            'username' => 'required|string|unique:users,username',
+            'password' => 'required|string|min:6|confirmed',
+            'idpef' => 'required|exists:perfil,idpef',
+            'idemp' => 'nullable|exists:empresa,idemp',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Split name
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            // 2. Create Persona
+            $persona = Persona::create([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'idpef' => $request->idpef,
+                'idemp' => $request->idemp,
+                'codubi' => 1, // Default
+                'actper' => 1, // Default active
+            ]);
+
+            // 3. Create User
+            $user = User::create([
+                'name' => $request->nombre_completo,
+                'username' => $request->username,
+                'email' => $request->emaper,
+                'password' => Hash::make($request->password),
+                'idper' => $persona->idper,
+                'idemp' => $request->idemp,
+            ]);
+
+            // 4. Assign Spatie Role
+            $perfil = Perfil::find($request->idpef);
+            $user->assignRole($perfil->nompef);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Usuario creado exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error registrando usuario: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al registrar usuario: ' . $e->getMessage())->withInput();
         }
     }
 }

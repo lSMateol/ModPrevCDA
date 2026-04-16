@@ -106,7 +106,7 @@
                     <span class="text-[9px] font-bold" x-text="openMenu === 'entidades' ? 'v' : '>'"></span>
                 </button>
                 <div x-show="openMenu === 'entidades'" x-collapse class="ml-4 pl-4 border-l border-gray-700/50 space-y-0.5 mt-1 relative">
-                    <a href="{{ route('admin.mup.conductores') }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('admin.mup.*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
+                    <a href="{{ route('admin.mup.usuarios') }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('admin.mup.*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-table-cells text-[8px] mr-2"></i>
                         MUP
