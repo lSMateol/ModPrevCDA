@@ -37,6 +37,16 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
     Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
     
+    // Módulo MUP (Entidades)
+    Route::prefix('entidades/mup')->name('mup.')->group(function () {
+        Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores');
+        Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+        
+        // Perfiles
+        Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
+        Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+    });
+
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
