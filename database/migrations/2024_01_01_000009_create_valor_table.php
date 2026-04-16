@@ -8,13 +8,17 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('valor', function (Blueprint $table) {
-            $table->id('idval'); //codigo del valor
-            $table->unsignedBigInteger('iddom')->nullable(); //codigo del dominio
-            $table->string('nomval', 100)->nullable(); //nombre del valor
-            $table->string('parval', 100)->nullable(); //parametro del valor
-            $table->tinyInteger('actval')->nullable(); //estado del valor
+            $table->id('idval'); // Código del valor
+            $table->unsignedBigInteger('iddom'); // Quitamos el nullable, un valor siempre debe pertenecer a un dominio
+            $table->string('nomval', 255)->nullable(); // Aumenté a 255 por estándar
+            $table->string('parval', 100)->nullable(); // Parámetro del valor (ej: GAS, DIE)
+            $table->tinyInteger('actval')->default(1); // Por defecto activo (1)
 
-            $table->foreign('iddom')->references('iddom')->on('dominio');
+            // Relación con Dominio con borrado en cascada
+            $table->foreign('iddom')
+                  ->references('iddom')
+                  ->on('dominio')
+                  ->onDelete('cascade');
         });
     }
 

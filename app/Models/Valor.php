@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Valor extends Model
 {
@@ -10,14 +12,21 @@ class Valor extends Model
     protected $primaryKey = 'idval';
     public $timestamps = false;
 
-    protected $fillable = ['iddom', 'nomval', 'parval', 'actval'];
+    // Se agrega 'idval' para permitir la asignación manual de IDs del Seeder
+    protected $fillable = ['idval', 'iddom', 'nomval', 'parval', 'actval'];
 
-    public function dominio()
+    /**
+     * Relación inversa con el Dominio
+     */
+    public function dominio(): BelongsTo
     {
         return $this->belongsTo(Dominio::class, 'iddom', 'iddom');
     }
 
-    public function vehiculos()
+    /**
+     * Relación con los Vehículos (Clase de vehículo)
+     */
+    public function vehiculos(): HasMany
     {
         return $this->hasMany(Vehiculo::class, 'clveh', 'idval');
     }

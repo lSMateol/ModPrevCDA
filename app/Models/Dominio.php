@@ -10,7 +10,7 @@ class Dominio extends Model
     protected $primaryKey = 'iddom';
     public $timestamps = false;
 
-    protected $fillable = ['nomdom'];
+    protected $fillable = ['iddom', 'nomdom'];
 
     public function valores()
     {
