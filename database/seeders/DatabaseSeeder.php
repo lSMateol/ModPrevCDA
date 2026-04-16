@@ -35,6 +35,8 @@ class DatabaseSeeder extends Seeder
             [
                 'name'     => 'Administrador',
                 'password' => Hash::make('admin123'), // Misma contraseña que en persona (pero hasheada con bcrypt)
+                'idper'    => 1, // Vinculado a 'Diego Agustin'
+                'idemp'    => null,
             ]
         );
 
@@ -49,6 +51,8 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Digitador',
                 'password' => Hash::make('12345678'),
+                'idper'    => 2, // Vinculado a 'Carlos Ruiz'
+                'idemp'    => null,
             ]
         );
 
@@ -64,6 +68,8 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Empresa',
                 'password' => Hash::make('12345678'),
+                'idper'    => null, 
+                'idemp'    => 3, // Transportes del Norte
             ]
         );
 
