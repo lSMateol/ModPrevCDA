@@ -49,6 +49,14 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
         // Usuarios (Master Dash)
         Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios');
         Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
+
+        // Propietarios
+        Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios');
+        Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+
+        // Empresas
+        Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas');
+        Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
     });
 
     // Aquí irán tus rutas de usuarios, roles y configuración global

@@ -19,8 +19,8 @@
         </div>
         <div class="mup-tabs">
             <a href="{{ route('admin.mup.conductores') }}" class="mup-tab">Conductor</a>
-            <a href="#" class="mup-tab">Propietario</a>
-            <a href="#" class="mup-tab">Empresas</a>
+            <a href="{{ route('admin.mup.propietarios') }}" class="mup-tab">Propietario</a>
+            <a href="{{ route('admin.mup.empresas') }}" class="mup-tab">Empresas</a>
             <a href="{{ route('admin.mup.usuarios') }}" class="mup-tab active">Usuario</a>
         </div>
     </header>

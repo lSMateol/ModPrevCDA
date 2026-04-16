@@ -4,37 +4,44 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container">
+<div class="mup-container" x-data="{ 
+    showCreateForm: true,
+    searchQuery: '',
+    marcarTodos: function() {
+        const checkboxes = document.querySelectorAll('#permissions-card input[type=checkbox]');
+        checkboxes.forEach(c => c.checked = true);
+    }
+}">
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
             <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores') }}" class="mup-tab active">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios') }}" class="mup-tab">Propietario</a>
+            <a href="{{ route('admin.mup.conductores') }}" class="mup-tab">Conductor</a>
+            <a href="{{ route('admin.mup.propietarios') }}" class="mup-tab active">Propietario</a>
             <a href="{{ route('admin.mup.empresas') }}" class="mup-tab">Empresas</a>
             <a href="{{ route('admin.mup.usuarios') }}" class="mup-tab">Usuario</a>
         </div>
     </header>
 
     <div class="mup-content-scroll">
-        <div class="space-y-6">
-            {{-- SECCIÓN: Listado de Conductores --}}
+        <div class="stack-layout">
+            {{-- SECCIÓN: Listado de Propietarios --}}
             <section class="mup-card">
                 <div class="mup-card-header-plain">
                     <div>
-                        <div class="mup-card-title">Listado de conductores</div>
-                        <div class="mup-card-subtitle">Consulta, edita y exporta el listado de conductores registrados en el sistema.</div>
+                        <div class="mup-card-title text-gray-800">Listado de propietarios</div>
+                        <div class="mup-card-subtitle">Consulta, edita y exporta el listado de propietarios registrados en el sistema.</div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="flex border rounded-md p-1 bg-white">
-                            <button class="px-3 py-1 text-xs font-bold text-blue-600 bg-blue-50 rounded">CSV</button>
-                            <button class="px-3 py-1 text-xs font-bold text-green-600 bg-green-50 rounded mx-1">Excel</button>
-                            <button class="px-3 py-1 text-xs font-bold text-red-600 bg-red-50 rounded">PDF</button>
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <div class="export-group">
+                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
+                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
+                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
                         </div>
                         <div class="relative">
-                            <input type="text" placeholder="Buscar..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-64 bg-gray-50">
+                            <input type="text" x-model="searchQuery" placeholder="Buscar por nombre o documento..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-80 bg-gray-50">
                             <div class="absolute left-3 top-2.5 text-gray-400">
                                 <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
@@ -54,15 +61,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($conductores as $con)
-                            <tr>
-                                <td>CON-{{ str_pad($con->idper, 3, '0', STR_PAD_LEFT) }}</td>
-                                <td><strong>{{ $con->nomper }} {{ $con->apeper }}</strong></td>
-                                <td>{{ number_format($con->ndocper, 0, ',', '.') }}</td>
-                                <td>{{ $con->emaper }}</td>
+                            @forelse($propietarios as $prop)
+                            <tr x-show="(searchQuery === '' || '{{ strtolower($prop->nomper.' '.$prop->apeper) }}'.includes(searchQuery.toLowerCase()))">
+                                <td>PRO-{{ str_pad($prop->idper, 3, '0', STR_PAD_LEFT) }}</td>
+                                <td><strong>{{ $prop->nomper }} {{ $prop->apeper }}</strong></td>
+                                <td>{{ number_format($prop->ndocper, 0, ',', '.') }}</td>
+                                <td>{{ $prop->emaper }}</td>
                                 <td>
-                                    <span class="mup-state-badge {{ $con->actper ? 'mup-state-active' : 'mup-state-inactive' }}">
-                                        {{ $con->actper ? 'Activo' : 'Inactivo' }}
+                                    <span class="mup-state-badge {{ ($prop->actper) ? 'mup-state-active' : 'mup-state-inactive' }}">
+                                        <div class="w-2 h-2 rounded-full bg-current"></div>
+                                        {{ ($prop->actper) ? 'Activo' : 'Inactivo' }}
                                     </span>
                                 </td>
                                 <td class="text-right">
@@ -75,7 +83,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-10 text-gray-500">No hay conductores registrados.</td>
+                                <td colspan="6" class="text-center py-10 text-gray-500">No hay propietarios registrados.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -83,20 +91,23 @@
                 </div>
             </section>
 
-            <div class="mup-management-row">
-                {{-- FORMULARIO: Nuevo Conductor --}}
-                <section class="mup-card">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {{-- CARD: Nuevo Propietario --}}
+                <section class="mup-card" x-show="showCreateForm">
                     <div class="mup-card-header-soft">
                         <div class="flex items-center gap-3">
                             <iconify-icon icon="lucide:user-round-plus" class="text-2xl text-[#0d3b5a]"></iconify-icon>
                             <div>
-                                <div class="mup-card-title">Nuevo conductor</div>
-                                <div class="mup-card-subtitle">Registra un nuevo conductor con su información personal y datos operativos.</div>
+                                <div class="mup-card-title">Nuevo propietario</div>
+                                <div class="mup-card-subtitle">Registra un nuevo propietario con información personal y datos operativos.</div>
                             </div>
                         </div>
+                        <button @click="showCreateForm = false" class="text-gray-400 hover:text-red-500 transition">
+                            <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                        </button>
                     </div>
                     <div class="mup-card-body">
-                        <form action="{{ route('admin.mup.conductores.store') }}" method="POST">
+                        <form action="{{ route('admin.mup.propietarios.store') }}" method="POST">
                             @csrf
                             <div class="text-[13px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-wider">Información personal</div>
                             <div class="border-b mb-6"></div>
@@ -104,7 +115,7 @@
                             <div class="mup-form-grid">
                                 <div class="mup-form-group span-2">
                                     <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
-                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Pérez" required value="{{ old('nombre_completo') }}">
+                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Carlos Martínez" required value="{{ old('nombre_completo') }}">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Tipo de documento <span class="mup-required">*</span></label>
@@ -115,16 +126,24 @@
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Número de documento <span class="mup-required">*</span></label>
-                                    <input type="number" name="ndocper" class="mup-input" placeholder="Ej. 12345678" required value="{{ old('ndocper') }}">
+                                    <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
+                                    <input type="number" name="ndocper" class="mup-input" placeholder="Ej. 79123456" required value="{{ old('ndocper') }}">
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Correo electrónico <span class="mup-required">*</span></label>
-                                    <input type="email" name="emaper" class="mup-input" placeholder="Ej. correo@ejemplo.com" required value="{{ old('emaper') }}">
+                                    <label class="mup-label">Dirección</label>
+                                    <input type="text" name="dirper" class="mup-input" placeholder="Ej. Calle 123" value="{{ old('dirper') }}">
+                                </div>
+                                <div class="mup-form-group">
+                                    <label class="mup-label">Ciudad</label>
+                                    <input type="text" name="ciuper" class="mup-input" placeholder="Ej. Bogotá" value="{{ old('ciuper') }}">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Teléfono</label>
                                     <input type="text" name="telper" class="mup-input" placeholder="Ej. 300 123 4567" value="{{ old('telper') }}">
+                                </div>
+                                <div class="mup-form-group">
+                                    <label class="mup-label">E-mail <span class="mup-required">*</span></label>
+                                    <input type="email" name="emaper" class="mup-input" placeholder="Ej. correo@ejemplo.com" required value="{{ old('emaper') }}">
                                 </div>
                             </div>
 
@@ -135,52 +154,53 @@
                                 <div class="mup-form-group">
                                     <label class="mup-label">Categoría del pase <span class="mup-required">*</span></label>
                                     <select name="catcon" class="mup-input" required>
-                                        <option value="">Seleccione...</option>
                                         @foreach($categorias as $cat)
                                             <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
                                         @endforeach
-                                        {{-- Fallback si no hay categorías sembradas --}}
-                                        @if($categorias->isEmpty())
-                                            <option value="1">C2</option>
-                                        @endif
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">No. licencia de tránsito <span class="mup-required">*</span></label>
-                                    <input type="text" name="nliccon" class="mup-input" placeholder="Ej. 1234567890" required value="{{ old('nliccon') }}">
+                                    <input type="text" name="nliccon" class="mup-input" placeholder="Ej. 12345678" required value="{{ old('nliccon') }}">
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Fecha de vencimiento <span class="mup-required">*</span></label>
+                                    <label class="mup-label">Fecha vencimiento licencia <span class="mup-required">*</span></label>
                                     <input type="date" name="fvencon" class="mup-input" required value="{{ old('fvencon') }}">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Activo (SI/NO) <span class="mup-required">*</span></label>
-                                    <select name="actper" class="mup-input" required>
-                                        <option value="1" {{ old('actper') == '1' ? 'selected' : '' }}>SI</option>
-                                        <option value="0" {{ old('actper') == '0' ? 'selected' : '' }}>NO</option>
+                                    <select name="actper" class="mup-input">
+                                        <option value="1">SI</option>
+                                        <option value="0">NO</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div class="mt-4 p-3 bg-blue-50 rounded-md flex items-center gap-3 text-blue-800 text-xs">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>Ficha de propietario organizada por bloques para facilitar el registro operativo.</span>
                             </div>
 
                             <div class="mt-8 flex justify-end gap-3 pt-6 border-t">
                                 <button type="reset" class="mup-btn mup-btn-outline">Cancelar</button>
                                 <button type="submit" class="mup-btn mup-btn-primary">
                                     <iconify-icon icon="lucide:save"></iconify-icon>
-                                    Guardar conductor
+                                    Guardar propietario
                                 </button>
                             </div>
                         </form>
                     </div>
                 </section>
 
-                {{-- CARD: Permisos --}}
-                <section class="mup-card">
-                    <div class="mup-card-body">
+                {{-- CARD: Permisos (Sidebar format) --}}
+                <section class="mup-card h-full" id="permissions-card">
+                    <div class="mup-card-body pt-8">
                         <div class="flex justify-between items-start mb-6">
                             <div>
-                                <div class="mup-card-title text-lg">Permisos del perfil: Conductores</div>
-                                <div class="mup-card-subtitle">Configuración específica para el perfil conductor dentro del flujo operativo del CDA.</div>
+                                <div class="mup-card-title text-lg">Permisos del perfil: Propietarios</div>
+                                <div class="mup-card-subtitle">Configuración específica para el perfil propietario dentro del sistema del CDA.</div>
                             </div>
+                            <button type="button" @click="marcarTodos" class="px-3 py-1 bg-gray-100 text-[#0d3b5a] rounded text-[10px] font-bold">Marcar todos</button>
                         </div>
 
                         <div class="flex gap-6 border-b mb-6 text-sm font-medium">
@@ -190,7 +210,7 @@
 
                         <div class="space-y-4">
                             @php
-                                $modulos = ['Dashboard', 'Agenda de revisión', 'Historial de vehículos', 'Documentos asociados', 'Alertas de vencimiento', 'Actualización de datos'];
+                                $modulosProp = ['Dashboard', 'Agenda de revisión', 'Historial de vehículos', 'Documentos asociados', 'Alertas de vencimiento', 'Actualización de datos'];
                             @endphp
                             <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase mb-2">
                                 <div class="col-span-1">Módulo</div>
@@ -199,12 +219,24 @@
                                 <div class="text-center">Edit</div>
                                 <div class="text-center">Elim</div>
                             </div>
-                            @foreach($modulos as $mod)
+                            @foreach($modulosProp as $mod)
                             <div class="grid grid-cols-5 py-3 border-t items-center">
                                 <div class="text-sm font-medium">{{ $mod }}</div>
-                                <div class="flex justify-center"><iconify-icon icon="lucide:check" class="text-white bg-[#0d3b5a] rounded p-0.5 text-[10px]"></iconify-icon></div>
-                                <div class="text-center text-gray-300">-</div>
-                                <div class="text-center text-gray-300">-</div>
+                                <div class="flex justify-center"><input type="checkbox" checked class="rounded border-gray-300"></div>
+                                <div class="text-center">
+                                    @if(in_array($mod, ['Documentos asociados', 'Actualización de datos']))
+                                        <input type="checkbox" checked class="rounded border-gray-300">
+                                    @else
+                                        <span class="text-gray-300">-</span>
+                                    @endif
+                                </div>
+                                <div class="text-center">
+                                    @if(in_array($mod, ['Actualización de datos']))
+                                        <input type="checkbox" checked class="rounded border-gray-300">
+                                    @else
+                                        <span class="text-gray-300">-</span>
+                                    @endif
+                                </div>
                                 <div class="text-center text-gray-300">-</div>
                             </div>
                             @endforeach
