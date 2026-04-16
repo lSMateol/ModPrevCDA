@@ -30,28 +30,32 @@ class DominioSeeder extends Seeder
             );
         }
 
-        // 2. SEEDER DE VALORES (Relacionados con los IDs correctos del PDF)
+        // 2. SEEDER DE VALORES (Sincronizado 100% con PDF de exportación)
         $valores = [
             // Clase de Vehículo (iddom: 1)
-            ['idval' => 1,  'iddom' => 1, 'nomval' => 'Automóvil',     'parval' => 'AUTO',  'actval' => 1],
-            ['idval' => 2,  'iddom' => 1, 'nomval' => 'Bus',           'parval' => 'BUS',   'actval' => 1],
-            ['idval' => 3,  'iddom' => 1, 'nomval' => 'Buseta',        'parval' => 'BUSE',  'actval' => 1],
-            ['idval' => 4,  'iddom' => 1, 'nomval' => 'Camión',        'parval' => 'CMN',   'actval' => 1],
-            ['idval' => 5,  'iddom' => 1, 'nomval' => 'Camioneta',     'parval' => 'CAM',   'actval' => 1],
-            ['idval' => 6,  'iddom' => 1, 'nomval' => 'Microbus',      'parval' => 'MIC',   'actval' => 1],
+            ['idval' => 2,  'iddom' => 1, 'nomval' => 'AUTOMOVIL',     'parval' => 'AUTO',  'actval' => 1],
+            ['idval' => 3,  'iddom' => 1, 'nomval' => 'BUS',           'parval' => 'BUS',   'actval' => 1],
+            ['idval' => 6,  'iddom' => 1, 'nomval' => 'BUSETA',        'parval' => 'BUSE',  'actval' => 1],
+            ['idval' => 7,  'iddom' => 1, 'nomval' => 'CAMION',        'parval' => 'CMN',   'actval' => 1],
+            ['idval' => 9,  'iddom' => 1, 'nomval' => 'CAMIONETA',     'parval' => 'CAM',   'actval' => 1],
+            ['idval' => 20, 'iddom' => 1, 'nomval' => 'MICROBUS',      'parval' => 'MIC',   'actval' => 1],
 
             // Tipo de Combustible (iddom: 2)
-            ['idval' => 91, 'iddom' => 2, 'nomval' => 'Gasolina',      'parval' => 'GAS',   'actval' => 1],
-            ['idval' => 92, 'iddom' => 2, 'nomval' => 'Diésel',        'parval' => 'DIE',   'actval' => 1],
-            ['idval' => 93, 'iddom' => 2, 'nomval' => 'Gas Natural',   'parval' => 'GNV',   'actval' => 1],
+            ['idval' => 37, 'iddom' => 2, 'nomval' => 'GASOLINA',      'parval' => 'GAS',   'actval' => 1],
+            ['idval' => 43, 'iddom' => 2, 'nomval' => 'DIESEL',        'parval' => 'DIE',   'actval' => 1],
+            ['idval' => 40, 'iddom' => 2, 'nomval' => 'GAS-NATURAL',   'parval' => 'GNV',   'actval' => 1],
 
-            // Tipo de Motor (iddom: 9 - Corregido según PDF)
-            ['idval' => 101,'iddom' => 9, 'nomval' => '4 Tiempos',     'parval' => '4T',    'actval' => 1],
-            ['idval' => 102,'iddom' => 9, 'nomval' => '2 Tiempos',     'parval' => '2T',    'actval' => 1],
+            // Tipo de Motor (iddom: 9)
+            ['idval' => 101, 'iddom' => 9, 'nomval' => '4 T',          'parval' => '4T',    'actval' => 1],
+            ['idval' => 102, 'iddom' => 9, 'nomval' => '2 T',          'parval' => '2T',    'actval' => 1],
 
-            // Carga Vehículo (iddom: 10 - Corregido según PDF)
-            ['idval' => 111,'iddom' => 10, 'nomval' => 'Liviana',       'parval' => 'LIV',   'actval' => 1],
-            ['idval' => 112,'iddom' => 10, 'nomval' => 'Pesada',        'parval' => 'PES',   'actval' => 1],
+            // Carga Vehículo (iddom: 10)
+            ['idval' => 91, 'iddom' => 10, 'nomval' => 'Liviano',      'parval' => 'LIV',   'actval' => 1],
+            ['idval' => 92, 'iddom' => 10, 'nomval' => 'Pesado',       'parval' => 'PES',   'actval' => 1],
+
+            // Tipo de Documento (iddom: 4)
+            ['idval' => 57, 'iddom' => 4, 'nomval' => 'C.C.',          'parval' => 'CC',    'actval' => 1],
+            ['idval' => 58, 'iddom' => 4, 'nomval' => 'NIT',           'parval' => 'NIT',   'actval' => 1],
         ];
 
         foreach ($valores as $valor) {
