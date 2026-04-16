@@ -128,7 +128,7 @@ class PersonaSeeder extends Seeder
                 'apeper'   => 'Vargas',
                 'telper'   => '3001000011',
                 'codubi'   => 1,
-                'idpef'    => null, // Suponiendo que 3 = inspector
+                'idpef'    => 4, // 4 = inspector
                 'pass'     => null,
                 'emaper'   => 'andres.vargas@cda.com',
                 'idemp'    => null,
@@ -145,7 +145,7 @@ class PersonaSeeder extends Seeder
                 'apeper'   => 'Gómez',
                 'telper'   => '3001000012',
                 'codubi'   => 2,
-                'idpef'    => null, // Suponiendo que 4 = ingeniero
+                'idpef'    => 5, // 5 = ingeniero
                 'pass'     => null,
                 'emaper'   => 'maria.gomez@cda.com',
                 'idemp'    => null,
@@ -162,7 +162,7 @@ class PersonaSeeder extends Seeder
                 'apeper'   => 'Fernández',
                 'telper'   => '3001000013',
                 'codubi'   => 3,
-                'idpef'    => null, // Suponiendo que 4 = ingeniero
+                'idpef'    => 5, // 5 = ingeniero
                 'pass'     => null,
                 'emaper'   => 'luis.fernandez@cda.com',
                 'idemp'    => null,

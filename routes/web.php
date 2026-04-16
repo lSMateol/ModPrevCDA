@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DiagnosticoController;
 
 // ==========================================
 // REDIRECCIÓN INICIAL (Seguridad)
@@ -30,6 +31,11 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::get('/dashboard', function () {
         return view('dashboard'); 
     })->name('dashboard');
+
+    // CRUD de Diagnósticos para Administrador
+    Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+    Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+    Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
     
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
@@ -42,6 +48,10 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
         return view('dashboard'); 
     })->name('dashboard');
     
+    // CRUD de Diagnósticos para Digitador
+    Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+    Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+    Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
     // Aquí irán tus rutas de vehículos y diagnósticos
 });
 
