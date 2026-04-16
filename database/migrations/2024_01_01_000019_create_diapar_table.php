@@ -8,14 +8,17 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('diapar', function (Blueprint $table) {
-            $table->unsignedBigInteger('iddia')->nullable(); //codigo del diagnostico
-            $table->unsignedBigInteger('idpar')->nullable(); //codigo del parametro
-            $table->unsignedBigInteger('idper')->nullable(); //codigo de la persona
+            $table->id('iddiapar'); //codigo del diagnostico (PK)
+            $table->foreignId('iddia')->constrained('diag', 'iddia')->onDelete('cascade'); //codigo del parametro
+            $table->foreignId('idpar')->constrained('param', 'idpar'); //codigo del parametro
+            $table->foreignId('idper')->constrained('persona', 'idper'); //codigo de la persona
             $table->text('valor')->nullable(); //valor del parametro para el diagnostico
-
-            $table->foreign('iddia')->references('iddia')->on('diag');
-            $table->foreign('idpar')->references('idpar')->on('param');
-            $table->foreign('idper')->references('idper')->on('persona');
+            $table->timestamps();
+      
+        });
+        // AHORA, añadimos la llave foránea que faltaba en 'diag'
+        Schema::table('diag', function (Blueprint $table) {
+            $table->foreign('iddiapar')->references('iddiapar')->on('diapar');
         });
     }
 

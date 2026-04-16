@@ -16,7 +16,7 @@ class PersonaSeeder extends Seeder
             ['idper' => 2, 'ndocper' => 10000002, 'tdocper' => 1, 'nomper' => 'Carlos',   'apeper' => 'Ruiz',      'telper' => '3001000002', 'codubi' => 1, 'idpef' => 2, 'pass' => md5('digitador1'),  'emaper' => 'carlos.ruiz@cda.com',      'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
             ['idper' => 3, 'ndocper' => 10000003, 'tdocper' => 1, 'nomper' => 'María',    'apeper' => 'Gómez',     'telper' => '3001000003', 'codubi' => 1, 'idpef' => 2, 'pass' => md5('digitador2'),  'emaper' => 'maria.gomez@cda.com',      'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
             ['idper' => 4, 'ndocper' => 10000004, 'tdocper' => 1, 'nomper' => 'Juan',     'apeper' => 'Perez',     'telper' => '3001000004', 'codubi' => 2, 'idpef' => 2, 'pass' => md5('digitador3'),  'emaper' => 'juan.perez@cda.com',       'idemp' => null, 'actper' => 1, 'nliccon' => null, 'fvencon' => null, 'catcon' => null  ],
-               // Personas adicionales para vehículos (propietarios y conductores)
+               // Personas para vehículos (propietarios y conductores)
             [
                 'idper'    => 5,
                 'ndocper'  => 10000005,
@@ -119,6 +119,58 @@ class PersonaSeeder extends Seeder
                 'fvencon'  => null,
                 'catcon'   => null,
             ],
+            // Personas para Agendamiento (inspectores y ingenieros)
+            [
+                'idper'    => 11,
+                'ndocper'  => 10000011,
+                'tdocper'  => 1,
+                'nomper'   => 'Andrés',
+                'apeper'   => 'Vargas',
+                'telper'   => '3001000011',
+                'codubi'   => 1,
+                'idpef'    => null, // Suponiendo que 3 = inspector
+                'pass'     => null,
+                'emaper'   => 'andres.vargas@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 12,
+                'ndocper'  => 10000012,
+                'tdocper'  => 1,
+                'nomper'   => 'María',
+                'apeper'   => 'Gómez',
+                'telper'   => '3001000012',
+                'codubi'   => 2,
+                'idpef'    => null, // Suponiendo que 4 = ingeniero
+                'pass'     => null,
+                'emaper'   => 'maria.gomez@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ],
+            [
+                'idper'    => 13,
+                'ndocper'  => 10000013,
+                'tdocper'  => 1,
+                'nomper'   => 'Luis',
+                'apeper'   => 'Fernández',
+                'telper'   => '3001000013',
+                'codubi'   => 3,
+                'idpef'    => null, // Suponiendo que 4 = ingeniero
+                'pass'     => null,
+                'emaper'   => 'luis.fernandez@cda.com',
+                'idemp'    => null,
+                'actper'   => 1,
+                'nliccon'  => null,
+                'fvencon'  => null,
+                'catcon'   => null,
+            ]
 
             ]);
     }

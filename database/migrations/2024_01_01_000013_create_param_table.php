@@ -9,12 +9,12 @@ return new class extends Migration {
     {
         Schema::create('param', function (Blueprint $table) {
             $table->id('idpar'); //codigo de parametro
-            $table->string('nompar', 100)->nullable(); //nombre del parametro
+            $table->string('nompar', 100); //nombre del parametro
             $table->unsignedBigInteger('idtip')->nullable(); //codigo de tipo de parametro
             $table->decimal('rini', 6, 2)->nullable(); //rango inicial
             $table->decimal('rfin', 6, 2)->nullable(); //rango final
-            $table->string('control', 50)->nullable(); //tipo de control
-            $table->string('nomcampo', 30)->nullable(); //nombre del campo
+            $table->string('control', 50); //tipo de control
+            $table->string('nomcampo', 30); //nombre del campo
             $table->string('unipar', 50)->nullable(); //unidad de medida del parametro
             $table->integer('colum')->nullable(); //numero de columna en el formulario
             $table->tinyInteger('actpar')->default(1); //estado del parametro (1: activo, 0: inactivo)

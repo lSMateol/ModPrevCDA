@@ -9,9 +9,9 @@ return new class extends Migration {
     {
         Schema::create('tippar', function (Blueprint $table) {
             $table->id('idtip'); //codigo del tipo de parametro
-            $table->string('nomtip', 70)->nullable(); //nombre del tipo de parametro
-            $table->string('tittip', 150)->nullable(); //titulo del tipo de parametro
-            $table->unsignedBigInteger('idpef')->nullable(); //codigo del perfil al que pertenece el tipo de parametro
+            $table->string('nomtip', 70); //nombre del tipo de parametro
+            $table->string('tittip', 150); //titulo del tipo de parametro
+            $table->unsignedBigInteger('idpef'); //codigo del perfil al que pertenece el tipo de parametro
             $table->tinyInteger('acttip')->default(1); //estado del tipo de parametro (1: activo, 0: inactivo)
             $table->string('icotip', 250)->nullable(); //icono del tipo de parametro
 

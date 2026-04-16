@@ -12,7 +12,7 @@ class Diag extends Model
 
     protected $fillable = [
         'fecdia', 'idveh', 'aprobado', 'idper',
-        'fecvig', 'kilomt', 'idinsp', 'iding', 'dpiddia'
+        'fecvig', 'kilomt', 'idinsp', 'iding', 'iddiapar'
     ];
 
     public function vehiculo()
@@ -57,12 +57,12 @@ class Diag extends Model
 
     public function rechazo()
     {
-        return $this->hasOne(RechazoD::class, 'iddia', 'iddia');
+        return $this->hasOne(Rechazo::class, 'iddia', 'iddia');
     }
 
     public function historial()
     {
-        return $this->hasMany(HistorialMovimiento::class, 'idregistro', 'iddia')
+        return $this->hasMany(Historial::class, 'idregistro', 'iddia')
                     ->where('modulo', 'diagnostico');
     }
 }

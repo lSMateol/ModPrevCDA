@@ -9,27 +9,113 @@ class DiagSeeder extends Seeder
 {
     public function run(): void
     {
+        // Insertar cabeceras de diagnóstico (diag)
         DB::table('diag')->insert([
-            ['iddia'=>1, 'fecdia'=>'2025-10-24 08:30:00', 'idveh'=>8,  'aprobado'=>0, 'idper'=>9,  'fecvig'=>'2026-04-24 08:30:00','kilomt'=>45200, 'idinsp'=>2, 'iding'=>5, 'dpiddia'=>null],
-            ['iddia'=>2, 'fecdia'=>'2025-10-23 14:15:00', 'idveh'=>9,  'aprobado'=>0, 'idper'=>10, 'fecvig'=>'2026-04-23 14:15:00','kilomt'=>32100, 'idinsp'=>3, 'iding'=>5, 'dpiddia'=>null],
-            ['iddia'=>3, 'fecdia'=>'2025-10-22 10:45:00', 'idveh'=>10, 'aprobado'=>0, 'idper'=>7,  'fecvig'=>'2026-04-22 10:45:00','kilomt'=>88500, 'idinsp'=>4, 'iding'=>6, 'dpiddia'=>null],
-            ['iddia'=>4, 'fecdia'=>'2025-10-22 16:20:00', 'idveh'=>11, 'aprobado'=>0, 'idper'=>9,  'fecvig'=>'2026-04-22 16:20:00','kilomt'=>21000, 'idinsp'=>2, 'iding'=>6, 'dpiddia'=>null],
-            ['iddia'=>5, 'fecdia'=>'2025-10-21 09:00:00', 'idveh'=>5,  'aprobado'=>1, 'idper'=>9,  'fecvig'=>'2026-04-21 09:00:00','kilomt'=>65000, 'idinsp'=>3, 'iding'=>5, 'dpiddia'=>null],
+            [
+                'iddia'   => 1,
+                'fecdia'  => '2025-10-24 08:30:00',
+                'idveh'   => 8,   // asegúrate que exista en vehiculo
+                'aprobado'=> 0,
+                'idper'   => 2,   // persona que realiza (digitador)
+                'fecvig'  => '2026-04-24 08:30:00',
+                'kilomt'  => 45200,
+                'idinsp'  => 11,
+                'iding'   => 12,
+                'iddiapar' => null,
+            ],
+            [
+                'iddia'   => 2,
+                'fecdia'  => '2025-10-23 14:15:00',
+                'idveh'   => 9,
+                'aprobado'=> 0,
+                'idper'   => 3,
+                'fecvig'  => '2026-04-23 14:15:00',
+                'kilomt'  => 32100,
+                'idinsp'  => 11,
+                'iding'   => 13,
+                'iddiapar' => null,
+            ],
+            [
+                'iddia'   => 3,
+                'fecdia'  => '2025-10-22 10:45:00',
+                'idveh'   => 10,
+                'aprobado'=> 1,
+                'idper'   => 2,
+                'fecvig'  => '2026-04-22 10:45:00',
+                'kilomt'  => 88500,
+                'idinsp'  => 11,
+                'iding'   => 12,
+                'iddiapar' => null,
+            ],
+            [
+                'iddia'   => 4,
+                'fecdia'  => '2025-10-21 16:00:00',
+                'idveh'   => 11,
+                'aprobado'=> 0,
+                'idper'   => 2,
+                'fecvig'  => '2026-04-21 16:00:00',
+                'kilomt'  => 150000,
+                'idinsp'  => 11,
+                'iding'   => 13,
+                'iddiapar' => null,
+            ],
         ]);
 
-        // Parámetros de diagnóstico
+        // Insertar valores de parámetros (diapar) usando los idpar definidos en ParamSeeder
         DB::table('diapar')->insert([
-            ['iddia'=>1, 'idpar'=>1, 'idper'=>2, 'valor'=>'NO FUNCIONA'],
-            ['iddia'=>1, 'idpar'=>2, 'idper'=>2, 'valor'=>'FUNCIONA'],
-            ['iddia'=>1, 'idpar'=>5, 'idper'=>2, 'valor'=>'35'],
-            ['iddia'=>2, 'idpar'=>7, 'idper'=>3, 'valor'=>'85'],
-            ['iddia'=>2, 'idpar'=>8, 'idper'=>3, 'valor'=>'78'],
-            ['iddia'=>3, 'idpar'=>1, 'idper'=>4, 'valor'=>'FUNCIONA'],
-            ['iddia'=>3, 'idpar'=>3, 'idper'=>4, 'valor'=>'88'],
-            ['iddia'=>3, 'idpar'=>4, 'idper'=>4, 'valor'=>'850'],
-            ['iddia'=>5, 'idpar'=>1, 'idper'=>3, 'valor'=>'FUNCIONA'],
-            ['iddia'=>5, 'idpar'=>2, 'idper'=>3, 'valor'=>'FUNCIONA'],
-            ['iddia'=>5, 'idpar'=>3, 'idper'=>3, 'valor'=>'82'],
+            // Diagnóstico 1
+            ['iddia' => 1, 'idpar' => 1,  'idper' => 2, 'valor' => 'no_funciona'],   // luz_izquierda
+            ['iddia' => 1, 'idpar' => 2,  'idper' => 2, 'valor' => 'funciona'],       // luz_derecha
+            ['iddia' => 1, 'idpar' => 3,  'idper' => 2, 'valor' => '85.5'],           // temp_c
+            ['iddia' => 1, 'idpar' => 4,  'idper' => 2, 'valor' => '2450'],            // rpm
+            ['iddia' => 1, 'idpar' => 5,  'idper' => 2, 'valor' => '78.2'],            // ciclo1
+            ['iddia' => 1, 'idpar' => 6,  'idper' => 2, 'valor' => '82.1'],            // ciclo2
+            ['iddia' => 1, 'idpar' => 7,  'idper' => 2, 'valor' => '79.5'],            // ciclo3
+            ['iddia' => 1, 'idpar' => 8,  'idper' => 2, 'valor' => '81.0'],            // ciclo4
+            ['iddia' => 1, 'idpar' => 9,  'idper' => 2, 'valor' => '80.2'],            // resultado_diesel
+            ['iddia' => 1, 'idpar' => 10, 'idper' => 2, 'valor' => 'no'],              // defecto_dilusion
+            ['iddia' => 1, 'idpar' => 11, 'idper' => 2, 'valor' => 'si'],              // defecto_criterios_diesel
+            ['iddia' => 1, 'idpar' => 12, 'idper' => 2, 'valor' => 'na'],              // defecto_potencia
+            ['iddia' => 1, 'idpar' => 13, 'idper' => 2, 'valor' => 'no'],              // defecto_diametro
+            ['iddia' => 1, 'idpar' => 14, 'idper' => 2, 'valor' => 'Suspensión'],      // grupo_inspeccion
+            ['iddia' => 1, 'idpar' => 15, 'idper' => 2, 'valor' => 'Golpes'],          // tipo_defecto
+            ['iddia' => 1, 'idpar' => 16, 'idper' => 2, 'valor' => 'Amortiguadores con fugas'], // desc_inspeccion
+
+            // Diagnóstico 2 (solo algunos parámetros a modo de ejemplo)
+            ['iddia' => 2, 'idpar' => 1,  'idper' => 3, 'valor' => 'funciona'],
+            ['iddia' => 2, 'idpar' => 2,  'idper' => 3, 'valor' => 'funciona'],
+            ['iddia' => 2, 'idpar' => 3,  'idper' => 3, 'valor' => '92.0'],
+            ['iddia' => 2, 'idpar' => 4,  'idper' => 3, 'valor' => '3100'],
+            ['iddia' => 2, 'idpar' => 5,  'idper' => 3, 'valor' => '65.4'],
+            ['iddia' => 2, 'idpar' => 6,  'idper' => 3, 'valor' => '68.2'],
+            ['iddia' => 2, 'idpar' => 7,  'idper' => 3, 'valor' => '70.1'],
+            ['iddia' => 2, 'idpar' => 8,  'idper' => 3, 'valor' => '67.8'],
+            ['iddia' => 2, 'idpar' => 9,  'idper' => 3, 'valor' => '67.9'],
+            ['iddia' => 2, 'idpar' => 10, 'idper' => 3, 'valor' => 'si'],
+            ['iddia' => 2, 'idpar' => 11, 'idper' => 3, 'valor' => 'si'],
+            ['iddia' => 2, 'idpar' => 12, 'idper' => 3, 'valor' => 'no'],
+            ['iddia' => 2, 'idpar' => 13, 'idper' => 3, 'valor' => 'no'],
+            ['iddia' => 2, 'idpar' => 14, 'idper' => 3, 'valor' => 'Dirección'],
+            ['iddia' => 2, 'idpar' => 15, 'idper' => 3, 'valor' => 'Juego excesivo'],
+            ['iddia' => 2, 'idpar' => 16, 'idper' => 3, 'valor' => 'La dirección tiene holgura lateral'],
+
+            // Diagnóstico 3 (aprobado)
+            ['iddia' => 3, 'idpar' => 1,  'idper' => 4, 'valor' => 'funciona'],
+            ['iddia' => 3, 'idpar' => 2,  'idper' => 4, 'valor' => 'funciona'],
+            ['iddia' => 3, 'idpar' => 3,  'idper' => 4, 'valor' => '88.2'],
+            ['iddia' => 3, 'idpar' => 4,  'idper' => 4, 'valor' => '2200'],
+            ['iddia' => 3, 'idpar' => 5,  'idper' => 4, 'valor' => '95.0'],
+            ['iddia' => 3, 'idpar' => 6,  'idper' => 4, 'valor' => '94.5'],
+            ['iddia' => 3, 'idpar' => 7,  'idper' => 4, 'valor' => '96.0'],
+            ['iddia' => 3, 'idpar' => 8,  'idper' => 4, 'valor' => '95.2'],
+            ['iddia' => 3, 'idpar' => 9,  'idper' => 4, 'valor' => '95.1'],
+            ['iddia' => 3, 'idpar' => 10, 'idper' => 4, 'valor' => 'no'],
+            ['iddia' => 3, 'idpar' => 11, 'idper' => 4, 'valor' => 'no'],
+            ['iddia' => 3, 'idpar' => 12, 'idper' => 4, 'valor' => 'no'],
+            ['iddia' => 3, 'idpar' => 13, 'idper' => 4, 'valor' => 'no'],
+            ['iddia' => 3, 'idpar' => 14, 'idper' => 4, 'valor' => 'Carrocería'],
+            ['iddia' => 3, 'idpar' => 15, 'idper' => 4, 'valor' => 'Sin novedad'],
+            ['iddia' => 3, 'idpar' => 16, 'idper' => 4, 'valor' => 'Vehículo en buen estado estético'],
         ]);
 
         // Rechazos
