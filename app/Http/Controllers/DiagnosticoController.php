@@ -8,6 +8,7 @@ use App\Models\Param;
 use App\Models\Vehiculo;
 use App\Models\Persona;
 use App\Models\Empresa;
+use App\Models\Rechazo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -201,5 +202,102 @@ class DiagnosticoController extends Controller
         ];
 
         return view('diagnosticos.alertas', compact('alertas', 'metricas'));
+    }
+
+    public function rechazados(Request $request)
+    {
+        $query = Diag::where('aprobado', 0)->with(['vehiculo.empresa', 'inspector', 'rechazo']);
+
+        if ($request->filled('placa')) {
+            $query->whereHas('vehiculo', function ($q) use ($request) {
+                $q->where('placaveh', 'like', '%' . $request->placa . '%');
+            });
+        }
+
+        if ($request->filled('inspector')) {
+            $query->where('idinsp', $request->inspector);
+        }
+
+        $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15);
+        $inspectores = Persona::where('idpef', 4)->get();
+
+        return view('diagnosticos.rechazados.index', compact('rechazados', 'inspectores'));
+    }
+
+    public function editRechazo($id)
+    {
+        $diagnostico = Diag::with(['vehiculo.empresa', 'inspector', 'rechazo'])->findOrFail($id);
+        $inspectores = Persona::where('idpef', 4)->get();
+        return view('diagnosticos.rechazados.edit', compact('diagnostico', 'inspectores'));
+    }
+
+    public function updateRechazo(Request $request, $id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+        
+        $request->validate([
+            'motivo' => 'required|string',
+            'idinsp' => 'required|exists:persona,idper',
+        ]);
+
+        DB::transaction(function () use ($request, $diagnostico) {
+            $diagnostico->update([
+                'idinsp' => $request->idinsp,
+            ]);
+
+            Rechazo::updateOrCreate(
+                ['iddia' => $diagnostico->iddia],
+                [
+                    'motivo' => $request->motivo,
+                    'notas' => $request->observaciones,
+                    'estadorec' => 'Rechazado'
+                ]
+            );
+        });
+
+        $prefix = $this->getPrefix();
+        return redirect()->route($prefix . '.rechazados')->with('success', 'Registro de rechazo actualizado.');
+    }
+
+    public function reasignar($id)
+    {
+        $diagnostico = Diag::with(['vehiculo.empresa', 'inspector', 'rechazo'])->findOrFail($id);
+        $inspectores = Persona::where('idpef', 4)->get();
+        return view('diagnosticos.rechazados.reasignar', compact('diagnostico', 'inspectores'));
+    }
+
+    public function storeReasignacion(Request $request, $id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+
+        $request->validate([
+            'idinsp_nuevo' => 'required|exists:persona,idper',
+            'fecha' => 'required|date',
+            'hora' => 'required',
+            'motivo' => 'required|string',
+        ]);
+
+        DB::transaction(function () use ($request, $diagnostico) {
+            // Guardar en la tabla de rechazo
+            Rechazo::updateOrCreate(
+                ['iddia' => $diagnostico->iddia],
+                [
+                    'idper_ant' => $diagnostico->idinsp,
+                    'idper_nvo' => $request->idinsp_nuevo,
+                    'motivo' => $request->motivo,
+                    'prioridad' => $request->prioridad ?? 'Media',
+                    'camposmod' => $request->campos_mod ?? '',
+                    'notas' => $request->notas ?? '',
+                    'fecreasig' => $request->fecha . ' ' . $request->hora,
+                    'estadorec' => 'Reasignado'
+                ]
+            );
+
+            // Actualizar el inspector en el diagnóstico
+            $diagnostico->update(['idinsp' => $request->idinsp_nuevo]);
+        });
+
+        $prefix = $this->getPrefix();
+        return redirect()->route($prefix . '.rechazados')->with('success', 'Inspector reasignado correctamente.');
     }
 }
