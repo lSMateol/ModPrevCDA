@@ -47,4 +47,9 @@ class Persona extends Model
     {
         return $this->hasMany(Diapar::class, 'idper', 'idper');
     }
+
+    public function getNombreCompletoAttribute()
+    {
+        return "{$this->nomper} {$this->apeper}";
+    }
 }

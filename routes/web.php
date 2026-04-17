@@ -35,7 +35,20 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     // CRUD de Diagnósticos para Administrador
     Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+    
+    // Rutas de Rechazados
+    Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
+    Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
+    Route::put('/rechazados/{id}', [DiagnosticoController::class, 'updateRechazo'])->name('rechazados.update');
+    Route::get('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'reasignar'])->name('rechazados.reasignar');
+    Route::post('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'storeReasignacion'])->name('rechazados.store-reasignacion');
+
     Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
+    Route::get('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'getFotos'])->name('diagnosticos.get-fotos');
+    Route::post('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'uploadFotos'])->name('diagnosticos.upload-fotos');
+    Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
+    Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
+    Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
     
     // Módulo MUP (Entidades)
     Route::prefix('entidades/mup')->name('mup.')->group(function () {
@@ -73,7 +86,20 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     // CRUD de Diagnósticos para Digitador
     Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+
+    // Rutas de Rechazados
+    Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
+    Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
+    Route::put('/rechazados/{id}', [DiagnosticoController::class, 'updateRechazo'])->name('rechazados.update');
+    Route::get('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'reasignar'])->name('rechazados.reasignar');
+    Route::post('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'storeReasignacion'])->name('rechazados.store-reasignacion');
+
     Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
+    Route::get('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'getFotos'])->name('diagnosticos.get-fotos');
+    Route::post('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'uploadFotos'])->name('diagnosticos.upload-fotos');
+    Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
+    Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
+    Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
     // Aquí irán tus rutas de vehículos y diagnósticos
 });
 
@@ -96,5 +122,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+Route::get('/storage-fallback/{path}', [DiagnosticoController::class, 'serveFile'])->where('path', '.*')->name('storage.fallback');
 
 require __DIR__.'/auth.php';

@@ -47,7 +47,7 @@
                         <i class="fa-solid fa-table-cells text-[8px] mr-2"></i>
                         Alertas
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ route($prefix . '.rechazados') }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('*.rechazados*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-table-cells text-[8px] mr-2"></i>
                         Rechazados

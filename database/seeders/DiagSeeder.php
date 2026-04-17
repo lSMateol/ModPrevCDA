@@ -75,11 +75,9 @@ class DiagSeeder extends Seeder
             ['iddia' => 1, 'idpar' => 9,  'idper' => 2, 'valor' => '80.2'],            // resultado_diesel
             ['iddia' => 1, 'idpar' => 10, 'idper' => 2, 'valor' => 'no'],              // defecto_dilusion
             ['iddia' => 1, 'idpar' => 11, 'idper' => 2, 'valor' => 'si'],              // defecto_criterios_diesel
-            ['iddia' => 1, 'idpar' => 12, 'idper' => 2, 'valor' => 'na'],              // defecto_potencia
-            ['iddia' => 1, 'idpar' => 13, 'idper' => 2, 'valor' => 'no'],              // defecto_diametro
-            ['iddia' => 1, 'idpar' => 14, 'idper' => 2, 'valor' => 'Suspensión'],      // grupo_inspeccion
-            ['iddia' => 1, 'idpar' => 15, 'idper' => 2, 'valor' => 'Golpes'],          // tipo_defecto
-            ['iddia' => 1, 'idpar' => 16, 'idper' => 2, 'valor' => 'Amortiguadores con fugas'], // desc_inspeccion
+            ['iddia' => 1, 'idpar' => 12, 'idper' => 2, 'valor' => 'Suspensión'],      // grupo_inspeccion
+            ['iddia' => 1, 'idpar' => 13, 'idper' => 2, 'valor' => 'Golpes'],          // tipo_defecto
+            ['iddia' => 1, 'idpar' => 14, 'idper' => 2, 'valor' => 'Amortiguadores con fugas'], // desc_inspeccion
 
             // Diagnóstico 2 (solo algunos parámetros a modo de ejemplo)
             ['iddia' => 2, 'idpar' => 1,  'idper' => 3, 'valor' => 'funciona'],
@@ -93,11 +91,9 @@ class DiagSeeder extends Seeder
             ['iddia' => 2, 'idpar' => 9,  'idper' => 3, 'valor' => '67.9'],
             ['iddia' => 2, 'idpar' => 10, 'idper' => 3, 'valor' => 'si'],
             ['iddia' => 2, 'idpar' => 11, 'idper' => 3, 'valor' => 'si'],
-            ['iddia' => 2, 'idpar' => 12, 'idper' => 3, 'valor' => 'no'],
-            ['iddia' => 2, 'idpar' => 13, 'idper' => 3, 'valor' => 'no'],
-            ['iddia' => 2, 'idpar' => 14, 'idper' => 3, 'valor' => 'Dirección'],
-            ['iddia' => 2, 'idpar' => 15, 'idper' => 3, 'valor' => 'Juego excesivo'],
-            ['iddia' => 2, 'idpar' => 16, 'idper' => 3, 'valor' => 'La dirección tiene holgura lateral'],
+            ['iddia' => 2, 'idpar' => 12, 'idper' => 3, 'valor' => 'Dirección'],
+            ['iddia' => 2, 'idpar' => 13, 'idper' => 3, 'valor' => 'Juego excesivo'],
+            ['iddia' => 2, 'idpar' => 14, 'idper' => 3, 'valor' => 'La dirección tiene holgura lateral'],
 
             // Diagnóstico 3 (aprobado)
             ['iddia' => 3, 'idpar' => 1,  'idper' => 4, 'valor' => 'funciona'],
@@ -111,11 +107,9 @@ class DiagSeeder extends Seeder
             ['iddia' => 3, 'idpar' => 9,  'idper' => 4, 'valor' => '95.1'],
             ['iddia' => 3, 'idpar' => 10, 'idper' => 4, 'valor' => 'no'],
             ['iddia' => 3, 'idpar' => 11, 'idper' => 4, 'valor' => 'no'],
-            ['iddia' => 3, 'idpar' => 12, 'idper' => 4, 'valor' => 'no'],
-            ['iddia' => 3, 'idpar' => 13, 'idper' => 4, 'valor' => 'no'],
-            ['iddia' => 3, 'idpar' => 14, 'idper' => 4, 'valor' => 'Carrocería'],
-            ['iddia' => 3, 'idpar' => 15, 'idper' => 4, 'valor' => 'Sin novedad'],
-            ['iddia' => 3, 'idpar' => 16, 'idper' => 4, 'valor' => 'Vehículo en buen estado estético'],
+            ['iddia' => 3, 'idpar' => 12, 'idper' => 4, 'valor' => 'Carrocería'],
+            ['iddia' => 3, 'idpar' => 13, 'idper' => 4, 'valor' => 'Sin novedad'],
+            ['iddia' => 3, 'idpar' => 14, 'idper' => 4, 'valor' => 'Vehículo en buen estado estético'],
         ]);
 
         // Rechazos

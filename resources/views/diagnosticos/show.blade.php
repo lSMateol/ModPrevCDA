@@ -9,14 +9,21 @@
         return $p->parametro->tippar->nomtip;
     });
 
-    // Determinar estado general (simplificado: si alguno no cumple, rechazo)
+    // Determinar estado general
     $allCumple = true;
     foreach($diagnostico->parametros as $p) {
         $param = $p->parametro;
+        $val = $p->valor;
+        
         if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-            if ($p->valor < $param->rini || $p->valor > $param->rfin) $allCumple = false;
+            // Validación numérica por rango
+            if ($val < $param->rini || $val > $param->rfin) $allCumple = false;
         } elseif ($param->control == 'radio') {
-            if (in_array($p->valor, ['no', 'no_funciona'])) $allCumple = false;
+            // Validación de radio buttons (si/no/funciona/...)
+            if (in_array($val, ['no', 'no_funciona'])) $allCumple = false;
+        } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
+            // Si hay un defecto seleccionado en la inspección visual, no cumple
+            if (!empty($val)) $allCumple = false;
         }
     }
 @endphp
@@ -25,16 +32,32 @@
     <!-- Main Header -->
     <header class="flex justify-between items-start mb-8">
         <div>
-            <h1 class="text-3xl font-black text-[#002D54] tracking-tight">Detalle Diagnóstico</h1>
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-black text-[#002D54] tracking-tight">Detalle Diagnóstico</h1>
+                @if($diagnostico->dpiddia)
+                    <span class="bg-[#002D54] text-white px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1.5 mt-1">
+                        <span class="material-symbols-outlined text-[12px]">history</span>
+                        Re-Inspección
+                    </span>
+                @endif
+            </div>
             <p class="text-on-surface-variant font-body text-sm mt-1 opacity-60">
                 <span class="material-symbols-outlined text-xs align-middle mr-1">check_circle</span>
                 Revisión técnica vehicular completada con los hallazgos descritos a continuación.
             </p>
         </div>
-        <button class="text-on-surface-variant/40 hover:text-on-surface transition-colors">
-            <span class="material-symbols-outlined text-3xl">close</span>
-        </button>
+        <div class="flex gap-4">
+            <button id="btn-edit-asignacion" class="bg-surface-container-high text-[#001834] px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#ffba20] transition-all flex items-center gap-2 shadow-sm border border-outline-variant/10">
+                <span class="material-symbols-outlined text-lg">settings</span>
+                Modificar Asignación
+            </button>
+            <button class="text-on-surface-variant/40 hover:text-on-surface transition-colors" onclick="window.location.href='{{ route($prefix . '.diagnosticos.index') }}'">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+        </div>
     </header>
+
+    @include('diagnosticos.modal-edit-asignacion')
 
     <!-- Info Cards Bar -->
     <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-10">
@@ -63,11 +86,13 @@
         </div>
         
         <!-- Estado -->
-        <div class="bg-red-50 p-6 rounded-2xl shadow-sm border border-red-100 flex items-center gap-4">
-            <span class="material-symbols-outlined text-red-700 bg-red-100 p-2 rounded-xl text-lg">shield_with_heart</span>
+        <div class="{{ $allCumple ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100' }} p-6 rounded-2xl shadow-sm border flex items-center gap-4 transition-all duration-500">
+            <span class="material-symbols-outlined {{ $allCumple ? 'text-emerald-700 bg-emerald-100' : 'text-red-700 bg-red-100' }} p-2 rounded-xl text-lg">
+                {{ $allCumple ? 'verified' : 'shield_with_heart' }}
+            </span>
             <div>
-                <p class="text-[0.6rem] font-black text-red-700 uppercase tracking-widest opacity-70">Estado General</p>
-                <p class="text-base font-black text-red-900 leading-tight">
+                <p class="text-[0.6rem] font-black {{ $allCumple ? 'text-emerald-700' : 'text-red-700' }} uppercase tracking-widest opacity-70">Estado General</p>
+                <p class="text-base font-black {{ $allCumple ? 'text-emerald-900' : 'text-red-900' }} leading-tight">
                     {{ $allCumple ? 'Aprobado Sugerido' : 'Rechazo Sugerido' }}
                 </p>
             </div>
@@ -108,11 +133,14 @@
                             @foreach($params as $p)
                             @php
                                 $param = $p->parametro;
+                                $val = $p->valor;
                                 $cumple = true;
                                 if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                                    $cumple = ($p->valor >= $param->rini && $p->valor <= $param->rfin);
+                                    $cumple = ($val >= $param->rini && $val <= $param->rfin);
                                 } elseif ($param->control == 'radio') {
-                                    $cumple = !in_array($p->valor, ['no', 'no_funciona']);
+                                    $cumple = !in_array($val, ['no', 'no_funciona']);
+                                } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
+                                    $cumple = empty($val);
                                 }
                                 $rango = ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) 
                                     ? $param->rini . ' - ' . $param->rfin
@@ -164,10 +192,13 @@
                         $sectionCumple = true;
                         foreach($params as $p) {
                             $param = $p->parametro;
+                            $val = $p->valor;
                             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                                if ($p->valor < $param->rini || $p->valor > $param->rfin) $sectionCumple = false;
+                                if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
-                                if (in_array($p->valor, ['no', 'no_funciona'])) $sectionCumple = false;
+                                if (in_array($val, ['no', 'no_funciona'])) $sectionCumple = false;
+                            } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
+                                if (!empty($val)) $sectionCumple = false;
                             }
                         }
                     @endphp
@@ -185,6 +216,36 @@
                     </div>
                     @endforeach
                 </div>
+            </div>
+
+            <!-- Evidencia Fotográfica -->
+            <div class="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10">
+                <h3 class="font-headline font-black text-[#001834] text-lg mb-6 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-sm bg-primary-fixed-dim p-1.5 rounded-lg text-[#001834]">photo_library</span>
+                    Evidencia Fotográfica
+                </h3>
+                
+                @if($diagnostico->fotos->count() > 0)
+                    <div class="grid grid-cols-2 gap-4">
+                        @foreach($diagnostico->fotos as $foto)
+                            <div class="group relative aspect-video rounded-2xl overflow-hidden bg-surface-container-low border border-outline-variant/10 hover:shadow-xl transition-all duration-500">
+                                <img 
+                                    src="{{ route('storage.fallback', ['path' => $foto->rutafoto]) }}" 
+                                    alt="Evidencia" 
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                >
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#001834]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                    <span class="text-white text-[10px] font-black uppercase tracking-widest">Vista Ampliada</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="bg-surface-container-low/30 rounded-2xl p-6 border border-dashed border-outline-variant/30 flex flex-col items-center text-center">
+                        <span class="material-symbols-outlined text-on-surface-variant/20 text-4xl mb-2">no_photography</span>
+                        <p class="text-xs font-bold text-on-surface-variant opacity-40 uppercase tracking-widest">Sin evidencias registradas</p>
+                    </div>
+                @endif
             </div>
 
             <!-- Observations Card -->
@@ -228,24 +289,50 @@
     <div class="mt-12 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex gap-3">
             <button class="bg-surface-container-lowest px-6 py-3 rounded-xl border border-outline-variant/20 font-black text-[0.65rem] uppercase tracking-widest text-on-surface-variant flex items-center gap-2 hover:bg-[#001834] hover:text-white transition-all">
-                <span class="material-symbols-outlined text-sm">csv</span> Exportar CSV
-            </button>
-            <button class="bg-surface-container-lowest px-6 py-3 rounded-xl border border-outline-variant/20 font-black text-[0.65rem] uppercase tracking-widest text-on-surface-variant flex items-center gap-2 hover:bg-[#001834] hover:text-white transition-all">
-                <span class="material-symbols-outlined text-sm">description</span> Exportar Excel
-            </button>
-            <button class="bg-surface-container-lowest px-6 py-3 rounded-xl border border-outline-variant/20 font-black text-[0.65rem] uppercase tracking-widest text-on-surface-variant flex items-center gap-2 hover:bg-[#001834] hover:text-white transition-all">
-                <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Exportar PDF
+                <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Exportar Registro PDF
             </button>
         </div>
         
-        <div class="flex gap-4">
+        <div class="flex gap-4" x-data="{ editingStatus: false }">
             <a href="{{ route($prefix . '.diagnosticos.index') }}" class="bg-surface-container-high px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-on-surface-variant hover:bg-[#001834] hover:text-white transition-all">Volver al Listado</a>
-            @if(!$allCumple)
-            <button class="bg-[#ba1a1a] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-200 flex items-center gap-2 hover:bg-red-700 active:scale-95 transition-all">
-                Enviar a Rechazados
-                <span class="material-symbols-outlined text-sm">send</span>
-            </button>
+            
+            <!-- Estado Actual cuando ya está finalizado -->
+            @if($diagnostico->aprobado != 0)
+                <div x-show="!editingStatus" class="flex items-center gap-4">
+                    <div class="bg-emerald-100 text-emerald-700 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                        Diagnóstico Completado
+                    </div>
+                    <button @click="editingStatus = true" class="text-[#001834] font-black text-[0.65rem] uppercase tracking-widest border-b-2 border-[#001834] hover:opacity-70 transition-opacity">
+                        Cambiar estado general
+                    </button>
+                </div>
             @endif
+
+            <!-- Botones de Acción (Visibles si es nuevo o si se está editando) -->
+            <div x-show="editingStatus || {{ $diagnostico->aprobado }} == 0" class="flex gap-4">
+                <form action="{{ route($prefix . '.diagnosticos.reject', $diagnostico->iddia) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="bg-[#ba1a1a] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-200 flex items-center gap-2 hover:bg-red-700 active:scale-95 transition-all">
+                        Finalizar como Rechazado
+                        <span class="material-symbols-outlined text-sm">cancel</span>
+                    </button>
+                </form>
+
+                <form action="{{ route($prefix . '.diagnosticos.approve', $diagnostico->iddia) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-200 flex items-center gap-2 hover:bg-emerald-700 active:scale-95 transition-all">
+                        Finalizar y Aprobar
+                        <span class="material-symbols-outlined text-sm">verified</span>
+                    </button>
+                </form>
+                
+                @if($diagnostico->aprobado != 0)
+                    <button @click="editingStatus = false" class="bg-surface-container-lowest px-4 py-4 rounded-2xl font-black text-xs text-on-surface-variant hover:bg-surface-container transition-all">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 </div>

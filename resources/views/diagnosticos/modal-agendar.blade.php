@@ -6,9 +6,10 @@
 <div id="modal-agendar" class="fixed inset-0 bg-[#001c3b]/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4 overflow-y-auto transition-all duration-300">
     
     <div class="relative w-full max-w-lg transition-transform duration-300 scale-95" id="modal-content">
-        <!-- Botón Cerrar Flotante -->
-        <button id="close-agendar" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-all flex items-center gap-2 font-bold uppercase tracking-widest text-[10px]">
-            <span class="material-symbols-outlined text-lg">close</span> Cerrar
+        <!-- Botón Cerrar Flotante Mejorado -->
+        <button id="close-agendar" class="absolute -top-12 right-0 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-[#ffba20]/30 hover:bg-white hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group">
+            <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-90">close</span> 
+            <span>Cerrar</span>
         </button>
         
         <!-- Tarjeta de Formulario -->

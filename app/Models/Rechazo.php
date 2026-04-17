@@ -27,11 +27,11 @@ class Rechazo extends Model
 
     public function inspectorAnterior()
     {
-        return $this->belongsTo(Persona::class, 'idinsp_ant', 'idper');
+        return $this->belongsTo(Persona::class, 'idper_ant', 'idper');
     }
 
     public function inspectorNuevo()
     {
-        return $this->belongsTo(Persona::class, 'idinsp_nuevo', 'idper');
+        return $this->belongsTo(Persona::class, 'idper_nvo', 'idper');
     }
 }
