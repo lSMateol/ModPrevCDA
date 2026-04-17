@@ -130,47 +130,95 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-outline-variant/10 font-body">
-                            @foreach($params as $p)
-                            @php
-                                $param = $p->parametro;
-                                $val = $p->valor;
-                                $cumple = true;
-                                if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                                    $cumple = ($val >= $param->rini && $val <= $param->rfin);
-                                } elseif ($param->control == 'radio') {
-                                    $cumple = !in_array($val, ['no', 'no_funciona']);
-                                } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
-                                    $cumple = empty($val);
-                                }
-                                $rango = ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) 
-                                    ? $param->rini . ' - ' . $param->rfin
-                                    : ($param->control == 'radio' ? 'Cualitativo' : 'N/A');
-                            @endphp
-                            <tr class="group hover:bg-surface-container-low/30 transition-colors">
-                                <td class="py-5 pr-4">
-                                    <p class="font-bold text-sm text-[#001834]">{{ $param->nompar }}</p>
-                                </td>
-                                <td class="py-5 font-black text-sm text-[#001834]/80">
-                                    {{ $p->valor }} {{ $param->nompar == 'Temperatura' ? '°C' : '' }}
-                                </td>
-                                <td class="py-5 font-bold text-xs text-on-surface-variant opacity-60">
-                                    {{ $rango }}
-                                </td>
-                                <td class="py-5">
-                                    @if($cumple)
-                                        <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-100 text-[0.6rem] font-black uppercase tracking-widest">
-                                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                                            Cumple
-                                        </div>
-                                    @else
+                            @if(str_contains(strtoupper($tipo), 'VISUAL'))
+                                @php
+                                    $data = @json_decode($params->firstWhere('parametro.nompar', 'desc_inspeccion')->valor ?? '', true);
+                                    $lista = is_array($data) ? ($data['list'] ?? $data) : [];
+                                    $obsG = is_array($data) ? ($data['obs'] ?? '') : '';
+                                    if(!is_array($lista)) $lista = [];
+                                @endphp
+                                @forelse($lista as $def)
+                                <tr class="group hover:bg-surface-container-low/30 transition-colors">
+                                    <td class="py-5 pr-4">
+                                        <p class="font-bold text-sm text-[#001834]">{{ $def['grupo'] ?? '-' }}</p>
+                                        <p class="text-[0.65rem] font-medium text-on-surface-variant opacity-60">{{ $def['obs'] ?? ($def['desc'] ?? '') }}</p>
+                                    </td>
+                                    <td class="py-5 font-black text-sm text-[#001834]/80">
+                                        {{ $def['tipo'] ?? '-' }}
+                                    </td>
+                                    <td class="py-5 font-bold text-xs text-on-surface-variant opacity-60">
+                                        -
+                                    </td>
+                                    <td class="py-5">
                                         <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-xl border border-red-100 text-[0.6rem] font-black uppercase tracking-widest">
-                                            <span class="material-symbols-outlined text-xs">cancel</span>
-                                            No Cumple
+                                            <span class="material-symbols-outlined text-xs">warning</span>
+                                            Hallazgo
                                         </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                    @if(empty($obsG))
+                                    <tr>
+                                        <td colspan="4" class="py-10 text-center text-sm font-bold text-on-surface-variant opacity-40 italic">
+                                            No se reportaron defectos del listado base.
+                                        </td>
+                                    </tr>
                                     @endif
-                                </td>
-                            </tr>
-                            @endforeach
+                                @endforelse
+                                
+                                @if(!empty($obsG))
+                                <tr>
+                                    <td colspan="4" class="py-6 border-t border-dashed border-outline-variant/30">
+                                        <p class="text-[0.65rem] font-black uppercase tracking-[0.1em] text-on-surface-variant opacity-60 mb-2">Observaciones Generales / Otros Hallazgos</p>
+                                        <div class="bg-surface-container-low p-4 rounded-2xl text-sm font-semibold text-[#001834] leading-relaxed">
+                                            {{ $obsG }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endif
+                            @else
+                                @foreach($params as $p)
+                                @php
+                                    $param = $p->parametro;
+                                    $val = $p->valor;
+                                    $cumple = true;
+                                    if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
+                                        $cumple = ($val >= $param->rini && $val <= $param->rfin);
+                                    } elseif ($param->control == 'radio') {
+                                        $cumple = !in_array($val, ['no', 'no_funciona']);
+                                    } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
+                                        $cumple = empty($val);
+                                    }
+                                    $rango = ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) 
+                                        ? $param->rini . ' - ' . $param->rfin
+                                        : ($param->control == 'radio' ? 'Cualitativo' : 'N/A');
+                                @endphp
+                                <tr class="group hover:bg-surface-container-low/30 transition-colors">
+                                    <td class="py-5 pr-4">
+                                        <p class="font-bold text-sm text-[#001834]">{{ $param->nompar }}</p>
+                                    </td>
+                                    <td class="py-5 font-black text-sm text-[#001834]/80">
+                                        {{ $p->valor }} {{ $param->nompar == 'Temperatura' ? '°C' : '' }}
+                                    </td>
+                                    <td class="py-5 font-bold text-xs text-on-surface-variant opacity-60">
+                                        {{ $rango }}
+                                    </td>
+                                    <td class="py-5">
+                                        @if($cumple)
+                                            <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-100 text-[0.6rem] font-black uppercase tracking-widest">
+                                                <span class="material-symbols-outlined text-xs">check_circle</span>
+                                                Cumple
+                                            </div>
+                                        @else
+                                            <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-xl border border-red-100 text-[0.6rem] font-black uppercase tracking-widest">
+                                                <span class="material-symbols-outlined text-xs">cancel</span>
+                                                No Cumple
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            @endif
                         </tbody>
                     </table>
                 </div>

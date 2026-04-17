@@ -309,62 +309,56 @@
         <table class="mechanized-section">
             <tr>
                 <th colspan="3">4. EMISIONES AUDIBLES</th>
-                <th colspan="8">5. INTENSIDAD E INCLINACION DE LAS LUCES BAJAS</th>
+                <th colspan="2" style="background: #eee;">5. LUCES</th>
             </tr>
             <tr>
                 <th style="width: 15%;"></th>
                 <th style="width: 10%;">Valor</th>
                 <th style="width: 8%;">Unid</th>
-                <th colspan="2" style="width: 15%;"></th>
-                <th style="width: 10%;">Intensidad</th>
-                <th style="width: 8%;">Mínimo</th>
-                <th style="width: 8%;">Unidad</th>
-                <th style="width: 10%;">Inclinación</th>
-                <th style="width: 10%;">Rango</th>
-                <th style="width: 8%;">Unidad</th>
+                <th style="width: 50%;">PARÁMETRO</th>
+                <th style="width: 17%;">ESTADO</th>
             </tr>
             <tr>
                 <td class="label">RUIDO ESCAPE</td>
                 <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '1' }}</td>
                 <td class="text-center">dBA</td>
-                <td class="label" colspan="2">BAJA DERECHA</td>
-                <td class="text-center">{{ $paramValues['INTENSIDAD LUZ DERECHA'] ?? '3.1' }}</td>
-                <td class="text-center">2.5</td>
-                <td class="text-center">Klx</td>
-                <td class="text-center">{{ $paramValues['INCLINACION LUZ DERECHA'] ?? '1.1' }}</td>
-                <td class="text-center">0.5 - 3.5</td>
-                <td class="text-center">%</td>
+                <td class="label">LUZ IZQUIERDA (BAJA)</td>
+                <td class="text-center" style="font-weight: bold;">
+                    {{ isset($paramValues['luz_izquierda']) ? (strtolower($paramValues['luz_izquierda']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-' }}
+                </td>
             </tr>
             <tr>
                 <td colspan="3"></td>
-                <td class="label" colspan="2">BAJA IZQUIERDA</td>
-                <td class="text-center">{{ $paramValues['INTENSIDAD LUZ IZQUIERDA'] ?? '4.4' }}</td>
-                <td class="text-center">2.5</td>
-                <td class="text-center">Klx</td>
-                <td class="text-center">{{ $paramValues['INCLINACION LUZ IZQUIERDA'] ?? '2.5' }}</td>
-                <td class="text-center">0.5 - 3.5</td>
-                <td class="text-center">%</td>
+                <td class="label">LUZ DERECHA (BAJA)</td>
+                <td class="text-center" style="font-weight: bold;">
+                    {{ isset($paramValues['luz_derecha']) ? (strtolower($paramValues['luz_derecha']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-' }}
+                </td>
             </tr>
         </table>
 
-        <!-- 6. SUSPENSION -->
-        <div class="section-title">6. SUSPENSION (SI APLICA)</div>
+        <!-- DEFECTOS (Movido debajo de Luces) -->
+        <div class="section-title">DEFECTOS</div>
         <table class="mechanized-section">
             <tr>
-                <th colspan="1">DELANTERA IZQUIERDA</th>
-                <th colspan="1">DELANTERA DERECHA</th>
-                <th colspan="1">TRASERA IZQUIERDA</th>
-                <th colspan="1">TRASERA DERECHA</th>
-                <th>Minimo</th>
-                <th>Unidad</th>
+                <th style="width: 40%;">PARÁMETRO</th>
+                <th style="width: 10%;">SI</th>
+                <th style="width: 10%;">NO</th>
+                <th style="width: 10%;">N/A</th>
+                <th style="width: 30%;">RESULTADO</th>
             </tr>
             <tr>
-                <td class="text-center" style="height: 15px;">{{ $paramValues['SUSP_DEL_IZQ'] ?? '-' }}</td>
-                <td class="text-center">{{ $paramValues['SUSP_DEL_DER'] ?? '-' }}</td>
-                <td class="text-center">{{ $paramValues['SUSP_TRA_IZQ'] ?? '-' }}</td>
-                <td class="text-center">{{ $paramValues['SUSP_TRA_DER'] ?? '-' }}</td>
-                <td class="text-center">10</td>
-                <td class="text-center">%</td>
+                <td class="label">DILUSION GASOLINA</td>
+                <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'si' ? 'X' : '' }}</td>
+                <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'no' ? 'X' : '' }}</td>
+                <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'na' ? 'X' : '' }}</td>
+                <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['dilusion_gasolina'] ?? '-') }}</td>
+            </tr>
+            <tr>
+                <td class="label">CRITERIOS DE VALIDACION (MOTOR DIESEL)</td>
+                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'si' ? 'X' : '' }}</td>
+                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'no' ? 'X' : '' }}</td>
+                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'na' ? 'X' : '' }}</td>
+                <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['Criterios_de_validacion'] ?? '-') }}</td>
             </tr>
         </table>
 
@@ -409,8 +403,8 @@
         <div class="section-title">D. DEFECTOS ENCONTRADOS EN LA INSPECCIÓN VISUAL Y SENSORIAL</div>
         <table>
             <tr>
-                <th style="width: 50%;">Descripción</th>
-                <th style="width: 30%;">Grupo</th>
+                <th style="width: 50%;">Descripción (Observaciones)</th>
+                <th style="width: 30%;">Grupo / Categoría</th>
                 <th colspan="2" class="text-center">Tipo de defecto</th>
             </tr>
             <tr>
@@ -419,19 +413,54 @@
                 <th class="text-center" style="width: 40px;">A</th>
                 <th class="text-center" style="width: 40px;">B</th>
             </tr>
-            @if(isset($paramValues['grupo_inspeccion']) && $paramValues['grupo_inspeccion'])
-            <tr>
-                <td style="font-size: 8pt;">{{ $paramValues['desc_inspeccion'] ?? 'Se detectó defecto en inspección técnica sensorial' }}</td>
-                <td class="text-center">{{ $paramValues['grupo_inspeccion'] }}</td>
-                <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo A' ? 'X' : '' }}</td>
-                <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo B' ? 'X' : '' }}</td>
-            </tr>
+            @php
+                $descRaw = $paramValues['desc_inspeccion'] ?? '';
+                $data = @json_decode($descRaw, true);
+                
+                // Determinamos si es el nuevo formato (con objeto) o el antiguo (lista directa)
+                $listaDefectos = [];
+                $obsGeneral = '';
+                
+                if (is_array($data)) {
+                    if (isset($data['list'])) {
+                        $listaDefectos = $data['list'];
+                        $obsGeneral = $data['obs'] ?? '';
+                    } else {
+                        $listaDefectos = $data; // Formato anterior
+                    }
+                }
+            @endphp
+
+            @if(count($listaDefectos) > 0)
+                @foreach($listaDefectos as $defecto)
+                <tr>
+                    <td style="font-size: 8pt;">{{ $defecto['obs'] ?? ($defecto['desc'] ?? 'Sin observaciones') }}</td>
+                    <td class="text-center">{{ $defecto['grupo'] ?? '-' }}</td>
+                    <td class="text-center">{{ ($defecto['tipo'] ?? '') == 'Tipo A' ? 'X' : '' }}</td>
+                    <td class="text-center">{{ ($defecto['tipo'] ?? '') == 'Tipo B' ? 'X' : '' }}</td>
+                </tr>
+                @endforeach
+            @elseif(!empty($descRaw) && !is_array($data))
+                {{-- Fallback para datos muy antiguos planos --}}
+                <tr>
+                    <td style="font-size: 8pt;">{{ $descRaw }}</td>
+                    <td class="text-center">{{ $paramValues['grupo_inspeccion'] ?? 'N/A' }}</td>
+                    <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo A' ? 'X' : '' }}</td>
+                    <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo B' ? 'X' : '' }}</td>
+                </tr>
             @else
-            <tr>
-                <td colspan="4" class="text-center" style="color: #666; font-style: italic; height: 30px; vertical-align: middle;">No se encontraron defectos visuales o sensoriales</td>
-            </tr>
+                <tr>
+                    <td colspan="4" class="text-center" style="color: #666; font-style: italic; height: 30px; vertical-align: middle;">No se encontraron defectos del listado base</td>
+                </tr>
             @endif
         </table>
+
+        @if(!empty($obsGeneral))
+        <div style="margin-top: 5px; border: 1px solid #000; padding: 5px;">
+            <strong style="font-size: 8pt; text-transform: uppercase;">Observaciones Generales / Otros Hallazgos:</strong>
+            <p style="margin: 3px 0 0 0; font-size: 8pt; white-space: pre-wrap;">{{ $obsGeneral }}</p>
+        </div>
+        @endif
 
         <div style="display: flex; gap: 20px; align-items: flex-start; margin-top: 5px;">
             <div style="flex: 1;">
