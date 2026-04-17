@@ -38,6 +38,14 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
     Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
     
+    // Gestión Vehicular para Administrador
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+    Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
@@ -53,7 +61,14 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
     Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
-    // Aquí irán tus rutas de vehículos y diagnósticos
+    
+    // Gestión Vehicular para Digitador
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+    Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
 });
 
 // ==========================================
@@ -64,6 +79,9 @@ Route::middleware(['auth', 'role:Empresa'])->prefix('empresa')->name('empresa.')
         return view('dashboard'); 
     })->name('dashboard');
     
+    // Gestión Vehicular para Empresa (filtrado automático por idemp)
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+
     // Aquí irán las rutas para que la empresa vea sus certificados
 });
 
@@ -76,11 +94,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ==========================================
-// MODULO GESTION VEHICULAR (Comunes a todos los operativos)
-// ==========================================
-Route::middleware(['auth', 'role:Administrador|Digitador|Empresa'])->group(function () {
-    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
-});
 
 require __DIR__.'/auth.php';
