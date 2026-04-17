@@ -288,9 +288,15 @@
     <!-- Bottom Actions -->
     <div class="mt-12 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex gap-3">
-            <button class="bg-surface-container-lowest px-6 py-3 rounded-xl border border-outline-variant/20 font-black text-[0.65rem] uppercase tracking-widest text-on-surface-variant flex items-center gap-2 hover:bg-[#001834] hover:text-white transition-all">
+            @php
+                $canExport = !is_null($diagnostico->aprobado) && !($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado');
+            @endphp
+            <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diagnostico->iddia) : 'javascript:void(0)' }}" 
+               target="{{ $canExport ? '_blank' : '_self' }}" 
+               onclick="{{ !$canExport ? "alert('Debe terminar el proceso para exportar (Estado: ". (is_null($diagnostico->aprobado) ? 'Pendiente' : 'Reasignado') .")')" : '' }}"
+               class="{{ $canExport ? 'bg-surface-container-lowest text-on-surface-variant hover:bg-[#001834] hover:text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50' }} px-6 py-3 rounded-xl border border-outline-variant/20 font-black text-[0.65rem] uppercase tracking-widest flex items-center gap-2 transition-all">
                 <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Exportar Registro PDF
-            </button>
+            </a>
         </div>
         
         <div class="flex gap-4" x-data="{ editingStatus: false }">

@@ -49,6 +49,7 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
     Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
     Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
+    Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
     
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
@@ -78,6 +79,7 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
     Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
     Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
+    Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
     // Aquí irán tus rutas de vehículos y diagnósticos
 });
 
