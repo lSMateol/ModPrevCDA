@@ -31,6 +31,16 @@
         @csrf
         @method('PUT')
 
+        @if ($errors->any())
+            <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-2xl shadow-sm animate-pulse">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-red-600">error</span>
+                    <h3 class="text-sm font-black text-red-800 uppercase tracking-widest">Errores de Validación</h3>
+                </div>
+                <p class="text-xs text-red-600 mt-2 font-bold">Por favor verifica los campos marcados en rojo. Asegúrate de que los valores numéricos estén dentro de los rangos permitidos.</p>
+            </div>
+        @endif
+
         @foreach($parametrosPorTipo as $tipo => $params)
         <section class="space-y-6">
             <!-- Título de Sección -->
@@ -58,8 +68,8 @@
                 @foreach($params as $param)
                 <div class="flex flex-col gap-2 {{ $param->control == 'textarea' ? 'col-span-full' : '' }}">
                     @if($param->control == 'radio')
-                        <div class="flex flex-col gap-3 p-4 bg-surface-container-low rounded-2xl border border-transparent hover:border-[#001834]/5 transition-all">
-                            <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60 leading-tight">
+                        <div class="flex flex-col gap-3 p-4 {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-200' : 'bg-surface-container-low border-transparent' }} rounded-2xl border hover:border-[#001834]/5 transition-all">
+                            <label class="text-[0.65rem] font-black uppercase tracking-widest {{ $errors->has($param->nompar) ? 'text-red-700' : 'text-on-surface-variant' }} opacity-60 leading-tight">
                                 {{ $param->nompar }}
                             </label>
                             <div class="flex flex-wrap gap-5">
@@ -79,14 +89,20 @@
                                 </label>
                                 @endforeach
                             </div>
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter">{{ $message }}</span>
+                            @enderror
                         </div>
                     @elseif($param->control == 'number')
                         <div class="space-y-1">
-                            <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60 px-1">{{ $param->nompar }}</label>
+                            <label class="text-[0.65rem] font-black uppercase tracking-widest {{ $errors->has($param->nompar) ? 'text-red-700' : 'text-on-surface-variant' }} opacity-60 px-1">{{ $param->nompar }}</label>
                             <input type="number" step="any" name="{{ $param->nompar }}" 
                                 value="{{ old($param->nompar, $paramValues[$param->nompar] ?? '') }}" 
                                 placeholder="Escribe aquí..."
-                                class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all">
+                                class="w-full {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-300 ring-1 ring-red-300' : 'bg-surface-container-high border-none' }} rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all">
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
+                            @enderror
                         </div>
                     @elseif($param->control == 'textarea')
                         <div class="space-y-1">
@@ -94,6 +110,56 @@
                             <textarea name="{{ $param->nompar }}" rows="4" 
                                 placeholder="Detalles o descripción técnica..."
                                 class="w-full bg-surface-container-high border-none rounded-2xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all">{{ old($param->nompar, $paramValues[$param->nompar] ?? '') }}</textarea>
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    @elseif($param->nompar == 'grupo_inspeccion')
+                        <div class="space-y-1">
+                            <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60 px-1">DEFECTO</label>
+                            <select name="{{ $param->nompar }}" 
+                                class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all cursor-pointer">
+                                <option value="" disabled {{ !old($param->nompar, $paramValues[$param->nompar] ?? '') ? 'selected' : '' }}>Seleccionar el defecto...</option>
+                                @foreach([
+                                    'SPLINDERS', 
+                                    'BUJES DE LOS MUELLES', 
+                                    'TERMINALES BRAZO LARGO Y CORTO (2)', 
+                                    'PASAMANOS SUELTOS', 
+                                    'LLANTA DE REPUESTO',
+                                    'LATONERIA Y PINTURA', 
+                                    'POLARIZADOS', 
+                                    'ASIENTOS MAL ANCLADOS',
+                                    'TAPICERIA',
+                                    'COJINERIA', 
+                                    'EXTINTOR', 
+                                    'INEXISTENCIA CINTAS RETROREFLECTIVAS',
+                                    'LLANTAS LISAS',
+                                    'BUJES BARRA ESTABILIZADORA', 
+                                    'GOTEO CAJA DE DIRECCION, TRANSMISION Y MOTOR', 
+                                    'MAL FUNCIONAMIENTO LUCES TRASERAS',
+                                    'BOTIQUIN', 
+                                    'MAL FUNCIONAMIENTO DISPOSITIVO DE VELOCIDAD', 
+                                    'INEXISTENCIA DE CALCOMANIAS'
+                                ] as $opcion)
+                                    <option value="{{ $opcion }}" {{ old($param->nompar, $paramValues[$param->nompar] ?? '') == $opcion ? 'selected' : '' }}>{{ $opcion }}</option>
+                                @endforeach
+                            </select>
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    @elseif($param->nompar == 'tipo_defecto')
+                        <div class="space-y-1">
+                            <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60 px-1">TIPO DE DEFECTO</label>
+                            <select name="{{ $param->nompar }}" 
+                                class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all cursor-pointer">
+                                <option value="" disabled {{ !old($param->nompar, $paramValues[$param->nompar] ?? '') ? 'selected' : '' }}>Seleccione tipo...</option>
+                                <option value="Tipo A" {{ old($param->nompar, $paramValues[$param->nompar] ?? '') == 'Tipo A' ? 'selected' : '' }}>Tipo A</option>
+                                <option value="Tipo B" {{ old($param->nompar, $paramValues[$param->nompar] ?? '') == 'Tipo B' ? 'selected' : '' }}>Tipo B</option>
+                            </select>
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
+                            @enderror
                         </div>
                     @else
                         <div class="space-y-1">
@@ -101,6 +167,9 @@
                             <input type="text" name="{{ $param->nompar }}" 
                                 value="{{ old($param->nompar, $paramValues[$param->nompar] ?? '') }}" 
                                 class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all">
+                            @error($param->nompar)
+                                <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
+                            @enderror
                         </div>
                     @endif
                 </div>

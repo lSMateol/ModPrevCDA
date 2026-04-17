@@ -77,16 +77,26 @@ class DiagnosticoController extends Controller
 
         $persona = Auth::user()->persona;
         if (!$persona) {
-            return redirect()->back()->withErrors(['error' => 'Usuario no tiene una persona asociada.']);
+            return response()->json(['message' => 'Usuario no tiene una persona asociada.'], 403);
+        }
+
+        // Restricción: No duplicar diagnósticos pendientes para el mismo vehículo
+        $existente = Diag::where('idveh', $request->idveh)->whereNull('aprobado')->first();
+        if ($existente) {
+            return response()->json([
+                'duplicate' => true,
+                'message' => "Ya existe un diagnóstico PENDIENTE para este vehículo (ID-#{$existente->iddia}).",
+                'iddia' => $existente->iddia
+            ], 422);
         }
 
         $diagnostico = Diag::create([
             'fecdia' => now(),
             'idveh' => $request->idveh,
-            'aprobado' => 0,
+            'aprobado' => null, // Inicia como pendiente
             'idper' => $persona->idper,
             'fecvig' => now()->addYear(),
-            'kilomt' => $request->kilometraje,
+            'kilomt' => $request->idveh ? Vehiculo::find($request->idveh)->kilomt : 0, // Fallback if needed
             'idinsp' => $request->idinsp,
             'iding' => $request->iding,
         ]);
@@ -135,33 +145,93 @@ class DiagnosticoController extends Controller
                     );
                 }
             }
+
+            // Calcular aprobación automática al guardar
+            $allCumple = true;
+            $diagnosticoFresh = $diagnostico->fresh('parametros.parametro');
+            
+            foreach($diagnosticoFresh->parametros as $p) {
+                $pMeta = $p->parametro;
+                $v = $p->valor;
+                
+                if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
+                    if ($v < $pMeta->rini || $v > $pMeta->rfin) $allCumple = false;
+                } elseif ($pMeta->control == 'radio') {
+                    if (in_array($v, ['no', 'no_funciona'])) $allCumple = false;
+                } elseif (in_array($pMeta->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
+                    if (!empty($v)) $allCumple = false;
+                }
+            }
+
+            $diagnostico->update(['aprobado' => $allCumple ? 1 : 0]);
         });
 
         $prefix = $this->getPrefix();
-        return redirect()->route($prefix . '.diagnosticos.show', $diagnostico->iddia)->with('success', 'Parámetros guardados correctamente.');
+        return redirect()->route($prefix . '.diagnosticos.show', $diagnostico->iddia)->with('success', 'Diagnóstico procesado correctamente.');
     }
 
     public function show($id)
     {
-        $diagnostico = Diag::with(['vehiculo.empresa', 'persona', 'inspector', 'ingeniero', 'parametros.parametro'])->findOrFail($id);
+        $diagnostico = Diag::with(['vehiculo.empresa', 'persona', 'inspector', 'ingeniero', 'parametros.parametro', 'fotos'])->findOrFail($id);
         return view('diagnosticos.show', compact('diagnostico'));
+    }
+
+    public function updateAsignacion(Request $request, $id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+        
+        $request->validate([
+            'kilomt' => 'required|numeric',
+            'idinsp' => 'required|exists:persona,idper',
+            'iding' => 'required|exists:persona,idper',
+        ]);
+
+        $diagnostico->update([
+            'kilomt' => $request->kilomt,
+            'idinsp' => $request->idinsp,
+            'iding' => $request->iding,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Asignación de servicio actualizada correctamente.']);
     }
 
     public function destroy($id)
     {
         $diagnostico = Diag::findOrFail($id);
+        
+        // Eliminar registros relacionados para evitar errores de integridad
         $diagnostico->parametros()->delete();
+        $diagnostico->rechazo()->delete();
+        $diagnostico->fotos()->delete();
+        $diagnostico->documentos()->delete();
+        
         $diagnostico->delete();
         
         $prefix = $this->getPrefix();
         return redirect()->route($prefix . '.diagnosticos.index')->with('success', 'Diagnóstico eliminado.');
     }
-    public function alertas()
+    public function alertas(Request $request)
     {
-        $vehiculos = Vehiculo::with('empresa')->get();
+        $query = Vehiculo::with(['empresa', 'marca']);
+        
+        // Filtro por Placa
+        if ($request->filled('placa')) {
+            $query->where('placaveh', 'like', '%' . $request->placa . '%');
+        }
+
+        // Filtro por Empresa
+        if ($request->filled('empresa_id')) {
+            $query->where('idemp', $request->empresa_id);
+        }
+
+        $vehiculos = $query->get();
         $hoy = now();
         
-        $alertas = $vehiculos->map(function($v) use ($hoy) {
+        // Filtros de fecha de vencimiento
+        $fechaInicio = $request->filled('fecha_inicio') ? \Carbon\Carbon::parse($request->fecha_inicio)->startOfDay() : null;
+        $fechaFin = $request->filled('fecha_fin') ? \Carbon\Carbon::parse($request->fecha_fin)->endOfDay() : null;
+
+        $alertas = $vehiculos->map(function($v) use ($hoy, $fechaInicio, $fechaFin) {
             $docs = [];
             
             // SOAT
@@ -184,14 +254,31 @@ class DiagnosticoController extends Controller
                 ];
             }
 
-            return [
+            // Filtrar por Rango de Vencimiento
+            if ($fechaInicio || $fechaFin) {
+                $tieneDocEnRango = collect($docs)->some(function($d) use ($fechaInicio, $fechaFin) {
+                    if ($fechaInicio && $fechaFin) return $d['fecha']->between($fechaInicio, $fechaFin);
+                    if ($fechaInicio) return $d['fecha']->gte($fechaInicio);
+                    if ($fechaFin) return $d['fecha']->lte($fechaFin);
+                    return true;
+                });
+                if (!$tieneDocEnRango) return null;
+            }
+
+            // Si no tiene documentos registrados, no genera alerta
+            if (empty($docs)) return null;
+
+            $alertaItem = [
                 'vehiculo' => $v,
                 'documentos' => $docs,
                 'prioridad' => collect($docs)->pluck('estado')->contains('vencido') ? 'alta' : (collect($docs)->pluck('estado')->contains('por_vencer') ? 'media' : 'baja')
             ];
-        })->filter(function($item) {
-            return $item['prioridad'] !== 'baja'; // Solo mostrar los que tienen algo vencido o por vencer
-        })->sortByDesc(function($item) {
+
+            // Solo mostrar los que tienen algo vencido o por vencer (o si está filtrado por fecha)
+            if ($alertaItem['prioridad'] === 'baja' && !($fechaInicio || $fechaFin)) return null;
+
+            return $alertaItem;
+        })->filter()->sortByDesc(function($item) {
             return $item['prioridad'] === 'alta' ? 2 : ($item['prioridad'] === 'media' ? 1 : 0);
         });
 
@@ -201,12 +288,14 @@ class DiagnosticoController extends Controller
             'al_dia' => $vehiculos->count() - $alertas->count()
         ];
 
-        return view('diagnosticos.alertas', compact('alertas', 'metricas'));
+        $empresas = Empresa::all();
+
+        return view('diagnosticos.alertas', compact('alertas', 'metricas', 'empresas'));
     }
 
     public function rechazados(Request $request)
     {
-        $query = Diag::where('aprobado', 0)->with(['vehiculo.empresa', 'inspector', 'rechazo']);
+        $query = Diag::where('aprobado', 0)->with(['vehiculo.empresa', 'inspector', 'rechazo.inspectorAnterior']);
 
         if ($request->filled('placa')) {
             $query->whereHas('vehiculo', function ($q) use ($request) {
@@ -216,6 +305,10 @@ class DiagnosticoController extends Controller
 
         if ($request->filled('inspector')) {
             $query->where('idinsp', $request->inspector);
+        }
+
+        if ($request->filled('fecha')) {
+            $query->whereDate('fecdia', $request->fecha);
         }
 
         $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15);
@@ -263,41 +356,128 @@ class DiagnosticoController extends Controller
     {
         $diagnostico = Diag::with(['vehiculo.empresa', 'inspector', 'rechazo'])->findOrFail($id);
         $inspectores = Persona::where('idpef', 4)->get();
-        return view('diagnosticos.rechazados.reasignar', compact('diagnostico', 'inspectores'));
+        $ingenieros = Persona::where('idpef', 5)->get();
+        return view('diagnosticos.rechazados.reasignar', compact('diagnostico', 'inspectores', 'ingenieros'));
     }
 
     public function storeReasignacion(Request $request, $id)
     {
-        $diagnostico = Diag::findOrFail($id);
+        $diagnosticoAnterior = Diag::findOrFail($id);
 
         $request->validate([
             'idinsp_nuevo' => 'required|exists:persona,idper',
-            'fecha' => 'required|date',
-            'hora' => 'required',
-            'motivo' => 'required|string',
+            'iding_nuevo' => 'required|exists:persona,idper',
+            'kilomt' => 'required|numeric',
         ]);
 
-        DB::transaction(function () use ($request, $diagnostico) {
-            // Guardar en la tabla de rechazo
-            Rechazo::updateOrCreate(
-                ['iddia' => $diagnostico->iddia],
-                [
-                    'idper_ant' => $diagnostico->idinsp,
-                    'idper_nvo' => $request->idinsp_nuevo,
-                    'motivo' => $request->motivo,
-                    'prioridad' => $request->prioridad ?? 'Media',
-                    'camposmod' => $request->campos_mod ?? '',
-                    'notas' => $request->notas ?? '',
-                    'fecreasig' => $request->fecha . ' ' . $request->hora,
-                    'estadorec' => 'Reasignado'
-                ]
-            );
+        // Restricción: No duplicar si ya hay uno pendiente
+        $existente = Diag::where('idveh', $diagnosticoAnterior->idveh)->whereNull('aprobado')->first();
+        if ($existente) {
+            return redirect()->back()->with('error', "El vehículo ya tiene una inspección PENDIENTE (ID-#{$existente->iddia}). Debe completarla o eliminarla antes de crear una nueva.");
+        }
 
-            // Actualizar el inspector en el diagnóstico
-            $diagnostico->update(['idinsp' => $request->idinsp_nuevo]);
+        $nuevoDiagnostico = DB::transaction(function () use ($request, $diagnosticoAnterior) {
+            // 1. Marcar el rechazo anterior como procesado/reasignado
+            if ($diagnosticoAnterior->rechazo) {
+                $diagnosticoAnterior->rechazo->update([
+                    'idper_nvo' => $request->idinsp_nuevo,
+                    'fecreasig' => now(),
+                    'estadorec' => 'Reasignado'
+                ]);
+            }
+
+            // 2. Crear el NUEVO diagnóstico para el mismo vehículo
+            $nuevo = Diag::create([
+                'fecdia' => now(), // Tomado por defecto el día en que se hace
+                'idveh'  => $diagnosticoAnterior->idveh,
+                'aprobado' => null, // Inicia como pendiente
+                'idinsp' => $request->idinsp_nuevo,
+                'iding' => $request->iding_nuevo,
+                'idper' => Auth::id(), // Quien realiza la reasignación
+                'kilomt' => $request->kilomt,
+                'dpiddia' => $diagnosticoAnterior->iddia, // Referencia al original
+            ]);
+
+            return $nuevo;
         });
 
         $prefix = $this->getPrefix();
-        return redirect()->route($prefix . '.rechazados')->with('success', 'Inspector reasignado correctamente.');
+        return redirect()->route($prefix . '.diagnosticos.edit', $nuevoDiagnostico->iddia)
+            ->with('success', 'Nueva inspección programada y reasignada correctamente.');
+    }
+
+    public function getFotos($id)
+    {
+        $diagnostico = Diag::with('fotos')->findOrFail($id);
+        $fotos = $diagnostico->fotos->map(function($f) {
+            return [
+                'id' => $f->idfot,
+                // Usar ruta de fallback para garantizar acceso si no hay symlink
+                'url' => route('storage.fallback', ['path' => $f->rutafoto])
+            ];
+        });
+        return response()->json($fotos);
+    }
+
+    public function serveFile($path)
+    {
+        $fullPath = storage_path('app/public/' . $path);
+        if (!file_exists($fullPath)) abort(404);
+        return response()->file($fullPath);
+    }
+
+    public function uploadFotos(Request $request, $id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+        
+        // Organizar por Año, Mes y Día
+        $fecha = \Carbon\Carbon::parse($diagnostico->fecdia);
+        $year = $fecha->format('Y');
+        $month = $fecha->format('m');
+        $day = $fecha->format('d');
+        $basePath = "fotos_diagnosticos/{$year}/{$month}/{$day}";
+
+        // 1. Eliminar fotos que ya no están en la lista (si se enviara una lista de IDs a mantener)
+        if ($request->has('ids_a_eliminar')) {
+            $ids = json_decode($request->ids_a_eliminar);
+            if (!empty($ids)) {
+                $fotosAEliminar = $diagnostico->fotos()->whereIn('idfot', $ids)->get();
+                foreach ($fotosAEliminar as $f) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($f->rutafoto);
+                    $f->delete();
+                }
+            }
+        }
+
+        // 2. Guardar nuevas fotos
+        if ($request->hasFile('fotos')) {
+            foreach ($request->file('fotos') as $file) {
+                // El archivo ya viene como .webp desde el cliente
+                $path = $file->store($basePath, 'public');
+                $diagnostico->fotos()->create([
+                    'rutafoto' => $path
+                ]);
+            }
+        }
+
+        return response()->json(['message' => 'Fotos actualizadas correctamente'], 201);
+    }
+
+    public function approve($id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+        $diagnostico->update(['aprobado' => 1]);
+        
+        $prefix = $this->getPrefix();
+        return redirect()->route($prefix . '.diagnosticos.index')->with('success', 'Diagnóstico aprobado y completado correctamente.');
+    }
+
+    public function reject($id)
+    {
+        $diagnostico = Diag::findOrFail($id);
+        $diagnostico->update(['aprobado' => 0]);
+        
+        $prefix = $this->getPrefix();
+        return redirect()->route($prefix . '.diagnosticos.index')->with('success', 'Diagnóstico marcado como rechazado.');
     }
 }

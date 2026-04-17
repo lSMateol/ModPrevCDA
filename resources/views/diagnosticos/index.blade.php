@@ -81,10 +81,13 @@
                         <option value="0" {{ request('aprobado') == '0' ? 'selected' : '' }}>No Aprobado</option>
                     </select>
                 </div>
-                <div class="flex items-end">
+                <div class="flex flex-col gap-2 justify-end">
                     <button type="submit" class="w-full bg-[#001834] text-white font-black text-xs h-[46px] uppercase tracking-widest rounded-xl hover:bg-tertiary-container hover:shadow-lg transition-all active:scale-[0.98]">
                         Aplicar Filtros
                     </button>
+                    <a href="{{ route($prefix . '.diagnosticos.index') }}" class="text-[9px] font-black text-[#001834] uppercase tracking-widest text-center hover:underline opacity-60 hover:opacity-100 transition-opacity">
+                        Limpiar Filtros
+                    </a>
                 </div>
             </div>
         </form>
@@ -125,9 +128,20 @@
                 </div>
                 
                 <!-- Estado Status -->
-                <div class="flex-shrink-0">
-                    @if($diag->aprobado)
+                <div class="flex-shrink-0 flex items-center gap-3">
+                    @if($diag->dpiddia)
+                        <span class="bg-[#002D54] text-white px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[12px]">history</span>
+                            Re-Inspección
+                        </span>
+                    @endif
+
+                    @if(is_null($diag->aprobado))
+                        <span class="bg-gray-50 text-gray-500 px-5 py-2 rounded-full text-[0.65rem] font-black border border-gray-100 uppercase tracking-widest">Pendiente</span>
+                    @elseif($diag->aprobado)
                         <span class="bg-emerald-50 text-emerald-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
+                    @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
+                        <span class="bg-amber-50 text-amber-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
                     @else
                         <span class="bg-red-50 text-red-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
                     @endif
@@ -169,133 +183,282 @@
 </div>
 
 @include('diagnosticos.modal-agendar')
+@include('diagnosticos.modal-fotos')
 @endsection
 
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Prefijo global
+        const prefix = '{{ Auth::user()->hasRole("Administrador") ? "admin" : "digitador" }}';
+
+        // ==========================================
+        // LÓGICA DE AGENDAR
+        // ==========================================
         const btnAgendar = document.getElementById('btn-agendar');
         const modalAgendar = document.getElementById('modal-agendar');
         const closeAgendar = document.getElementById('close-agendar');
         const formAgendar = document.getElementById('form-agendar');
 
-        if (!btnAgendar || !modalAgendar) {
-            console.error('No se encontraron los elementos del modal');
-            return;
-        }
-
-        // Obtener el prefijo según el rol del usuario
-        const prefix = '{{ Auth::user()->hasRole("Administrador") ? "admin" : "digitador" }}';
-
-        // Abrir modal y cargar datos
-        btnAgendar.addEventListener('click', async () => {
-            try {
-                // Mostrar loading en los selects
-                document.getElementById('idveh').innerHTML = '<option value="">Cargando vehículos...</option>';
-                document.getElementById('idinsp').innerHTML = '<option value="">Cargando inspectores...</option>';
-                document.getElementById('iding').innerHTML = '<option value="">Cargando ingenieros...</option>';
-                
-                const res = await fetch(`/${prefix}/diagnosticos/data`, {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                
-                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                const data = await res.json();
-                
-                // Llenar vehículos
-                const selectVehiculo = document.getElementById('idveh');
-                selectVehiculo.innerHTML = '<option value="">Seleccione vehículo</option>';
-                if (data.vehiculos && data.vehiculos.length) {
+        if (btnAgendar && modalAgendar) {
+            btnAgendar.addEventListener('click', async () => {
+                try {
+                    document.getElementById('idveh').innerHTML = '<option value="">Cargando vehículos...</option>';
+                    document.getElementById('idinsp').innerHTML = '<option value="">Cargando inspectores...</option>';
+                    document.getElementById('iding').innerHTML = '<option value="">Cargando ingenieros...</option>';
+                    
+                    const res = await fetch(`/${prefix}/diagnosticos/data`, {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    });
+                    
+                    const data = await res.json();
+                    
+                    const selectVehiculo = document.getElementById('idveh');
+                    selectVehiculo.innerHTML = '<option value="">Seleccione vehículo</option>';
                     data.vehiculos.forEach(v => {
                         selectVehiculo.innerHTML += `<option value="${v.idveh}">${v.placaveh} - ${v.empresa?.razsoem || 'Sin empresa'}</option>`;
                     });
-                } else {
-                    selectVehiculo.innerHTML += '<option disabled>No hay vehículos registrados</option>';
-                }
-                
-                // Llenar inspectores
-                const selectInsp = document.getElementById('idinsp');
-                selectInsp.innerHTML = '<option value="">Seleccione inspector</option>';
-                if (data.inspectores && data.inspectores.length) {
+                    
+                    const selectInsp = document.getElementById('idinsp');
+                    selectInsp.innerHTML = '<option value="">Seleccione inspector</option>';
                     data.inspectores.forEach(i => {
                         selectInsp.innerHTML += `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`;
                     });
-                } else {
-                    selectInsp.innerHTML += '<option disabled>No hay inspectores disponibles</option>';
-                }
-                
-                // Llenar ingenieros
-                const selectIng = document.getElementById('iding');
-                selectIng.innerHTML = '<option value="">Seleccione ingeniero</option>';
-                if (data.ingenieros && data.ingenieros.length) {
+                    
+                    const selectIng = document.getElementById('iding');
+                    selectIng.innerHTML = '<option value="">Seleccione ingeniero</option>';
                     data.ingenieros.forEach(i => {
                         selectIng.innerHTML += `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`;
                     });
-                } else {
-                    selectIng.innerHTML += '<option disabled>No hay ingenieros disponibles</option>';
-                }
-                
-                modalAgendar.classList.remove('hidden');
-            } catch (error) {
-                console.error('Error al cargar datos:', error);
-                alert('No se pudieron cargar los datos. Revisa la consola para más detalles.');
-            }
-        });
-
-        // Cerrar modal con la X
-        if (closeAgendar) {
-            closeAgendar.addEventListener('click', () => {
-                modalAgendar.classList.add('hidden');
-            });
-        }
-        
-        // Cerrar modal haciendo clic fuera del contenido
-        modalAgendar.addEventListener('click', (e) => {
-            if (e.target === modalAgendar) {
-                modalAgendar.classList.add('hidden');
-            }
-        });
-
-        // Enviar formulario del modal
-        if (formAgendar) {
-            formAgendar.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(formAgendar);
-                const submitBtn = formAgendar.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerText;
-                submitBtn.innerText = 'Guardando...';
-                submitBtn.disabled = true;
-                
-                try {
-                    const res = await fetch(formAgendar.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                    });
                     
-                    if (res.ok) {
-                        window.location.href = `/${prefix}/diagnosticos`;
-                    } else {
-                        const errorData = await res.json().catch(() => ({}));
-                        alert(errorData.message || 'Error al agendar el servicio. Verifica los datos.');
-                        submitBtn.innerText = originalText;
+                    modalAgendar.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error al cargar datos:', error);
+                }
+            });
+
+            if (closeAgendar) closeAgendar.onclick = () => modalAgendar.classList.add('hidden');
+            modalAgendar.onclick = (e) => { if (e.target === modalAgendar) modalAgendar.classList.add('hidden'); };
+
+            if (formAgendar) {
+                formAgendar.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(formAgendar);
+                    const submitBtn = formAgendar.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    
+                    try {
+                        const res = await fetch(formAgendar.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                        });
+                        if (res.ok) window.location.reload();
+                        else {
+                            const data = await res.json();
+                            if (data.duplicate) {
+                                if (confirm(data.message + "\n\n¿Desea ir a EDITAR el diagnóstico existente para corregir valores?")) {
+                                    window.location.href = `/${prefix}/diagnosticos/${data.iddia}/edit`;
+                                }
+                            } else {
+                                alert(data.message || 'Error al guardar');
+                            }
+                        }
+                    } catch (error) {
+                        console.error(error);
+                    } finally {
                         submitBtn.disabled = false;
                     }
-                } catch (error) {
-                    console.error('Error en la petición:', error);
-                    alert('Error de conexión. Intenta nuevamente.');
-                    submitBtn.innerText = originalText;
-                    submitBtn.disabled = false;
+                });
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DE CAPTURA DE FOTOS (WebP)
+        // ==========================================
+        const modalFotos = document.getElementById('modal-fotos');
+        const closeFotos = document.getElementById('close-fotos');
+        const fotoDiagId = document.getElementById('foto-diag-id');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const stopCameraBtn = document.getElementById('stop-camera');
+        const cameraPreview = document.getElementById('camera-preview');
+        const fileInput = document.getElementById('file-input');
+        const photoList = document.getElementById('photo-list');
+        const photoCount = document.getElementById('photo-count');
+        const btnSaveFotos = document.getElementById('btn-save-fotos');
+        const template = document.getElementById('photo-item-template');
+
+        let stream = null;
+        let existingPhotos = []; // { id, url }
+        let newPhotos = [];      // Blobs
+        let idsAEliminar = [];   // IDs de fotos existentes a borrar
+
+        document.querySelectorAll('.btn-foto').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                fotoDiagId.innerText = id;
+                modalFotos.classList.remove('hidden');
+                
+                // Cargar fotos existentes
+                try {
+                    const res = await fetch(`/${prefix}/diagnosticos/${id}/fotos`);
+                    existingPhotos = await res.json();
+                    newPhotos = [];
+                    idsAEliminar = [];
+                    updatePhotoUI();
+                } catch (err) {
+                    console.error("Error cargando fotos:", err);
+                    resetFotos();
                 }
             });
+        });
+
+        function resetFotos() {
+            stopCamera();
+            existingPhotos = [];
+            newPhotos = [];
+            idsAEliminar = [];
+            updatePhotoUI();
         }
+
+        cameraPreview.addEventListener('click', () => {
+            if (!stream) startCamera();
+            else fileInput.click();
+        });
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" },
+                    audio: false 
+                });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                document.getElementById('upload-placeholder').classList.add('hidden');
+                document.getElementById('camera-controls').classList.remove('hidden');
+            } catch (err) {
+                fileInput.click();
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.classList.add('hidden');
+            document.getElementById('camera-controls').classList.add('hidden');
+            if (existingPhotos.length === 0 && newPhotos.length === 0) {
+                document.getElementById('upload-placeholder').classList.remove('hidden');
+            }
+        }
+
+        stopCameraBtn.onclick = (e) => { e.stopPropagation(); stopCamera(); };
+
+        snap.onclick = (e) => {
+            e.stopPropagation();
+            if ((existingPhotos.length + newPhotos.length) >= 2) return alert("Máximo 2 fotos");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.toBlob((blob) => {
+                newPhotos.push(blob);
+                updatePhotoUI();
+            }, 'image/webp', 0.8);
+        };
+
+        fileInput.onchange = (e) => {
+            Array.from(e.target.files).forEach(file => {
+                if ((existingPhotos.length + newPhotos.length) >= 2) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width; tempCanvas.height = img.height;
+                        tempCanvas.getContext('2d').drawImage(img, 0, 0);
+                        tempCanvas.toBlob((blob) => {
+                            newPhotos.push(blob);
+                            updatePhotoUI();
+                        }, 'image/webp', 0.8);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        };
+
+        function updatePhotoUI() {
+            const total = existingPhotos.length + newPhotos.length;
+            photoCount.innerText = total;
+            btnSaveFotos.disabled = (total === 0 && idsAEliminar.length === 0);
+            
+            if (total >= 2) stopCamera();
+            if (total > 0) document.getElementById('upload-placeholder').classList.add('hidden');
+            else if (!stream) document.getElementById('upload-placeholder').classList.remove('hidden');
+
+            photoList.innerHTML = '';
+            
+            // Renderizar existentes
+            existingPhotos.forEach((foto, i) => {
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = foto.url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    idsAEliminar.push(foto.id);
+                    existingPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+
+            // Renderizar nuevas
+            newPhotos.forEach((blob, i) => {
+                const url = URL.createObjectURL(blob);
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    newPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+        }
+
+        btnSaveFotos.onclick = async () => {
+            const id = fotoDiagId.innerText;
+            const formData = new FormData();
+            
+            newPhotos.forEach((blob, i) => formData.append(`fotos[]`, blob, `evid_${id}_new_${i}.webp`));
+            formData.append('ids_a_eliminar', JSON.stringify(idsAEliminar));
+
+            btnSaveFotos.disabled = true;
+            btnSaveFotos.innerText = 'Sincronizando...';
+
+            try {
+                const res = await fetch(`/${prefix}/diagnosticos/${id}/fotos`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                });
+                if (res.ok) {
+                    alert('Evidencias actualizadas');
+                    modalFotos.classList.add('hidden');
+                } else alert('Error al guardar');
+            } catch (err) {
+                alert('Error de red');
+            } finally {
+                btnSaveFotos.innerText = 'Guardar Evidencias';
+                btnSaveFotos.disabled = false;
+            }
+        };
+
+        closeFotos.onclick = () => { modalFotos.classList.add('hidden'); stopCamera(); };
+        modalFotos.onclick = (e) => { if (e.target === modalFotos) { modalFotos.classList.add('hidden'); stopCamera(); } };
     });
 </script>
 @endpush

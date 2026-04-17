@@ -47,57 +47,52 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Kilometraje -->
                     <div class="space-y-2 col-span-full">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Inspector anterior</label>
-                        <div class="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl py-3 px-5">
-                            <div class="w-8 h-8 rounded-full bg-[#001834] flex items-center justify-center text-white text-xs font-bold uppercase">
-                                {{ substr($diagnostico->inspector->pernom, 0, 1) }}
-                            </div>
-                            <span class="text-sm font-bold text-[#001834]">{{ $diagnostico->inspector->nombre_completo }}</span>
-                            <span class="ml-auto material-symbols-outlined text-gray-300">lock</span>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Kilometraje Actual</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">speed</span>
+                            <input type="number" name="kilomt" value="{{ $diagnostico->kilomt }}" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold shadow-sm transition-all" placeholder="Ingrese el recorrido actual">
                         </div>
                     </div>
 
+                    <!-- Inspector -->
                     <div class="space-y-2 col-span-full">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nuevo inspector asignado</label>
-                        <select name="idinsp_nuevo" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all">
-                            <option value="">Seleccionar nuevo inspector...</option>
-                            @foreach($inspectores as $insp)
-                                @if($insp->idper != $diagnostico->idinsp)
-                                    <option value="{{ $insp->idper }}">{{ $insp->nombre_completo }}</option>
-                                @endif
-                            @endforeach
-                        </select>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Inspector Asignado</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">engineering</span>
+                            <select name="idinsp_nuevo" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold shadow-sm transition-all">
+                                <option value="">Seleccione inspector...</option>
+                                @foreach($inspectores as $insp)
+                                    <option value="{{ $insp->idper }}" {{ $diagnostico->idinsp == $insp->idper ? 'selected' : '' }}>
+                                        {{ $insp->nombre_completo }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Fecha de revisión</label>
-                        <input type="date" name="fecha" value="{{ now()->addDay()->format('Y-m-d') }}" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all">
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Hora</label>
-                        <input type="time" name="hora" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all">
-                    </div>
-
+                    <!-- Ingeniero -->
                     <div class="space-y-2 col-span-full">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Campos a modificar</label>
-                        <textarea name="campos_mod" rows="2" class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all" placeholder="Ej: Luces delanteras, frenos, etc."></textarea>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Ingeniero Responsable</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">manage_accounts</span>
+                            <select name="iding_nuevo" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold shadow-sm transition-all">
+                                <option value="">Seleccione ingeniero...</option>
+                                @foreach($ingenieros as $ing)
+                                    <option value="{{ $ing->idper }}" {{ $diagnostico->iding == $ing->idper ? 'selected' : '' }}>
+                                        {{ $ing->nombre_completo }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-
-                    <div class="space-y-2 col-span-full">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Notas o instrucciones</label>
-                        <textarea name="notas" rows="4" class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all" placeholder="Especifique si hay alguna indicación especial..."></textarea>
-                    </div>
-                    
-                    <!-- Hidden field for motivo if needed -->
-                    <input type="hidden" name="motivo" value="{{ $diagnostico->rechazo->motivo ?? 'Reasignación por rechazo previo.' }}">
                 </div>
 
                 <div class="flex items-center justify-between pt-10 border-t border-gray-50">
                     <div class="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                         <div class="w-2 h-2 rounded-full bg-[#ffba20] animate-pulse"></div>
-                        Verifica fecha e inspector antes de confirmar
+                        Confirmación iniciará un nuevo formulario de inspección
                     </div>
                     <div class="flex gap-4">
                         <a href="{{ route($prefix . '.rechazados') }}" class="px-8 py-4 rounded-2xl border border-gray-100 font-black text-[10px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Cancelar</a>

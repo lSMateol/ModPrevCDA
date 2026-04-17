@@ -12,7 +12,7 @@ class Diag extends Model
 
     protected $fillable = [
         'fecdia', 'idveh', 'aprobado', 'idper',
-        'fecvig', 'kilomt', 'idinsp', 'iding', 'iddiapar'
+        'fecvig', 'kilomt', 'idinsp', 'iding', 'iddiapar', 'dpiddia'
     ];
 
     public function vehiculo()

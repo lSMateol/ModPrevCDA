@@ -18,27 +18,41 @@
     </div>
 
     <!-- Filtros -->
-    <section class="bg-gray-50 p-6 rounded-2xl flex flex-wrap gap-4 items-end">
-        <div class="flex-1 min-w-[250px]">
-            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Buscar por placa, marca o modelo</label>
-            <div class="relative group">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-[#ffba20]">search</span>
-                <input type="text" class="w-full bg-white border-none rounded-xl py-3 pl-12 pr-4 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-[#ffba20]" placeholder="KVM-091...">
+    <section class="bg-gray-50 p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <form action="{{ route($prefix . '.rechazados') }}" method="GET">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                <div class="md:col-span-5">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Buscar por placa, marca o modelo</label>
+                    <div class="relative group">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-[#ffba20] transition-colors">search</span>
+                        <input type="text" name="placa" value="{{ request('placa') }}" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold shadow-sm transition-all" placeholder="KVM-091...">
+                    </div>
+                </div>
+                <div class="md:col-span-3">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Inspector Anterior</label>
+                    <select name="inspector" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-3.5 px-5 text-sm font-bold shadow-sm transition-all">
+                        <option value="">Todos los inspectores</option>
+                        @foreach($inspectores as $insp)
+                            <option value="{{ $insp->idper }}" {{ request('inspector') == $insp->idper ? 'selected' : '' }}>
+                                {{ $insp->nombre_completo }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Fecha Inspección</label>
+                    <input type="date" name="fecha" value="{{ request('fecha') }}" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-3.5 px-5 text-sm font-bold shadow-sm transition-all">
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-2">
+                    <button type="submit" class="bg-[#001834] text-white w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#ffba20] hover:text-[#001834] transition-all shadow-lg active:scale-95">
+                        Buscar
+                    </button>
+                    <a href="{{ route($prefix . '.rechazados') }}" class="text-center text-[#001834] font-black text-[9px] uppercase tracking-widest hover:opacity-70 transition-opacity underline">
+                        Limpiar Filtros
+                    </a>
+                </div>
             </div>
-        </div>
-        <div class="w-64">
-            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Inspector Anterior</label>
-            <select class="w-full bg-white border-none rounded-xl py-3 px-4 text-sm font-medium shadow-sm focus:ring-2 focus:ring-[#ffba20]">
-                <option value="">Todos</option>
-                @foreach($inspectores as $insp)
-                    <option value="{{ $insp->idper }}">{{ $insp->nombre_completo }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="w-64">
-            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Fecha de Inspección</label>
-            <input type="date" class="w-full bg-white border-none rounded-xl py-3 px-4 text-sm font-medium shadow-sm focus:ring-2 focus:ring-[#ffba20]">
-        </div>
+        </form>
     </section>
 
     <!-- Tabla de Rechazados -->
@@ -74,10 +88,12 @@
                     </td>
                     <td class="px-8 py-6">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 overflow-hidden">
-                                <span class="material-symbols-outlined text-gray-300 translate-y-1">person</span>
+                            <div class="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                                <span class="material-symbols-outlined text-gray-400 text-sm">person</span>
                             </div>
-                            <span class="text-xs font-bold text-[#001834]">{{ $rechazo->inspector->nombre_completo ?? 'N/A' }}</span>
+                            <span class="text-xs font-bold text-[#001834]">
+                                {{ $rechazo->rechazo->inspectorAnterior->nombre_completo ?? $rechazo->inspector->nombre_completo ?? 'N/A' }}
+                            </span>
                         </div>
                     </td>
                     <td class="px-8 py-6">

@@ -46,34 +46,45 @@
 
     <!-- Search Filters -->
     <section class="bg-gray-50 p-8 rounded-3xl border border-gray-100 space-y-6">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-[#001834] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#001834]/10">
-                <span class="material-symbols-outlined text-xl">tune</span>
+        <form action="{{ route(Auth::user()->hasRole('Administrador') ? 'admin.alertas' : 'digitador.alertas') }}" method="GET">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 bg-[#001834] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#001834]/10">
+                    <span class="material-symbols-outlined text-xl">tune</span>
+                </div>
+                <h2 class="font-headline text-xl font-black text-[#001834] tracking-tight">Filtros de Precisión</h2>
             </div>
-            <h2 class="font-headline text-xl font-black text-[#001834] tracking-tight">Filtros de Precisión</h2>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Rango de Vencimiento</label>
-                <div class="relative group">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-[#ffba20] transition-colors">calendar_today</span>
-                    <input type="text" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold shadow-sm transition-all" placeholder="Seleccionar fechas...">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Vencimiento Desde</label>
+                    <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio') }}" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-4 text-sm font-bold shadow-sm transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Vencimiento Hasta</label>
+                    <input type="date" name="fecha_fin" value="{{ request('fecha_fin') }}" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-4 text-sm font-bold shadow-sm transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Flota de Empresa</label>
+                    <select name="empresa_id" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all">
+                        <option value="">Todas las Empresas</option>
+                        @foreach($empresas as $emp)
+                            <option value="{{ $emp->idemp }}" {{ request('empresa_id') == $emp->idemp ? 'selected' : '' }}>{{ $emp->nomemp }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Placa Vehicular</label>
+                    <input type="text" name="placa" value="{{ request('placa') }}" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-4 text-sm font-bold shadow-sm transition-all" placeholder="ej. KVM-091">
+                </div>
+                <div class="md:col-span-4 flex justify-end gap-3">
+                    <a href="{{ route(Auth::user()->hasRole('Administrador') ? 'admin.alertas' : 'digitador.alertas') }}" class="bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-300 transition-all text-center">
+                        Limpiar Filtros
+                    </a>
+                    <button type="submit" class="bg-[#001834] text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#ffba20] hover:text-[#001834] transition-all shadow-lg">
+                        Aplicar Filtros
+                    </button>
                 </div>
             </div>
-            <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Flota de Empresa</label>
-                <select class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm transition-all">
-                    <option>Todas las Empresas</option>
-                </select>
-            </div>
-            <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Placa Vehicular</label>
-                <div class="relative group">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-[#ffba20] transition-colors">tag</span>
-                    <input type="text" class="w-full bg-white border-2 border-transparent focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold shadow-sm transition-all" placeholder="ej. KVM-091">
-                </div>
-            </div>
-        </div>
+        </form>
     </section>
 
     <!-- Alerts List -->
@@ -141,11 +152,6 @@
                         <p class="text-lg font-black text-[#001834] opacity-50">Permanente</p>
                         <span class="inline-block mt-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">OK</span>
                     </div>
-                </div>
-
-                <div class="mt-8 flex justify-end gap-4">
-                    <button class="text-[#001834] font-black text-[10px] uppercase tracking-widest py-3 px-6 hover:bg-gray-100 rounded-2xl transition-all">Ver Historial</button>
-                    <button class="bg-[#ffba20] text-[#271900] font-black text-[10px] uppercase tracking-widest py-3 px-8 rounded-2xl hover:shadow-xl hover:shadow-[#ffba20]/20 transition-all">Gestionar Trámite</button>
                 </div>
             </div>
             @endforeach
