@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DiagnosticoController;
+use App\Http\Controllers\VehiculoController;
 
 // ==========================================
 // REDIRECCIÓN INICIAL (Seguridad)
@@ -72,6 +73,15 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
         Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
     });
 
+    
+    // Gestión Vehicular para Administrador
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+    Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
@@ -101,6 +111,14 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
     Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
     // Aquí irán tus rutas de vehículos y diagnósticos
+    
+    // Gestión Vehicular para Digitador
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+    Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
 });
 
 // ==========================================
@@ -111,6 +129,9 @@ Route::middleware(['auth', 'role:Empresa'])->prefix('empresa')->name('empresa.')
         return view('dashboard'); 
     })->name('dashboard');
     
+    // Gestión Vehicular para Empresa (filtrado automático por idemp)
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+
     // Aquí irán las rutas para que la empresa vea sus certificados
 });
 

@@ -11,7 +11,7 @@ class Vehiculo extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nordveh', 'tipoveh', 'placaveh', 'linveh', 'modveh', 'paiveh',
+        'nordveh', 'tipoveh', 'tipo_servicio', 'placaveh', 'linveh', 'modveh', 'paiveh',
         'fmatv', 'idemp', 'capveh', 'clveh', 'crgveh', 'combuveh',
         'cilveh', 'lictraveh', 'colveh', 'nmotveh', 'tmotveh', 'nchaveh',
         'taroperveh', 'radaccveh', 'fecexpr', 'fecvenr', 'soat', 'fecvens',
@@ -32,6 +32,21 @@ class Vehiculo extends Model
     public function clase()
     {
         return $this->belongsTo(Valor::class, 'clveh', 'idval');
+    }
+
+    public function combustible()
+    {
+        return $this->belongsTo(Valor::class, 'combuveh', 'idval');
+    }
+
+    public function tipoMotor()
+    {
+        return $this->belongsTo(Valor::class, 'tmotveh', 'idval');
+    }
+
+    public function categoriaCarga()
+    {
+        return $this->belongsTo(Valor::class, 'crgveh', 'idval');
     }
 
     public function propietario()
