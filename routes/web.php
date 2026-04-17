@@ -31,6 +31,57 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
         return view('dashboard'); 
     })->name('dashboard');
     
+<<<<<<< Updated upstream
+=======
+    // Rutas de Rechazados
+    Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
+    Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
+    Route::put('/rechazados/{id}', [DiagnosticoController::class, 'updateRechazo'])->name('rechazados.update');
+    Route::get('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'reasignar'])->name('rechazados.reasignar');
+    Route::post('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'storeReasignacion'])->name('rechazados.store-reasignacion');
+
+    Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
+    Route::get('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'getFotos'])->name('diagnosticos.get-fotos');
+    Route::post('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'uploadFotos'])->name('diagnosticos.upload-fotos');
+    Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
+    Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
+    Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
+    Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
+    
+    // Módulo MUP (Entidades)
+    Route::prefix('entidades/mup')->name('mup.')->group(function () {
+        Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores');
+        Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+        
+        // Perfiles
+        Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
+        Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+
+        // Usuarios (Master Dash)
+        Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios');
+        Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
+        Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
+        Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
+
+        // Propietarios
+        Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios');
+        Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+
+        // Empresas
+        Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas');
+        Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
+    });
+
+    
+    // Gestión Vehicular para Administrador
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+    Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+
+>>>>>>> Stashed changes
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
