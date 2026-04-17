@@ -480,4 +480,35 @@ class DiagnosticoController extends Controller
         $prefix = $this->getPrefix();
         return redirect()->route($prefix . '.diagnosticos.index')->with('success', 'Diagnóstico marcado como rechazado.');
     }
+
+    public function export($id)
+    {
+        $diagnostico = Diag::with([
+            'vehiculo.empresa', 
+            'vehiculo.marca', 
+            'persona', 
+            'inspector', 
+            'ingeniero', 
+            'parametros.parametro.tippar', 
+            'fotos',
+            'rechazo'
+        ])->findOrFail($id);
+
+        // Restricción: Solo estados finales (Aprobado/No Aprobado)
+        if (is_null($diagnostico->aprobado)) {
+            $prefix = $this->getPrefix();
+            return redirect()->route($prefix . '.diagnosticos.index')->with('error', 'Debe terminar el proceso (guardar parámetros) para poder exportar este diagnóstico.');
+        }
+
+        if ($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado') {
+            $prefix = $this->getPrefix();
+            return redirect()->route($prefix . '.diagnosticos.index')->with('error', 'Este diagnóstico ha sido reasignado. Debe completar el nuevo proceso para exportar el formato actualizado.');
+        }
+
+        $params = $diagnostico->parametros->groupBy(function($p) {
+            return $p->parametro->tippar->nomtip;
+        });
+
+        return view('diagnosticos.export', compact('diagnostico', 'params'));
+    }
 }

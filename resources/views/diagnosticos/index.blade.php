@@ -15,6 +15,20 @@
             </button>
         </div>
     </div>
+    
+    @if(session('error'))
+        <div class="mb-8 bg-red-50 border-l-4 border-red-500 p-4 rounded-xl flex items-center gap-3 animate-in fade-in duration-500">
+            <span class="material-symbols-outlined text-red-600">error</span>
+            <p class="text-sm font-bold text-red-800">{{ session('error') }}</p>
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div class="mb-8 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl flex items-center gap-3 animate-in fade-in duration-500">
+            <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+            <p class="text-sm font-bold text-emerald-800">{{ session('success') }}</p>
+        </div>
+    @endif
 
     <!-- Sección de Métricas (Bento Grid Style) -->
     <section class="grid grid-cols-12 gap-6 mt-4">
@@ -152,6 +166,19 @@
                     <a href="{{ route($prefix . '.diagnosticos.show', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Ver Detalle">
                         <span class="material-symbols-outlined text-lg">visibility</span>
                     </a>
+                    
+                    @php
+                        $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
+                    @endphp
+                    
+                    <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
+                       target="{{ $canExport ? '_blank' : '_self' }}" 
+                       class="p-3 {{ $canExport ? 'text-[#002D54] bg-surface-container-low hover:bg-[#002D54] hover:text-white' : 'text-gray-300 bg-gray-50 cursor-not-allowed opacity-50' }} rounded-xl transition-all duration-300" 
+                       onclick="{{ !$canExport ? "alert('Debe terminar el proceso para exportar (Estado: ". (is_null($diag->aprobado) ? 'Pendiente' : 'Reasignado') .")')" : '' }}"
+                       title="{{ $canExport ? 'Exportar Formato' : 'No disponible (Proceso incompleto)' }}">
+                        <span class="material-symbols-outlined text-lg">description</span>
+                    </a>
+
                     <a href="{{ route($prefix . '.diagnosticos.edit', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Modificar">
                         <span class="material-symbols-outlined text-lg">edit_note</span>
                     </a>
