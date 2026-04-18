@@ -4,84 +4,7 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="{ 
-    showCreateForm: true,
-    selectedProfile: null,
-    searchQuery: '',
-    viewModal: false,
-    editModal: false,
-    deleteModal: false,
-    selectedUser: null,
-    showPass: false,
-    showConfirmPass: false,
-    // Dynamic Profiles for Editor
-    perfiles: @json($perfiles),
-    modulos: @json($modulos),
-    selectedPerfil: null,
-    
-    init() {
-        // Inicializar con Administrador si existe para poblar la vista inicial
-        this.selectedPerfil = this.perfiles.find(p => p.nompef === 'Administrador') || this.perfiles[0];
-    },
-    selectPerfil(perfil) {
-        this.selectedPerfil = perfil;
-    },
-    hasPermission(moduloNom, action) {
-        if (!this.selectedPerfil) return false;
-        
-        const baseRoute = this.mapModuloToRoute(moduloNom);
-        if (!baseRoute) return false;
-
-        let targetPermission = '';
-        switch(action) {
-            case 'ver': 
-                targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
-                    ? baseRoute 
-                    : baseRoute + '.index'; 
-                break;
-            case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
-            case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
-            case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
-        }
-
-        return this.selectedPerfil.permissions.some(p => p.name === targetPermission);
-    },
-    mapModuloToRoute(nom) {
-        const map = {
-            'Dashboard': 'admin.dashboard',
-            'Diagnóstico': 'admin.diagnosticos',
-            'Vehículos': 'admin.vehiculos.index',
-            'Alertas': 'admin.alertas',
-            'Empresas': 'admin.mup.empresas',
-            'Usuarios': 'admin.mup.usuarios',
-            'Conductores': 'admin.mup.conductores',
-            'Propietarios': 'admin.mup.propietarios',
-            'Rechazados': 'admin.rechazados'
-        };
-        return map[nom] || null;
-    },
-    isReadOnly() {
-        return this.selectedPerfil && this.selectedPerfil.nompef === 'Administrador';
-    },
-    // Validation for New User
-    password: '',
-    password_confirmation: '',
-    get passwordsMatch() {
-        if (!this.password || !this.password_confirmation) return true;
-        return this.password === this.password_confirmation;
-    },
-    filterProfile(id) {
-        this.selectedProfile = id;
-    },
-    openModal(action, user) {
-        this.selectedUser = user;
-        this.showPass = false;
-        this.showConfirmPass = false;
-        if (action === 'view') this.viewModal = true;
-        if (action === 'edit') this.editModal = true;
-        if (action === 'delete') this.deleteModal = true;
-    }
-}">
+<div class="mup-container" x-data="mupEditor()">
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
@@ -94,6 +17,91 @@
             <a href="{{ route('admin.mup.usuarios') }}" class="mup-tab active">Usuario</a>
         </div>
     </header>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('mupEditor', () => ({
+                showCreateForm: true,
+                selectedProfile: null,
+                searchQuery: '',
+                viewModal: false,
+                editModal: false,
+                deleteModal: false,
+                selectedUser: null,
+                showPass: false,
+                showConfirmPass: false,
+                
+                // Dynamic Profiles for Editor
+                perfiles: @json($perfiles),
+                modulos: @json($modulos),
+                selectedPerfil: null,
+                
+                // Validation for New User
+                password: '',
+                password_confirmation: '',
+                
+                init() {
+                    // Inicializar con Administrador si existe para poblar la vista inicial
+                    this.selectedPerfil = this.perfiles.find(p => p.nompef === 'Administrador') || this.perfiles[0];
+                },
+                selectPerfil(perfil) {
+                    this.selectedPerfil = perfil;
+                },
+                hasPermission(moduloNom, action) {
+                    if (!this.selectedPerfil) return false;
+                    
+                    const baseRoute = this.mapModuloToRoute(moduloNom);
+                    if (!baseRoute) return false;
+
+                    let targetPermission = '';
+                    switch(action) {
+                        case 'ver': 
+                            targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                                ? baseRoute 
+                                : baseRoute + '.index'; 
+                            break;
+                        case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
+                        case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
+                        case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
+                    }
+
+                    return this.selectedPerfil.permissions.some(p => p.name === targetPermission);
+                },
+                mapModuloToRoute(nom) {
+                    const map = {
+                        'Dashboard': 'admin.dashboard',
+                        'Diagnóstico': 'admin.diagnosticos',
+                        'Vehículos': 'admin.vehiculos.index',
+                        'Alertas': 'admin.alertas',
+                        'Empresas': 'admin.mup.empresas',
+                        'Usuarios': 'admin.mup.usuarios',
+                        'Conductores': 'admin.mup.conductores',
+                        'Propietarios': 'admin.mup.propietarios',
+                        'Rechazados': 'admin.rechazados'
+                    };
+                    return map[nom] || null;
+                },
+                isReadOnly() {
+                    return this.selectedPerfil && this.selectedPerfil.nompef === 'Administrador';
+                },
+                get passwordsMatch() {
+                    if (!this.password || !this.password_confirmation) return true;
+                    return this.password === this.password_confirmation;
+                },
+                filterProfile(id) {
+                    this.selectedProfile = id;
+                },
+                openModal(action, user) {
+                    this.selectedUser = user;
+                    this.showPass = false;
+                    this.showConfirmPass = false;
+                    if (action === 'view') this.viewModal = true;
+                    if (action === 'edit') this.editModal = true;
+                    if (action === 'delete') this.deleteModal = true;
+                }
+            }));
+        });
+    </script>
 
     <div class="mup-content-scroll">
         {{-- SECCIÓN ALERTA GLOBAL --}}
