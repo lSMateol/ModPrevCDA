@@ -59,6 +59,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
         // Perfiles
         Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
         Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+        Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
 
         // Usuarios (Master Dash)
         Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios');

@@ -14,6 +14,55 @@
     selectedUser: null,
     showPass: false,
     showConfirmPass: false,
+    // Dynamic Profiles for Editor
+    perfiles: @json($perfiles),
+    modulos: @json($modulos),
+    selectedPerfil: null,
+    
+    init() {
+        // Inicializar con Administrador si existe para poblar la vista inicial
+        this.selectedPerfil = this.perfiles.find(p => p.nompef === 'Administrador') || this.perfiles[0];
+    },
+    selectPerfil(perfil) {
+        this.selectedPerfil = perfil;
+    },
+    hasPermission(moduloNom, action) {
+        if (!this.selectedPerfil) return false;
+        
+        const baseRoute = this.mapModuloToRoute(moduloNom);
+        if (!baseRoute) return false;
+
+        let targetPermission = '';
+        switch(action) {
+            case 'ver': 
+                targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                    ? baseRoute 
+                    : baseRoute + '.index'; 
+                break;
+            case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
+            case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
+            case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
+        }
+
+        return this.selectedPerfil.permissions.some(p => p.name === targetPermission);
+    },
+    mapModuloToRoute(nom) {
+        const map = {
+            'Dashboard': 'admin.dashboard',
+            'Diagnóstico': 'admin.diagnosticos',
+            'Vehículos': 'admin.vehiculos.index',
+            'Alertas': 'admin.alertas',
+            'Empresas': 'admin.mup.empresas',
+            'Usuarios': 'admin.mup.usuarios',
+            'Conductores': 'admin.mup.conductores',
+            'Propietarios': 'admin.mup.propietarios',
+            'Rechazados': 'admin.rechazados'
+        };
+        return map[nom] || null;
+    },
+    isReadOnly() {
+        return this.selectedPerfil && this.selectedPerfil.nompef === 'Administrador';
+    },
     // Validation for New User
     password: '',
     password_confirmation: '',
@@ -294,110 +343,132 @@
                     </div>
                 </section>
 
-                {{-- CARD: Permisos (Sidebar format) --}}
-                <section class="mup-card h-full">
-                    <div class="mup-card-body pt-8">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <div class="mup-card-title text-lg">Permisos del perfil: Administrador</div>
-                                <div class="mup-card-subtitle">Visible para superadministradores. Define qué puede hacer este perfil en cada módulo.</div>
-                            </div>
-                            <button class="text-gray-400"><iconify-icon icon="lucide:x" class="text-xl"></iconify-icon></button>
-                        </div>
-
-                        <div class="flex gap-6 border-b mb-6 text-sm font-medium">
-                            <div class="text-[#0d3b5a] border-b-2 border-[#0d3b5a] pb-2 cursor-pointer">Módulos</div>
-                            <div class="text-gray-400 pb-2 cursor-pointer">Resumen</div>
-                        </div>
-
-                        <div class="space-y-4">
-                            @php
-                                $modulosPerm = ['Dashboard', 'Vehículos', 'Actores', 'Diagnóstico', 'Detalle diagnóstico', 'Rechazados', 'Historial', 'Alertas'];
-                            @endphp
-                            <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase mb-2">
-                                <div class="col-span-1">Módulo</div>
-                                <div class="text-center">Ver</div>
-                                <div class="text-center">Crear</div>
-                                <div class="text-center">Edit</div>
-                                <div class="text-center">Elim</div>
-                            </div>
-                            @foreach($modulosPerm as $mod)
-                            <div class="grid grid-cols-5 py-3 border-t items-center">
-                                <div class="text-sm font-medium">{{ $mod }}</div>
-                                <div class="flex justify-center"><iconify-icon icon="lucide:check" class="text-white bg-[#0d3b5a] rounded p-0.5 text-[10px]"></iconify-icon></div>
-                                <div class="text-center">
-                                    @if(in_array($mod, ['Vehículos', 'Actores', 'Diagnóstico', 'Detalle diagnóstico', 'Alertas']))
-                                        <iconify-icon icon="lucide:check" class="text-white bg-[#0d3b5a] rounded p-0.5 text-[10px]"></iconify-icon>
-                                    @else
-                                        <span class="text-gray-300">-</span>
-                                    @endif
+                <div class="lg:col-span-1">
+                <section class="mup-card sticky top-6 shadow-xl border-[#0d3b5a]/10" x-show="selectedPerfil" x-transition>
+                    <form :action="'{{ url('admin/entidades/mup/perfil') }}/' + selectedPerfil.idpef" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="mup-card-body pt-7">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <div class="mup-card-title text-lg" x-text="'Permisos del perfil: ' + selectedPerfil.nompef"></div>
+                                    <div class="mup-card-subtitle" x-text="isReadOnly() ? 'Este perfil es de sistema y no debe ser modificado.' : 'Define qué puede hacer este perfil en cada módulo.'"></div>
                                 </div>
-                                <div class="text-center">
-                                    @if(in_array($mod, ['Vehículos', 'Actores', 'Diagnóstico', 'Detalle diagnóstico']))
-                                        <iconify-icon icon="lucide:check" class="text-white bg-[#0d3b5a] rounded p-0.5 text-[10px]"></iconify-icon>
-                                    @else
-                                        <span class="text-gray-300">-</span>
-                                    @endif
-                                </div>
-                                <div class="text-center text-gray-300">
-                                    @if(in_array($mod, ['Vehículos', 'Actores', 'Diagnóstico', 'Detalle diagnóstico']))
-                                        <div class="w-4 h-4 rounded border border-gray-200 mx-auto"></div>
-                                    @else
-                                        -
-                                    @endif
-                                </div>
+                                <button type="button" @click="selectedPerfil = null" class="text-gray-400"><iconify-icon icon="lucide:x" class="text-xl"></iconify-icon></button>
                             </div>
-                            @endforeach
-                        </div>
 
-                        <div class="mt-8 flex justify-end gap-3 pt-6 border-t">
-                            <button class="mup-btn mup-btn-outline">Cancelar</button>
-                            <button class="mup-btn mup-btn-primary">Guardar cambios</button>
+                            <div class="flex gap-6 border-b mb-6 text-sm font-medium">
+                                <div class="text-[#0d3b5a] border-b-2 border-[#0d3b5a] pb-2 cursor-pointer">Módulos</div>
+                                <div class="text-gray-400 pb-2 cursor-pointer">Resumen</div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase mb-2">
+                                    <div class="col-span-1">Módulo</div>
+                                    <div class="text-center">Ver</div>
+                                    <div class="text-center">Crear</div>
+                                    <div class="text-center">Edit</div>
+                                    <div class="text-center">Elim</div>
+                                </div>
+
+                                <template x-for="mod in modulos" :key="mod.idpag">
+                                    <div class="grid grid-cols-5 py-3 border-t items-center hover:bg-gray-50 transition-colors">
+                                        <div class="text-sm font-medium text-gray-700" x-text="mod.nompag"></div>
+                                        
+                                        <!-- VER -->
+                                        <div class="flex justify-center">
+                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][ver]'" 
+                                                :checked="hasPermission(mod.nompag, 'ver')"
+                                                :disabled="isReadOnly()"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                        </div>
+
+                                        <!-- CREAR -->
+                                        <div class="flex justify-center">
+                                            <template x-if="!['Dashboard', 'Rechazados', 'Historial'].includes(mod.nompag)">
+                                                <input type="checkbox" :name="'permisos[' + mod.nompag + '][crear]'" 
+                                                    :checked="hasPermission(mod.nompag, 'crear')"
+                                                    :disabled="isReadOnly()"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                            </template>
+                                            <template x-if="['Dashboard', 'Rechazados', 'Historial'].includes(mod.nompag)">
+                                                <span class="text-gray-200 text-xs">-</span>
+                                            </template>
+                                        </div>
+
+                                        <!-- EDITAR -->
+                                        <div class="flex justify-center">
+                                            <template x-if="!['Dashboard', 'Alertas'].includes(mod.nompag)">
+                                                <input type="checkbox" :name="'permisos[' + mod.nompag + '][editar]'" 
+                                                    :checked="hasPermission(mod.nompag, 'editar')"
+                                                    :disabled="isReadOnly()"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                            </template>
+                                            <template x-if="['Dashboard', 'Alertas'].includes(mod.nompag)">
+                                                <span class="text-gray-200 text-xs">-</span>
+                                            </template>
+                                        </div>
+
+                                        <!-- ELIMINAR -->
+                                        <div class="flex justify-center">
+                                            <template x-if="['Usuarios', 'Conductores', 'Propietarios', 'Empresas', 'Vehículos'].includes(mod.nompag)">
+                                                <input type="checkbox" :name="'permisos[' + mod.nompag + '][eliminar]'" 
+                                                    :checked="hasPermission(mod.nompag, 'eliminar')"
+                                                    :disabled="isReadOnly()"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                            </template>
+                                            <template x-if="!['Usuarios', 'Conductores', 'Propietarios', 'Empresas', 'Vehículos'].includes(mod.nompag)">
+                                                <span class="text-gray-200 text-xs">-</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="mt-8 flex justify-end gap-3 pt-6 border-t" x-show="!isReadOnly()">
+                                <button type="button" @click="selectedPerfil = null" class="mup-btn mup-btn-outline">Cancelar</button>
+                                <button type="submit" class="mup-btn mup-btn-primary">Guardar cambios</button>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </section>
             </div>
+        </div>
 
-            {{-- SECCIÓN: Consulta dinámica de perfiles --}}
-            <section class="mup-card">
-                <div class="mup-card-header-plain">
-                    <div>
-                        <div class="mup-card-title">Consulta dinámica de perfiles</div>
-                        <div class="mup-card-subtitle">Visualiza, filtra y exporta todos los roles activos del sistema. Se elimina el rol de auditor por empresa.</div>
-                    </div>
-                    <a href="{{ route('admin.mup.perfil.nuevo') }}" class="mup-btn mup-btn-primary h-10">
-                        <iconify-icon icon="lucide:plus"></iconify-icon>
-                        Nuevo perfil
-                    </a>
+        {{-- SECCIÓN: Consulta dinámica de perfiles --}}
+        <section class="mup-card pb-10">
+            <div class="mup-card-header-plain">
+                <div>
+                    <div class="mup-card-title">Consulta dinámica de perfiles</div>
+                    <div class="mup-card-subtitle">Visualiza y gestiona los permisos de los roles activos del sistema.</div>
                 </div>
-                <div class="mup-card-body">
-                    <div class="flex gap-3 mb-6 flex-wrap">
-                        <button class="px-4 py-2 rounded-full text-sm font-bold bg-[#0d3b5a] text-white">Todos</button>
-                        <button class="px-4 py-2 rounded-full text-sm font-bold bg-[#f1f7fb] text-[#0d3b5a]">Administrativos</button>
-                        <button class="px-4 py-2 rounded-full text-sm font-bold bg-[#f1f7fb] text-[#0d3b5a]">Operativos</button>
-                        <button class="px-4 py-2 rounded-full text-sm font-bold bg-[#f1f7fb] text-[#0d3b5a]">Externos</button>
-                        <button class="px-4 py-2 rounded-full text-sm font-bold bg-[#f1f7fb] text-[#0d3b5a]">Activos</button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        @foreach($perfiles as $perf)
-                        <div class="bg-gray-50 border rounded-xl p-5 flex flex-col gap-4">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="font-bold text-gray-800">{{ $perf->nompef }}</div>
-                                    <div class="text-xs text-gray-500 mt-1 line-clamp-2">
-                                        {{ $perf->des_pef ?? 'Perfil configurado para la operación del CDA.' }}
-                                    </div>
+                <a href="{{ route('admin.mup.perfil.nuevo') }}" class="mup-btn mup-btn-primary h-10">
+                    <iconify-icon icon="lucide:plus"></iconify-icon>
+                    Nuevo perfil
+                </a>
+            </div>
+            <div class="mup-card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @foreach($perfiles as $perf)
+                    <div @click="selectPerfil({{ $perf }})" 
+                        class="border rounded-xl p-5 flex flex-col gap-4 cursor-pointer transition-all hover:shadow-md"
+                        :class="selectedPerfil && selectedPerfil.idpef == {{ $perf->idpef }} ? 'border-[#0d3b5a] bg-blue-50/50 ring-2 ring-[#0d3b5a]/10' : 'bg-gray-50 border-gray-200'">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-bold text-gray-800">{{ $perf->nompef }}</div>
+                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">
+                                    {{ $perf->des_pef ?? 'Perfil configurado para la operación del CDA.' }}
                                 </div>
-                                <div class="text-lg font-bold text-[#0d3b5a]">{{ $perf->personas_count }}</div>
                             </div>
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold">Activo</span>
-                                <span class="text-gray-400 font-bold">8 módulos</span>
-                            </div>
+                            <div class="text-lg font-bold text-[#0d3b5a]">{{ $perf->personas_count }}</div>
                         </div>
-                        @endforeach
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold">Activo</span>
+                            <span class="text-gray-400 font-bold">{{ $perf->permissions->count() }} permisos</span>
+                        </div>
                     </div>
+                    @endforeach
+                </div>
 
                     <div class="mt-8 flex justify-between items-center text-xs text-gray-400 border-t pt-4">
                         <div>Consulta dinámica con todos los perfiles visibles del sistema</div>

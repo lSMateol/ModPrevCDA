@@ -170,6 +170,74 @@ class MupController extends Controller
     }
 
     /**
+     * Update an existing profile and its permissions.
+     */
+    public function updatePerfil(Request $request, $id)
+    {
+        $perfil = Perfil::findOrFail($id);
+        
+        $request->validate([
+            'nompef' => 'required|string|max:255|unique:perfil,nompef,' . $id . ',idpef',
+            'des_pef' => 'nullable|string',
+            'permisos' => 'nullable|array',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Actualizar Perfil interno
+            $perfil->update([
+                'nompef' => $request->nompef,
+                'des_pef' => $request->des_pef,
+            ]);
+
+            // 2. Sincronizar con Role de Spatie
+            $role = Role::firstOrCreate(['name' => $request->nompef]);
+            
+            // Si el nombre del perfil cambió, el rol viejo debe ser manejado, 
+            // pero Spatie usualmente identifica roles por nombre único.
+            // Para simplicidad en este MVP, asumiremos que si cambia el nombre, se actualiza el rol.
+            if ($role->name !== $request->nompef) {
+                $role->update(['name' => $request->nompef]);
+            }
+
+            // 3. Limpiar y Reasignar Permisos Basados en Rutas
+            $role->syncPermissions([]); // Limpiar todo para reasignar fresco
+
+            if ($request->has('permisos')) {
+                foreach ($request->permisos as $nompag => $actions) {
+                    $baseRoute = $this->mapPaginaToRoute($nompag);
+                    if (!$baseRoute) continue;
+
+                    foreach ($actions as $action => $status) {
+                        if ($status === 'on') {
+                            $routeNames = $this->getRouteNamesForAction($baseRoute, $action);
+                            foreach ($routeNames as $rn) {
+                                $permission = Permission::firstOrCreate(['name' => $rn]);
+                                $role->givePermissionTo($permission);
+                            }
+                        }
+                    }
+                }
+
+                // 4. Sincronizar páginas para menú
+                $paginasIds = Pagina::whereIn('nompag', array_keys($request->permisos))->pluck('idpag');
+                $perfil->paginas()->sync($paginasIds);
+            } else {
+                $perfil->paginas()->detach();
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Perfil "' . $perfil->nompef . '" actualizado correctamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando perfil: " . $e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo actualizar el perfil: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Display the Users (MUP) main dashbaord.
      */
     public function usuarios()
@@ -179,14 +247,19 @@ class MupController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        // 2. Perfiles con conteo de personas (para las tarjetas de insight)
-        $perfiles = Perfil::withCount('personas')->get();
+        // 2. Perfiles con conteo de personas y permisos cargados para el editor dinámico
+        $perfiles = Perfil::withCount('personas')
+            ->with(['paginas', 'permissions']) // Cargamos relaciones para el editor
+            ->orderBy('idpef')
+            ->get();
+
+        $modulos = Pagina::orderBy('ordpag')->get();
 
         // 3. Combos para el formulario
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $empresas = Empresa::orderBy('razsoem')->get();
 
-        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'modulos', 'tiposDoc', 'empresas'));
     }
 
     /**
