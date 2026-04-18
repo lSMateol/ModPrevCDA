@@ -129,15 +129,25 @@ class MupController extends Controller
             // 2. Crear Role de Spatie
             $role = Role::firstOrCreate(['name' => $request->nompef]);
 
-            // 3. Procesar Permisos
+            // 3. Procesar Permisos con Mapeo de Rutas
             if ($request->has('permisos')) {
-                foreach ($request->permisos as $modulo => $actions) {
-                    // $actions es un array como ['ver' => 'on', 'crear' => 'on']
+                foreach ($request->permisos as $nompag => $actions) {
+                    $pagina = Pagina::where('nompag', $nompag)->first();
+                    if (!$pagina) continue;
+
+                    // Obtener el prefijo de la ruta base (ej: admin.mup.usuarios)
+                    // Usaremos un mapeo manual para mayor precisión por ahora
+                    $baseRoute = $this->mapPaginaToRoute($nompag);
+                    if (!$baseRoute) continue;
+
                     foreach ($actions as $action => $status) {
                         if ($status === 'on') {
-                            $permissionName = strtolower(str_replace(' ', '_', $modulo)) . "." . $action;
-                            $permission = Permission::firstOrCreate(['name' => $permissionName]);
-                            $role->givePermissionTo($permission);
+                            $routeNames = $this->getRouteNamesForAction($baseRoute, $action);
+                            
+                            foreach ($routeNames as $rn) {
+                                $permission = Permission::firstOrCreate(['name' => $rn]);
+                                $role->givePermissionTo($permission);
+                            }
                         }
                     }
                 }
@@ -493,6 +503,60 @@ class MupController extends Controller
             DB::rollBack();
             Log::error("Error eliminando usuario: " . $e->getMessage());
             return redirect()->back()->with('error', 'Error al eliminar usuario: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Mapea el nombre de la página (Módulo) al nombre base de la ruta en web.php
+     */
+    private function mapPaginaToRoute($nompag)
+    {
+        $map = [
+            'Dashboard'   => 'admin.dashboard',
+            'Diagnóstico' => 'admin.diagnosticos',
+            'Vehículos'   => 'admin.vehiculos.index', // Se agregará el nombre .index base
+            'Alertas'     => 'admin.alertas',
+            'Empresas'    => 'admin.mup.empresas',
+            'Usuarios'    => 'admin.mup.usuarios',
+            'Conductores' => 'admin.mup.conductores',
+            'Propietarios'=> 'admin.mup.propietarios',
+            'Rechazados'  => 'admin.rechazados',
+        ];
+
+        return $map[$nompag] ?? null;
+    }
+
+    /**
+     * Retorna los nombres de rutas específicos para una acción CRUD
+     */
+    private function getRouteNamesForAction($baseRoute, $action)
+    {
+        switch ($action) {
+            case 'ver':
+                // Algunas rutas son directas (admin.alertas), otras son recursos (admin.usuarios.index)
+                if (in_array($baseRoute, ['admin.dashboard', 'admin.alertas', 'admin.rechazados'])) {
+                    return [$baseRoute];
+                }
+                // Si ya termina en .index, devolverla
+                if (str_ends_with($baseRoute, '.index')) {
+                    return [$baseRoute, str_replace('.index', '.show', $baseRoute)];
+                }
+                return [$baseRoute . '.index', $baseRoute . '.show'];
+            
+            case 'crear':
+                $base = str_replace('.index', '', $baseRoute);
+                return [$base . '.create', $base . '.store'];
+            
+            case 'editar':
+                $base = str_replace('.index', '', $baseRoute);
+                return [$base . '.edit', $base . '.update'];
+            
+            case 'eliminar':
+                $base = str_replace('.index', '', $baseRoute);
+                return [$base . '.destroy'];
+            
+            default:
+                return [];
         }
     }
 }

@@ -25,10 +25,9 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// RUTAS ADMINISTRADOR (Acceso Total + Control de Rutas)
 // ==========================================
-// RUTAS ADMINISTRADOR (Acceso Total)
-// ==========================================
-Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard'); 
     })->name('dashboard');
@@ -88,10 +87,9 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
+// RUTAS DIGITADOR (Operativo + Control de Rutas)
 // ==========================================
-// RUTAS DIGITADOR (Operativo)
-// ==========================================
-Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digitador.')->group(function () {
+Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador')->name('digitador.')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard'); 
     })->name('dashboard');
@@ -125,10 +123,9 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
 });
 
+// RUTAS EMPRESA (Restringido + Control de Rutas)
 // ==========================================
-// RUTAS EMPRESA (Restringido)
-// ==========================================
-Route::middleware(['auth', 'role:Empresa'])->prefix('empresa')->name('empresa.')->group(function () {
+Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->name('empresa.')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard'); 
     })->name('dashboard');
