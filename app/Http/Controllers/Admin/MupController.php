@@ -247,11 +247,18 @@ class MupController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        // 2. Perfiles con conteo de personas y permisos cargados para el editor dinámico
-        $perfiles = Perfil::withCount('personas')
-            ->with(['paginas', 'permissions']) // Cargamos relaciones para el editor
+        // 2. Perfiles con conteo de personas y sus permisos (Spatie) cargados manualmente
+        $perfilesRaw = Perfil::withCount('personas')
+            ->with(['paginas'])
             ->orderBy('idpef')
             ->get();
+
+        // Mapeamos los permisos de Spatie a cada perfil para que el editor los reconozca
+        $perfiles = $perfilesRaw->map(function($p) {
+            $role = \Spatie\Permission\Models\Role::where('name', $p->nompef)->first();
+            $p->permissions = $role ? $role->permissions : collect();
+            return $p;
+        });
 
         $modulos = Pagina::orderBy('ordpag')->get();
 
