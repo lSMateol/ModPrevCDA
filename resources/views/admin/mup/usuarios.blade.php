@@ -510,7 +510,7 @@
                         </div>
                         <div class="flex justify-between items-center text-xs">
                             <span class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold">Activo</span>
-                            <span class="text-gray-400 font-bold">{{ $perf->permissions->count() }} permisos</span>
+                            <span class="text-gray-400 font-bold">{{ count($perf->permission_names ?? []) }} permisos</span>
                         </div>
                     </div>
                     @endforeach
