@@ -48,7 +48,7 @@
                     this.selectedPerfil = perfil;
                 },
                 hasPermission(moduloNom, action) {
-                    if (!this.selectedPerfil) return false;
+                    if (!this.selectedPerfil || !this.selectedPerfil.permission_names) return false;
                     
                     const baseRoute = this.mapModuloToRoute(moduloNom);
                     if (!baseRoute) return false;
@@ -65,7 +65,7 @@
                         case 'eliminar': representativePermission = baseRoute + '.destroy'; break;
                     }
 
-                    return this.selectedPerfil.permissions.some(p => p.name === representativePermission);
+                    return this.selectedPerfil.permission_names.includes(representativePermission);
                 },
                 mapModuloToRoute(nom) {
                     const map = {
@@ -88,7 +88,7 @@
                     return this.selectedPerfil && this.selectedPerfil.nompef === 'Administrador';
                 },
                 togglePermission(moduloNom, action) {
-                    if (!this.selectedPerfil) return;
+                    if (!this.selectedPerfil || !this.selectedPerfil.permission_names) return;
                     
                     const baseRoute = this.mapModuloToRoute(moduloNom);
                     if (!baseRoute) return;
@@ -107,16 +107,16 @@
 
                     // Para el UI, nos basta comprobar el primero (el representativo)
                     const representative = routesToAdd[0];
-                    const exists = this.selectedPerfil.permissions.some(p => p.name === representative);
+                    const exists = this.selectedPerfil.permission_names.includes(representative);
 
                     if (exists) {
                         // Quitar todos los relacionados
-                        this.selectedPerfil.permissions = this.selectedPerfil.permissions.filter(p => !routesToAdd.includes(p.name));
+                        this.selectedPerfil.permission_names = this.selectedPerfil.permission_names.filter(p => !routesToAdd.includes(p));
                     } else {
                         // Agregar todos los relacionados
                         routesToAdd.forEach(r => {
-                            if (!this.selectedPerfil.permissions.some(p => p.name === r)) {
-                                this.selectedPerfil.permissions.push({ name: r });
+                            if (!this.selectedPerfil.permission_names.includes(r)) {
+                                this.selectedPerfil.permission_names.push(r);
                             }
                         });
                     }

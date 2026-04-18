@@ -256,7 +256,8 @@ class MupController extends Controller
         // Mapeamos los permisos de Spatie a cada perfil para que el editor los reconozca
         $perfiles = $perfilesRaw->map(function($p) {
             $role = \Spatie\Permission\Models\Role::where('name', $p->nompef)->first();
-            $p->permissions = $role ? $role->permissions : collect();
+            // Inyectamos solo los nombres en un array plano para el frontend
+            $p->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
             return $p;
         });
 
