@@ -91,6 +91,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
 
     // Vehículos por Empresa
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
     Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
@@ -139,6 +140,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
 
     // Vehículos por Empresa
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
     Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
@@ -159,8 +161,12 @@ Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->
 
     // Vehículos por Empresa (solo lectura)
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+
+    // Exportar diagnósticos individuales (lectura)
+    Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');

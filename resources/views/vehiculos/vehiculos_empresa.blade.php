@@ -65,20 +65,96 @@
         /* ──── Filtros Reporte ──── */
         fechaInicio: '',
         fechaFin: '',
+        reporteQuickMes: '',
+        reporteQuickAnio: '',
+
+        setQuickMes(mes) {
+            this.reporteQuickMes = mes;
+            if (!mes) { this.fechaInicio = ''; this.fechaFin = ''; return; }
+            const anio = this.reporteQuickAnio || new Date().getFullYear();
+            const m = String(mes).padStart(2, '0');
+            const lastDay = new Date(anio, mes, 0).getDate();
+            this.fechaInicio = `${anio}-${m}-01`;
+            this.fechaFin = `${anio}-${m}-${String(lastDay).padStart(2,'0')}`;
+        },
+        setQuickAnio(anio) {
+            this.reporteQuickAnio = anio;
+            if (!anio) { this.fechaInicio = ''; this.fechaFin = ''; this.reporteQuickMes = ''; return; }
+            if (this.reporteQuickMes) {
+                this.setQuickMes(this.reporteQuickMes);
+            } else {
+                this.fechaInicio = `${anio}-01-01`;
+                this.fechaFin = `${anio}-12-31`;
+            }
+        },
+        clearReporteFilters() {
+            this.fechaInicio = '';
+            this.fechaFin = '';
+            this.reporteQuickMes = '';
+            this.reporteQuickAnio = '';
+        },
+
         get reportesFiltrados() {
             if (!this.detailData || !this.detailData.reporte_flota) return [];
             let r = this.detailData.reporte_flota;
             if (this.fechaInicio) {
-                const fIni = new Date(this.fechaInicio);
-                fIni.setHours(0,0,0,0);
+                const fIni = new Date(this.fechaInicio + 'T00:00:00');
                 r = r.filter(x => new Date(x.fecdia) >= fIni);
             }
             if (this.fechaFin) {
-                const fFin = new Date(this.fechaFin);
-                fFin.setHours(23,59,59,999);
+                const fFin = new Date(this.fechaFin + 'T23:59:59');
                 r = r.filter(x => new Date(x.fecdia) <= fFin);
             }
             return r;
+        },
+        get reporteResumen() {
+            const r = this.reportesFiltrados;
+            return {
+                total: r.length,
+                aprobados: r.filter(x => x.aprobado === 1).length,
+                noAprobados: r.filter(x => x.aprobado === 0).length,
+            };
+        },
+        get reporteAniosDisponibles() {
+            if (!this.detailData || !this.detailData.reporte_flota) return [];
+            const years = new Set(this.detailData.reporte_flota.map(d => new Date(d.fecdia).getFullYear()));
+            return Array.from(years).sort((a,b) => b - a);
+        },
+        paramResumen(diag) {
+            if (!diag.parametros || diag.parametros.length === 0) return 'Sin parámetros';
+            const total = diag.parametros.length;
+            let fallos = 0;
+            diag.parametros.forEach(p => {
+                const meta = p.parametro;
+                if (!meta) return;
+                if (meta.control === 'radio' && (p.valor === 'no' || p.valor === 'no_funciona')) fallos++;
+                if (meta.control === 'number' && meta.rini !== null && meta.rfin !== null) {
+                    if (parseFloat(p.valor) < parseFloat(meta.rini) || parseFloat(p.valor) > parseFloat(meta.rfin)) fallos++;
+                }
+            });
+            if (fallos === 0) return total + ' parámetros — Todo OK';
+            return total + ' parámetros — ' + fallos + ' observación(es)';
+        },
+        canExportDiag(rep) {
+            if (rep.aprobado === null) return false;
+            if (rep.rechazo && rep.rechazo.estadorec === 'Reasignado') return false;
+            return true;
+        },
+        exportUrl(diagId) {
+            const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+            return '/' + prefix + '/diagnosticos/' + diagId + '/export';
+        },
+        exportarFlota() {
+            const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+            const empresaId = this.selectedVehiculo?.empresa?.idemp;
+            if (!empresaId) return;
+            let url = '/' + prefix + '/vehiculos-empresa/export-flota?empresa_id=' + empresaId;
+            if (this.fechaInicio) url += '&fecha_inicio=' + this.fechaInicio;
+            if (this.fechaFin) url += '&fecha_fin=' + this.fechaFin;
+            window.open(url, '_blank');
+        },
+        get reportesExportables() {
+            return this.reportesFiltrados.filter(r => this.canExportDiag(r));
         },
 
         /* ──── Edición de empresa (Admin/Digitador) ──── */
@@ -1351,98 +1427,231 @@
         {{-- VISTA 3: REPORTE DE FLOTA               --}}
         {{-- ═══════════════════════════════════════ --}}
         <div x-show="activeView === 'reporte'" style="display: none;">
-            <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
-                    <div>
-                        <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 6px 0;">
-                            <i class="fa-solid fa-chart-line" style="color: #0b1f38; margin-right: 8px;"></i>
-                            Reporte de Diagnósticos: <span x-text="selectedVehiculo?.empresa?.razsoem || 'General'"></span>
+            <style>
+                .rf-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+                .rf-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; gap: 12px; }
+                .rf-header-left h2 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px; }
+                .rf-header-left p { font-size: 13px; color: #6b7280; margin: 0; }
+                .rf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+                .rf-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: 0.2s; white-space: nowrap; }
+                .rf-btn-outline { background: transparent; border-color: #d1d5db; color: #374151; }
+                .rf-btn-outline:hover { background: #f9fafb; border-color: #9ca3af; }
+                .rf-btn-primary { background: #0b3a5a; color: #fff; border-color: #0b3a5a; }
+                .rf-btn-primary:hover { background: #082d46; }
+                .rf-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+                .rf-filters { padding: 16px 24px; background: #f9fafb; border-bottom: 1px solid #f3f4f6; }
+                .rf-filters-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+                .rf-filters-row + .rf-filters-row { margin-top: 10px; }
+                .rf-filters label { font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 2px; display: block; }
+                .rf-select { height: 34px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 28px 0 10px; font-size: 13px; background: #fff; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 8px center; background-size: 14px; }
+                .rf-select:focus { border-color: #0b3a5a; }
+                .rf-input-date { height: 34px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; font-family: inherit; outline: none; }
+                .rf-input-date:focus { border-color: #0b3a5a; }
+                .rf-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 24px; }
+                .rf-summary-card { padding: 14px; border-radius: 8px; text-align: center; }
+                .rf-summary-card .num { font-size: 24px; font-weight: 700; line-height: 1.2; }
+                .rf-summary-card .lbl { font-size: 11px; font-weight: 500; margin-top: 2px; }
+                .rf-summary-card.total { background: #eff6ff; border: 1px solid #bfdbfe; }
+                .rf-summary-card.total .num { color: #1d4ed8; }
+                .rf-summary-card.total .lbl { color: #1e40af; }
+                .rf-summary-card.ok { background: #f0fdf4; border: 1px solid #bbf7d0; }
+                .rf-summary-card.ok .num { color: #15803d; }
+                .rf-summary-card.ok .lbl { color: #166534; }
+                .rf-summary-card.fail { background: #fef2f2; border: 1px solid #fecaca; }
+                .rf-summary-card.fail .num { color: #dc2626; }
+                .rf-summary-card.fail .lbl { color: #991b1b; }
+                .rf-table-wrap { overflow-x: auto; }
+                .rf-table { width: 100%; border-collapse: collapse; }
+                .rf-table th { padding: 10px 16px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; white-space: nowrap; text-align: left; }
+                .rf-table td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+                .rf-table tbody tr:hover { background: #f9fafb; }
+                .rf-table .plate-badge { background: #f3f4f6; color: #111827; border: 1px solid #e5e7eb; padding: 3px 7px; border-radius: 5px; font-weight: 600; font-family: monospace; font-size: 12px; display: inline-block; }
+                .rf-table .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+                .rf-table .badge.success { background: #dcfce7; color: #15803d; }
+                .rf-table .badge.danger { background: #fef2f2; color: #dc2626; }
+                .rf-table .badge.warning { background: #fef3c7; color: #92400e; }
+                .rf-table .badge.inactive { background: #f3f4f6; color: #6b7280; }
+                .rf-informe-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; transition: 0.15s; }
+                .rf-informe-btn.enabled { background: #eff6ff; color: #1d4ed8; }
+                .rf-informe-btn.enabled:hover { background: #dbeafe; color: #1e40af; }
+                .rf-informe-btn.disabled { background: #f3f4f6; color: #d1d5db; cursor: not-allowed; }
+                .rf-footer { padding: 12px 24px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+                .rf-footer span { font-size: 12px; color: #9ca3af; }
+                .rf-clear-btn { font-size: 12px; color: #6b7280; background: none; border: 1px solid #e5e7eb; border-radius: 5px; padding: 4px 10px; cursor: pointer; }
+                .rf-clear-btn:hover { background: #f3f4f6; }
+                @media (max-width: 768px) {
+                    .rf-summary { grid-template-columns: 1fr; }
+                    .rf-header { flex-direction: column; align-items: stretch; }
+                    .rf-actions { justify-content: flex-end; }
+                }
+            </style>
+
+            <div class="rf-card">
+                {{-- Header --}}
+                <div class="rf-header">
+                    <div class="rf-header-left">
+                        <h2>
+                            <i class="fa-solid fa-chart-line" style="color: #0b3a5a;"></i>
+                            Reporte de Diagnósticos
                         </h2>
-                        <p style="font-size: 14px; color: #6b7280; margin: 0;">Historial completo de diagnósticos realizados a los vehículos de esta empresa.</p>
+                        <p>
+                            <i class="fa-solid fa-building" style="margin-right: 3px;"></i>
+                            <strong x-text="selectedVehiculo?.empresa?.razsoem || ''"></strong>
+                            <span x-show="selectedVehiculo?.empresa?.nonitem"> — NIT: <span x-text="selectedVehiculo.empresa.nonitem"></span></span>
+                        </p>
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button @click="activeView = 'perfil'" class="vbtn vbtn-outline" style="border-color: #d1d5db;">
-                            <i class="fa-solid fa-arrow-left"></i> Volver a Perfil
+                    <div class="rf-actions">
+                        <button @click="activeView = 'perfil'" class="rf-btn rf-btn-outline">
+                            <i class="fa-solid fa-arrow-left"></i> Perfil
                         </button>
-                        <button class="vbtn vbtn-outline" onclick="window.print()">
-                            <i class="fa-solid fa-print"></i> Imprimir / PDF
+                        <button class="rf-btn rf-btn-primary" @click="exportarFlota()" :disabled="reportesExportables.length === 0">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <span x-text="reportesExportables.length > 0 ? 'Imprimir / PDF (' + reportesExportables.length + ')' : 'Sin informes'"></span>
                         </button>
                     </div>
                 </div>
 
                 <template x-if="detailLoading">
                     <div style="text-align: center; padding: 48px; color: #9ca3af;">
-                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: #0b1f38; margin-bottom: 12px;"></i>
-                        <p>Cargando reportes...</p>
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; color: #0b1f38;"></i>
+                        <p style="margin-top: 8px;">Cargando reportes...</p>
                     </div>
                 </template>
 
                 <template x-if="!detailLoading && (!detailData || !detailData.reporte_flota || detailData.reporte_flota.length === 0)">
-                    <div style="text-align: center; padding: 48px; background: #f9fafb; border-radius: 8px; border: 1px dashed #e5e7eb;">
-                        <i class="fa-solid fa-clipboard-list" style="font-size: 32px; color: #9ca3af; margin-bottom: 16px;"></i>
-                        <p style="font-size: 14px; color: #6b7280; margin: 0;">No se encontraron diagnósticos registrados para esta empresa.</p>
+                    <div style="text-align: center; padding: 48px;">
+                        <i class="fa-solid fa-clipboard-list" style="font-size: 32px; color: #d1d5db; margin-bottom: 12px;"></i>
+                        <p style="font-size: 14px; color: #6b7280; margin: 0;">No se encontraron diagnósticos finalizados para esta empresa.</p>
                     </div>
                 </template>
 
                 <template x-if="!detailLoading && detailData && detailData.reporte_flota && detailData.reporte_flota.length > 0">
                     <div>
-                        <!-- FILTROS DE REPORTE -->
-                        <div style="display: flex; gap: 16px; margin-bottom: 24px; align-items: flex-end; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <label style="font-size: 13px; font-weight: 600; color: #4b5563;">Desde (<span style="font-weight: normal">Mes/Año/Día</span>)</label>
-                                <input type="date" x-model="fechaInicio" style="height: 38px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 12px; font-size: 14px;">
+                        {{-- Filtros --}}
+                        <div class="rf-filters">
+                            <div class="rf-filters-row">
+                                <span style="font-size: 12px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Rápido:
+                                </span>
+                                <select x-model="reporteQuickAnio" @change="setQuickAnio($event.target.value)" class="rf-select">
+                                    <option value="">Año</option>
+                                    <template x-for="y in reporteAniosDisponibles" :key="y">
+                                        <option :value="y" x-text="y"></option>
+                                    </template>
+                                </select>
+                                <select x-model="reporteQuickMes" @change="setQuickMes($event.target.value)" class="rf-select">
+                                    <option value="">Mes</option>
+                                    <option value="1">Ene</option><option value="2">Feb</option><option value="3">Mar</option>
+                                    <option value="4">Abr</option><option value="5">May</option><option value="6">Jun</option>
+                                    <option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option>
+                                    <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
+                                </select>
+
+                                <span style="color: #d1d5db; margin: 0 4px;">|</span>
+
+                                <div style="display: flex; flex-direction: column;">
+                                    <label>Desde</label>
+                                    <input type="date" x-model="fechaInicio" @change="reporteQuickMes = ''; reporteQuickAnio = '';" class="rf-input-date">
+                                </div>
+                                <div style="display: flex; flex-direction: column;">
+                                    <label>Hasta</label>
+                                    <input type="date" x-model="fechaFin" @change="reporteQuickMes = ''; reporteQuickAnio = '';" class="rf-input-date">
+                                </div>
+
+                                <button class="rf-clear-btn" @click="clearReporteFilters()" x-show="fechaInicio || fechaFin" style="align-self: flex-end;">
+                                    <i class="fa-solid fa-xmark"></i> Limpiar
+                                </button>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <label style="font-size: 13px; font-weight: 600; color: #4b5563;">Hasta</label>
-                                <input type="date" x-model="fechaFin" style="height: 38px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 12px; font-size: 14px;">
-                            </div>
-                            <button class="vbtn vbtn-outline" @click="fechaInicio = ''; fechaFin = '';" style="height: 38px;" x-show="fechaInicio || fechaFin">
-                                <i class="fa-solid fa-xmark"></i> Limpiar Fechas
-                            </button>
                         </div>
-                    
+
+                        {{-- Summary Cards --}}
+                        <div class="rf-summary" x-show="reportesFiltrados.length > 0">
+                            <div class="rf-summary-card total">
+                                <div class="num" x-text="reporteResumen.total"></div>
+                                <div class="lbl">Total Diagnósticos</div>
+                            </div>
+                            <div class="rf-summary-card ok">
+                                <div class="num" x-text="reporteResumen.aprobados"></div>
+                                <div class="lbl">Aprobados</div>
+                            </div>
+                            <div class="rf-summary-card fail">
+                                <div class="num" x-text="reporteResumen.noAprobados"></div>
+                                <div class="lbl">No Aprobados</div>
+                            </div>
+                        </div>
+
+                        {{-- Empty state filtrado --}}
                         <template x-if="reportesFiltrados.length === 0">
-                            <div style="text-align: center; padding: 32px; background: #fafafa; border-radius: 8px; border: 1px dashed #e5e7eb; color: #6b7280;">
-                                No hay diagnósticos en este rango de fechas.
+                            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                                <i class="fa-solid fa-filter-circle-xmark" style="font-size: 24px; opacity: 0.3; margin-bottom: 8px; display: block;"></i>
+                                No hay diagnósticos en el rango seleccionado.
                             </div>
                         </template>
 
-                        <div style="overflow-x: auto;" x-show="reportesFiltrados.length > 0">
-                            <table class="data-table" style="width: 100%;">
+                        {{-- Table --}}
+                        <div class="rf-table-wrap" x-show="reportesFiltrados.length > 0">
+                            <table class="rf-table">
                                 <thead>
                                     <tr>
-                                        <th>Fecha y Hora</th>
-                                        <th>Empresa</th>
-                                        <th>Placa</th>
-                                        <th>Estado</th>
-                                        <th>Responsable (Inspector)</th>
+                                        <th>Fecha</th>
+                                        <th>Placa / Vehículo</th>
+                                        <th>Resultado</th>
+                                        <th>Inspector</th>
+                                        <th>Ingeniero</th>
+                                        <th>Parámetros</th>
+                                        <th style="text-align: center;">Informe</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="rep in reportesFiltrados" :key="rep.iddia">
                                         <tr>
                                             <td>
-                                                <div style="font-weight: 500; color: #111827;" x-text="formatDateTime(rep.fecdia)"></div>
+                                                <div style="font-weight: 500; color: #111827;" x-text="formatDateTime(rep.fecdia).split(',')[0]"></div>
+                                                <div style="font-size: 11px; color: #9ca3af;" x-text="formatDateTime(rep.fecdia).split(',')[1] || ''"></div>
                                             </td>
                                             <td>
-                                                <div style="font-weight: 600; color: #4b5563;" x-text="rep.vehiculo?.empresa?.razsoem || '-'"></div>
+                                                <span class="plate-badge" x-text="rep.vehiculo?.placaveh || 'N/A'"></span>
+                                                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;" x-text="rep.vehiculo?.marca?.nommarlin || ''"></div>
                                             </td>
                                             <td>
-                                                <div class="plate-badge" style="font-size: 12px;" x-text="rep.vehiculo?.placaveh || 'N/A'"></div>
+                                                <span class="badge" :class="diagResultadoClass(rep)" x-text="diagResultado(rep)"></span>
                                             </td>
                                             <td>
-                                                <span class="status-badge" :class="diagResultadoClass(rep)" x-text="diagResultado(rep)"></span>
+                                                <span x-text="rep.inspector ? (rep.inspector.nomper + ' ' + (rep.inspector.apeper||'')) : '—'"></span>
                                             </td>
                                             <td>
-                                                <div style="font-size: 13px; color: #6b7280;">
-                                                    <i class="fa-solid fa-user-check" style="margin-right: 4px;"></i>
-                                                    <span x-text="rep.persona ? (rep.persona.nomper + ' ' + (rep.persona.apeper||'')) : 'Sistema'"></span>
-                                                </div>
+                                                <span x-text="rep.ingeniero ? (rep.ingeniero.nomper + ' ' + (rep.ingeniero.apeper||'')) : '—'"></span>
+                                            </td>
+                                            <td>
+                                                <div style="max-width: 180px; white-space: normal; line-height: 1.3; color: #6b7280; font-size: 12px;" x-text="paramResumen(rep)"></div>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <template x-if="canExportDiag(rep)">
+                                                    <a :href="exportUrl(rep.iddia)" target="_blank" class="rf-informe-btn enabled" title="Ver informe completo">
+                                                        <i class="fa-solid fa-file-lines"></i>
+                                                    </a>
+                                                </template>
+                                                <template x-if="!canExportDiag(rep)">
+                                                    <span class="rf-informe-btn disabled" title="Informe no disponible">
+                                                        <i class="fa-solid fa-file-circle-xmark"></i>
+                                                    </span>
+                                                </template>
                                             </td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
+                        </div>
+
+                        {{-- Footer --}}
+                        <div class="rf-footer" x-show="reportesFiltrados.length > 0">
+                            <span>
+                                <i class="fa-solid fa-info-circle" style="margin-right: 3px;"></i>
+                                <strong x-text="reportesFiltrados.length"></strong> diagnóstico(s)
+                                <span x-show="fechaInicio || fechaFin"> en el rango seleccionado</span>
+                                · <strong x-text="reportesExportables.length"></strong> exportable(s)
+                            </span>
+                            <span x-text="'Generado: ' + new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })"></span>
                         </div>
                     </div>
                 </template>

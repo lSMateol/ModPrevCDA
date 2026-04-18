@@ -115,7 +115,7 @@ class VehiculoEmpresaController extends Controller
 
             // ── Reporte de Flota: Todos los diagnósticos de la empresa ──
             $reporteFlota = Diag::whereIn('idveh', $idVehiculos)
-                ->with(['vehiculo', 'persona'])
+                ->with(['vehiculo.empresa', 'vehiculo.marca', 'persona', 'inspector', 'ingeniero', 'parametros.parametro.tippar', 'rechazo'])
                 ->latest('fecdia')
                 ->get();
         }
@@ -226,5 +226,69 @@ class VehiculoEmpresaController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al actualizar perfil: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Exportar reporte de flota unificado (múltiples diagnósticos en un solo documento imprimible).
+     * Filtra por empresa_id y rango de fechas.
+     * Empresa solo puede exportar sus propios diagnósticos.
+     */
+    public function exportFlota(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'empresa_id' => 'required|integer|exists:empresa,idemp',
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date',
+        ]);
+
+        $user = auth()->user();
+        $empresaId = $request->empresa_id;
+
+        // Seguridad: Empresa solo puede ver los suyos
+        if ($user->hasRole('Empresa') && $user->idemp !== (int) $empresaId) {
+            abort(403, 'No autorizado para ver esta empresa.');
+        }
+
+        $empresa = \App\Models\Empresa::findOrFail($empresaId);
+
+        // IDs de vehículos de la empresa
+        $idVehiculos = \App\Models\Vehiculo::where('idemp', $empresaId)->pluck('idveh')->toArray();
+
+        // Query base: diagnósticos finalizados (no pendientes)
+        $query = \App\Models\Diag::whereIn('idveh', $idVehiculos)
+            ->whereNotNull('aprobado')
+            ->with([
+                'vehiculo.empresa',
+                'vehiculo.marca',
+                'persona',
+                'inspector',
+                'ingeniero',
+                'parametros.parametro.tippar',
+                'fotos',
+                'rechazo',
+            ]);
+
+        // Filtros de fecha
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('fecdia', '>=', $request->fecha_inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('fecdia', '<=', $request->fecha_fin);
+        }
+
+        $diagnosticos = $query->latest('fecdia')->get();
+
+        // Excluir reasignados (no exportables)
+        $diagnosticos = $diagnosticos->filter(function ($d) {
+            return !($d->rechazo && $d->rechazo->estadorec === 'Reasignado');
+        });
+
+        if ($diagnosticos->isEmpty()) {
+            $prefix = $user->hasRole('Administrador') ? 'admin' : ($user->hasRole('Digitador') ? 'digitador' : 'empresa');
+            return redirect()->route($prefix . '.vehiculos-empresa.index')
+                ->with('error', 'No hay informes exportables en el rango seleccionado.');
+        }
+
+        return view('diagnosticos.export_flota', compact('diagnosticos', 'empresa'));
     }
 }
