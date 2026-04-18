@@ -18,9 +18,10 @@ class DiagSeeder extends Seeder
         DB::table('diag')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        $creatorId = 2; // Carlos Ruiz (Digitador)
-        $inspectorId = 11; // Andrés Vargas (Inspector)
-        $engineerId = 12; // María Gómez (Ingeniero)
+        // Obtener IDs dinámicamente de la tabla persona según su perfil
+        $creatorId   = DB::table('persona')->where('idpef', 2)->value('idper') ?? 2;  // Digitador
+        $inspectorId = DB::table('persona')->where('idpef', 4)->value('idper') ?? 11; // Inspector
+        $engineerId  = DB::table('persona')->where('idpef', 5)->value('idper') ?? 12; // Ingeniero
         
         // ==========================================
         // 1. SEED 5 APROBADOS
@@ -29,8 +30,9 @@ class DiagSeeder extends Seeder
             $iddia = $i;
             DB::table('diag')->insert([
                 'iddia'    => $iddia,
-                'fecdia'   => Carbon::now()->subDays(20 + $i),
-                'idveh'    => $i, // Vehículos 1 al 5
+                // Los primeros 3 serán de HOY para que aparezcan en métricas y primera página
+                'fecdia'   => $i <= 3 ? Carbon::now()->subHours($i + 1) : Carbon::now()->subDays($i + 5),
+                'idveh'    => $i,
                 'aprobado' => 1,
                 'idper'    => $creatorId,
                 'fecvig'   => Carbon::now()->addYear(),
@@ -50,8 +52,8 @@ class DiagSeeder extends Seeder
             $iddia = $i;
             DB::table('diag')->insert([
                 'iddia'    => $iddia,
-                'fecdia'   => Carbon::now()->subDays(15 + $i),
-                'idveh'    => $i, // Vehículos 6 al 10
+                'fecdia'   => Carbon::now()->subDays($i),
+                'idveh'    => $i,
                 'aprobado' => 0,
                 'idper'    => $creatorId,
                 'fecvig'   => Carbon::now()->addYear(),
@@ -81,11 +83,10 @@ class DiagSeeder extends Seeder
             $iddia = $i;
             $newPendingId = $i + 5; // Generará IDs 16 al 20
             
-            // El diagnóstico original que fue rechazado y luego reasignado
             DB::table('diag')->insert([
                 'iddia'    => $iddia,
-                'fecdia'   => Carbon::now()->subDays(10 + $i),
-                'idveh'    => ($i - 10), // Reutilizamos vehículos 1 al 5 para segundas revisiones
+                'fecdia'   => Carbon::now()->subDays($i),
+                'idveh'    => ($i - 10), 
                 'aprobado' => 0,
                 'idper'    => $creatorId,
                 'fecvig'   => Carbon::now()->addYear(),
@@ -112,19 +113,19 @@ class DiagSeeder extends Seeder
             // ==========================================
             // 4. SEED 5 PENDIENTES
             // ==========================================
-            // Creamos los nuevos diagnósticos que resultaron de la reasignación
             DB::table('diag')->insert([
                 'iddia'    => $newPendingId,
-                'fecdia'   => Carbon::now()->subMinutes(60 * $i),
+                // Los ponemos como muy recientes (hace minutos/horas) de HOY
+                'fecdia'   => Carbon::now()->subMinutes(30 * $i),
                 'idveh'    => ($i - 10),
-                'aprobado' => null, // PENDIENTE
+                'aprobado' => null, // PENDIENTE (null)
                 'idper'    => $creatorId,
                 'fecvig'   => Carbon::now()->addYear(),
                 'kilomt'   => 20000 + ($i * 1000),
                 'idinsp'   => $inspectorId,
                 'iding'    => $engineerId,
                 'iddiapar' => null,
-                'dpiddia'  => $iddia, // Referencia al diagnóstico padre (el reasignado)
+                'dpiddia'  => $iddia,
             ]);
         }
 
@@ -136,12 +137,9 @@ class DiagSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Helper para insertar parámetros de diagnóstico
-     */
     private function seedParams($iddia, $isApproved)
     {
-        $creatorId = 2;
+        $creatorId = DB::table('persona')->where('idpef', 2)->value('idper') ?? 2;
         $params = [
             ['idpar' => 1, 'v_ok' => 'funciona', 'v_fail' => 'no_funciona'],
             ['idpar' => 2, 'v_ok' => 'funciona', 'v_fail' => 'no_funciona'],

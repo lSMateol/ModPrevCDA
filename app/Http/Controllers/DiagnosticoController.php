@@ -48,8 +48,9 @@ class DiagnosticoController extends Controller
         // Métricas del día
         $hoy = now()->toDateString();
         $completados = Diag::whereDate('fecdia', $hoy)->where('aprobado', 1)->count();
-        $pendientes = Diag::whereDate('fecdia', $hoy)->where('aprobado', 0)->count();
-        $totalHoy = $completados + $pendientes;
+        $rechazados  = Diag::whereDate('fecdia', $hoy)->where('aprobado', 0)->count();
+        $pendientes  = Diag::whereDate('fecdia', $hoy)->whereNull('aprobado')->count();
+        $totalHoy = $completados + $rechazados + $pendientes;
         $efectividad = $totalHoy > 0 ? round(($completados / $totalHoy) * 100) : 0;
 
         $empresas = Empresa::all();
