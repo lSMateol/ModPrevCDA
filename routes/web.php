@@ -31,8 +31,6 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
         return view('dashboard'); 
     })->name('dashboard');
     
-<<<<<<< Updated upstream
-=======
     // Rutas de Rechazados
     Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
     Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
@@ -81,7 +79,6 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
 
->>>>>>> Stashed changes
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 
