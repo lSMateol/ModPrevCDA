@@ -194,6 +194,13 @@ class MupController extends Controller
             'password' => 'required|string|min:6|confirmed',
             'idpef' => 'required|exists:perfil,idpef',
             'idemp' => 'nullable|exists:empresa,idemp',
+        ], [
+            'ndocper.unique' => 'Ya existe un usuario con este número de documento.',
+            'emaper.unique' => 'Ya existe un usuario con este correo electrónico.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
         try {

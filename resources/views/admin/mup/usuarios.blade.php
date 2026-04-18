@@ -14,6 +14,13 @@
     selectedUser: null,
     showPass: false,
     showConfirmPass: false,
+    // Validation for New User
+    password: '',
+    password_confirmation: '',
+    get passwordsMatch() {
+        if (!this.password || !this.password_confirmation) return true;
+        return this.password === this.password_confirmation;
+    },
     filterProfile(id) {
         this.selectedProfile = id;
     },
@@ -40,6 +47,39 @@
     </header>
 
     <div class="mup-content-scroll">
+        {{-- SECCIÓN ALERTA GLOBAL --}}
+        @if(session('success') || session('error') || $errors->any())
+        <div class="px-6 pt-4">
+            @if(session('success'))
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
+                    <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl"></iconify-icon>
+                    <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
+                    <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                    <p class="text-sm text-red-700 font-medium">{{ session('error') }}</p>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4 rounded-r-md shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <iconify-icon icon="lucide:alert-triangle" class="text-orange-500 text-xl"></iconify-icon>
+                        <p class="text-sm text-orange-700 font-bold">Por favor corrige los siguientes errores:</p>
+                    </div>
+                    <ul class="list-disc list-inside text-xs text-orange-600 space-y-1 ml-8">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+        @endif
+
         <div class="stack-layout">
             {{-- SECCIÓN: Listado de Usuarios --}}
             <section class="mup-card">
@@ -195,7 +235,7 @@
                                 <div class="mup-form-group">
                                     <label class="mup-label">Contraseña <span class="mup-required">*</span></label>
                                     <div class="relative">
-                                        <input :type="showPass ? 'text' : 'password'" name="password" class="mup-input pr-10" placeholder="Min. 6 caracteres" required>
+                                        <input :type="showPass ? 'text' : 'password'" name="password" x-model="password" class="mup-input pr-10" placeholder="Min. 6 caracteres" required>
                                         <button type="button" @click="showPass = !showPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
                                             <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
                                         </button>
@@ -204,11 +244,14 @@
                                 <div class="mup-form-group">
                                     <label class="mup-label">Confirmar contraseña <span class="mup-required">*</span></label>
                                     <div class="relative">
-                                        <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" class="mup-input pr-10" required>
+                                        <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" x-model="password_confirmation" class="mup-input pr-10" required :class="!passwordsMatch ? 'border-red-500 ring-1 ring-red-500' : ''">
                                         <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
                                             <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
                                         </button>
                                     </div>
+                                    <template x-if="!passwordsMatch">
+                                        <p class="text-[10px] text-red-500 mt-1 font-bold italic animate-pulse">Las contraseñas no coinciden</p>
+                                    </template>
                                 </div>
                             </div>
 
@@ -242,7 +285,7 @@
 
                             <div class="mt-8 flex justify-end gap-3 pt-6 border-t">
                                 <button type="reset" class="mup-btn mup-btn-outline">Cancelar</button>
-                                <button type="submit" class="mup-btn mup-btn-primary">
+                                <button type="submit" class="mup-btn mup-btn-primary" :disabled="!passwordsMatch" :class="!passwordsMatch ? 'opacity-50 cursor-not-allowed' : ''">
                                     <iconify-icon icon="lucide:save"></iconify-icon>
                                     Guardar usuario
                                 </button>
@@ -476,7 +519,7 @@
                         <div class="mup-form-group">
                             <label class="mup-label">Nueva Contraseña (Opcional)</label>
                             <div class="relative">
-                                <input :type="showPass ? 'text' : 'password'" name="password" class="mup-input pr-10" placeholder="********">
+                                <input :type="showPass ? 'text' : 'password'" name="password" x-model="password" class="mup-input pr-10" placeholder="********">
                                 <button type="button" @click="showPass = !showPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
                                     <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
                                 </button>
@@ -485,11 +528,14 @@
                         <div class="mup-form-group">
                             <label class="mup-label">Confirmar Contraseña</label>
                             <div class="relative">
-                                <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" class="mup-input pr-10" placeholder="********">
+                                <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" x-model="password_confirmation" class="mup-input pr-10" placeholder="********" :class="!passwordsMatch ? 'border-red-500 ring-1 ring-red-500' : ''">
                                 <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
                                     <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
                                 </button>
                             </div>
+                            <template x-if="!passwordsMatch">
+                                <p class="text-[10px] text-red-500 mt-1 font-bold italic animate-pulse">Las contraseñas no coinciden</p>
+                            </template>
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
@@ -512,7 +558,7 @@
                 </div>
                 <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
                     <button type="button" @click="editModal = false" class="mup-btn mup-btn-outline">Cancelar</button>
-                    <button type="submit" class="mup-btn mup-btn-primary">Actualizar Cambios</button>
+                    <button type="submit" class="mup-btn mup-btn-primary" :disabled="!passwordsMatch" :class="!passwordsMatch ? 'opacity-50 cursor-not-allowed' : ''">Actualizar Cambios</button>
                 </div>
             </form>
         </div>
