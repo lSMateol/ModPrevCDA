@@ -53,26 +53,27 @@
                     const baseRoute = this.mapModuloToRoute(moduloNom);
                     if (!baseRoute) return false;
 
-                    let targetPermission = '';
+                    let representativePermission = '';
                     switch(action) {
                         case 'ver': 
-                            targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                            representativePermission = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
                                 ? baseRoute 
                                 : baseRoute + '.index'; 
                             break;
-                        case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
-                        case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
-                        case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
+                        case 'crear': representativePermission = baseRoute + '.create'; break;
+                        case 'editar': representativePermission = baseRoute + '.edit'; break;
+                        case 'eliminar': representativePermission = baseRoute + '.destroy'; break;
                     }
 
-                    return this.selectedPerfil.permissions.some(p => p.name === targetPermission);
+                    return this.selectedPerfil.permissions.some(p => p.name === representativePermission);
                 },
                 mapModuloToRoute(nom) {
                     const map = {
                         'Dashboard': 'admin.dashboard',
                         'Diagnóstico': 'admin.diagnosticos',
-                        'Vehículos': 'admin.vehiculos.index',
+                        'Vehículos': 'admin.vehiculos',
                         'Alertas': 'admin.alertas',
+                        'Mantenimiento': 'admin.dashboard',
                         'Empresas': 'admin.mup.empresas',
                         'Usuarios': 'admin.mup.usuarios',
                         'Conductores': 'admin.mup.conductores',
@@ -92,25 +93,32 @@
                     const baseRoute = this.mapModuloToRoute(moduloNom);
                     if (!baseRoute) return;
 
-                    let targetPermission = '';
+                    let routesToAdd = [];
                     switch(action) {
                         case 'ver': 
-                            targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
-                                ? baseRoute 
-                                : baseRoute + '.index'; 
+                            routesToAdd = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                                ? [baseRoute] 
+                                : [baseRoute + '.index', baseRoute + '.show']; 
                             break;
-                        case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
-                        case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
-                        case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
+                        case 'crear': routesToAdd = [baseRoute + '.create', baseRoute + '.store']; break;
+                        case 'editar': routesToAdd = [baseRoute + '.edit', baseRoute + '.update']; break;
+                        case 'eliminar': routesToAdd = [baseRoute + '.destroy']; break;
                     }
 
-                    const index = this.selectedPerfil.permissions.findIndex(p => p.name === targetPermission);
-                    if (index > -1) {
-                        // Si existe, lo quitamos
-                        this.selectedPerfil.permissions.splice(index, 1);
+                    // Para el UI, nos basta comprobar el primero (el representativo)
+                    const representative = routesToAdd[0];
+                    const exists = this.selectedPerfil.permissions.some(p => p.name === representative);
+
+                    if (exists) {
+                        // Quitar todos los relacionados
+                        this.selectedPerfil.permissions = this.selectedPerfil.permissions.filter(p => !routesToAdd.includes(p.name));
                     } else {
-                        // Si no existe, lo agregamos (simulado para el UI)
-                        this.selectedPerfil.permissions.push({ name: targetPermission });
+                        // Agregar todos los relacionados
+                        routesToAdd.forEach(r => {
+                            if (!this.selectedPerfil.permissions.some(p => p.name === r)) {
+                                this.selectedPerfil.permissions.push({ name: r });
+                            }
+                        });
                     }
                 },
                 get passwordsMatch() {

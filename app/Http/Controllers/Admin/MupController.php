@@ -592,15 +592,16 @@ class MupController extends Controller
     private function mapPaginaToRoute($nompag)
     {
         $map = [
-            'Dashboard'   => 'admin.dashboard',
-            'Diagnóstico' => 'admin.diagnosticos',
-            'Vehículos'   => 'admin.vehiculos.index', // Se agregará el nombre .index base
-            'Alertas'     => 'admin.alertas',
-            'Empresas'    => 'admin.mup.empresas',
-            'Usuarios'    => 'admin.mup.usuarios',
-            'Conductores' => 'admin.mup.conductores',
-            'Propietarios'=> 'admin.mup.propietarios',
-            'Rechazados'  => 'admin.rechazados',
+            'Dashboard'      => 'admin.dashboard',
+            'Diagnóstico'    => 'admin.diagnosticos',
+            'Vehículos'      => 'admin.vehiculos',
+            'Alertas'        => 'admin.alertas',
+            'Mantenimiento'  => 'admin.dashboard', // Fallback si no hay ruta dedicada
+            'Empresas'       => 'admin.mup.empresas',
+            'Usuarios'       => 'admin.mup.usuarios',
+            'Conductores'    => 'admin.mup.conductores',
+            'Propietarios'   => 'admin.mup.propietarios',
+            'Rechazados'     => 'admin.rechazados',
         ];
 
         return $map[$nompag] ?? null;
@@ -613,27 +614,19 @@ class MupController extends Controller
     {
         switch ($action) {
             case 'ver':
-                // Algunas rutas son directas (admin.alertas), otras son recursos (admin.usuarios.index)
                 if (in_array($baseRoute, ['admin.dashboard', 'admin.alertas', 'admin.rechazados'])) {
                     return [$baseRoute];
-                }
-                // Si ya termina en .index, devolverla
-                if (str_ends_with($baseRoute, '.index')) {
-                    return [$baseRoute, str_replace('.index', '.show', $baseRoute)];
                 }
                 return [$baseRoute . '.index', $baseRoute . '.show'];
             
             case 'crear':
-                $base = str_replace('.index', '', $baseRoute);
-                return [$base . '.create', $base . '.store'];
+                return [$baseRoute . '.create', $baseRoute . '.store'];
             
             case 'editar':
-                $base = str_replace('.index', '', $baseRoute);
-                return [$base . '.edit', $base . '.update'];
+                return [$baseRoute . '.edit', $baseRoute . '.update'];
             
             case 'eliminar':
-                $base = str_replace('.index', '', $baseRoute);
-                return [$base . '.destroy'];
+                return [$baseRoute . '.destroy'];
             
             default:
                 return [];
