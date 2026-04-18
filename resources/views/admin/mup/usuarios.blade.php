@@ -393,7 +393,15 @@
                     <form :action="'{{ url('admin/entidades/mup/perfil') }}/' + selectedPerfil.idpef" method="POST">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="idpef" :value="selectedPerfil.idpef">
                         <div class="mup-card-body pt-7">
+                            <div class="mb-4" x-show="!isReadOnly()">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Nombre del Perfil</label>
+                                <input type="text" name="nompef" x-model="selectedPerfil.nompef" class="w-full px-3 py-2 rounded border border-gray-200 text-sm font-bold text-[#0d3b5a]" required>
+                            </div>
+                            <template x-if="isReadOnly()">
+                                <input type="hidden" name="nompef" :value="selectedPerfil.nompef">
+                            </template>
                             <div class="flex justify-between items-start mb-6">
                                 <div>
                                     <div class="mup-card-title text-lg" x-text="'Permisos del perfil: ' + selectedPerfil.nompef"></div>
