@@ -12,11 +12,15 @@
     editModal: false,
     deleteModal: false,
     selectedUser: null,
+    showPass: false,
+    showConfirmPass: false,
     filterProfile(id) {
         this.selectedProfile = id;
     },
     openModal(action, user) {
         this.selectedUser = user;
+        this.showPass = false;
+        this.showConfirmPass = false;
         if (action === 'view') this.viewModal = true;
         if (action === 'edit') this.editModal = true;
         if (action === 'delete') this.deleteModal = true;
@@ -190,11 +194,21 @@
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Contraseña <span class="mup-required">*</span></label>
-                                    <input type="password" name="password" class="mup-input" placeholder="Min. 6 caracteres" required>
+                                    <div class="relative">
+                                        <input :type="showPass ? 'text' : 'password'" name="password" class="mup-input pr-10" placeholder="Min. 6 caracteres" required>
+                                        <button type="button" @click="showPass = !showPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
+                                            <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Confirmar contraseña <span class="mup-required">*</span></label>
-                                    <input type="password" name="password_confirmation" class="mup-input" required>
+                                    <div class="relative">
+                                        <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" class="mup-input pr-10" required>
+                                        <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
+                                            <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -461,11 +475,21 @@
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Nueva Contraseña (Opcional)</label>
-                            <input type="password" name="password" class="mup-input" placeholder="********">
+                            <div class="relative">
+                                <input :type="showPass ? 'text' : 'password'" name="password" class="mup-input pr-10" placeholder="********">
+                                <button type="button" @click="showPass = !showPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
+                                    <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                </button>
+                            </div>
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Confirmar Contraseña</label>
-                            <input type="password" name="password_confirmation" class="mup-input" placeholder="********">
+                            <div class="relative">
+                                <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" class="mup-input pr-10" placeholder="********">
+                                <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-2.5 text-gray-400 hover:text-[#0d3b5a] transition">
+                                    <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                </button>
+                            </div>
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
