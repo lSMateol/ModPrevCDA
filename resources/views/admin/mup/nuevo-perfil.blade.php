@@ -61,8 +61,7 @@
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Categoría / Tipo <span class="mup-required">*</span></label>
-                                <select name="tipo_pef" class="mup-input appearance-none bg-no-repeat bg-[right_1rem_center]" 
-                                        style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220%200%2024%2024%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E'); background-size: 1.25rem;">
+                                <select name="tipo_pef" class="mup-input cursor-pointer">
                                     <option value="Operativo" @selected(old('tipo_pef') == 'Operativo')>Operativo</option>
                                     <option value="Administrativo" @selected(old('tipo_pef') == 'Administrativo')>Administrativo</option>
                                     <option value="Gerencial" @selected(old('tipo_pef') == 'Gerencial')>Gerencial</option>
