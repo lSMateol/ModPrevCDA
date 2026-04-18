@@ -9,14 +9,19 @@ class MarcaSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('marca')->insert([
-            ['idmar' => 1, 'nommarlin' => 'Chevrolet Spark GT',  'depmar' => null],
-            ['idmar' => 2, 'nommarlin' => 'Toyota Hilux',        'depmar' => null],
-            ['idmar' => 3, 'nommarlin' => 'Hino Dutro',          'depmar' => null],
-            ['idmar' => 4, 'nommarlin' => 'Kenworth T800',       'depmar' => null],
-            ['idmar' => 5, 'nommarlin' => 'Mazda 3',             'depmar' => null],
-            ['idmar' => 6, 'nommarlin' => 'Ford Fiesta',         'depmar' => null],
-            ['idmar' => 7, 'nommarlin' => 'Renault Duster',      'depmar' => null],
-        ]);
+        // Leer y ejecutar directamente el archivo SQL nativo proporcionado
+        $sqlFilePath = database_path('data/marca.sql');
+        $sqlFilePath = database_path('data/marca.sql');
+        if (file_exists($sqlFilePath)) {
+            $content = file_get_contents($sqlFilePath);
+            // Filtramos todo el DDL (CREATE TABLE, ALTER) usando regex para asegurar que solo se ejecute la data pura
+            if (preg_match('/INSERT INTO `marca` \(`idmar`, `nommarlin`, `depmar`\) VALUES[\s\S]*?;/', $content, $matches)) {
+                $insertStatements = $matches[0];
+                \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+                DB::table('marca')->truncate();
+                \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+                DB::unprepared($insertStatements);
+            }
+        }
     }
 }

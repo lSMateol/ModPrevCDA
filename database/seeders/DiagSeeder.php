@@ -169,36 +169,147 @@ class DiagSeeder extends Seeder
         ]);
 
         // Historial de movimientos
+        // Fechas realistas: creación de vehículos → antes de diagnósticos
+        // Diagnósticos: usar las fechas exactas del DiagSeeder
         DB::table('historial')->insert([
+            // ═══ Creación de vehículos con empresa ═══
             [
                 'tabla_ref'   => 'vehiculo',
-                'id_ref'      => 1,
+                'id_ref'      => 1,  // XYZ123 → Transportes del Norte
                 'accion'      => 'Creación de vehículo',
-                'descripcion' => 'Se registró un nuevo vehículo con placa XYZ123.',
-                'idper'       => 2,   // usuario (ej. Carlos Ruiz)
+                'descripcion' => 'Se registró el vehículo con placa XYZ123 y se vinculó a Transportes del Norte.',
+                'idper'       => 2,  // Carlos Ruiz (digitador)
                 'es_sistema'  => false,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'created_at'  => '2025-01-15 09:20:00',
+                'updated_at'  => '2025-01-15 09:20:00',
             ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 2,  // ABC987 → Logiroute Express
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa ABC987 y se vinculó a Logiroute Express.',
+                'idper'       => 2,
+                'es_sistema'  => false,
+                'created_at'  => '2025-01-18 10:45:00',
+                'updated_at'  => '2025-01-18 10:45:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 3,  // DEF456 → AgroSur S.A.
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa DEF456 y se vinculó a AgroSur S.A.',
+                'idper'       => 3,  // María Gómez (digitadora)
+                'es_sistema'  => false,
+                'created_at'  => '2025-02-05 08:30:00',
+                'updated_at'  => '2025-02-05 08:30:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 4,  // GHI312 → Transportes del Norte
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa GHI312 y se vinculó a Transportes del Norte.',
+                'idper'       => 2,
+                'es_sistema'  => false,
+                'created_at'  => '2025-02-12 14:10:00',
+                'updated_at'  => '2025-02-12 14:10:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 5,  // KVM091 → Transmetropolis S.A.
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa KVM091 y se vinculó a Transmetropolis S.A.',
+                'idper'       => 3,
+                'es_sistema'  => false,
+                'created_at'  => '2025-03-01 11:00:00',
+                'updated_at'  => '2025-03-01 11:00:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 6,  // DTS442 → Logiroute Express
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa DTS442 y se vinculó a Logiroute Express.',
+                'idper'       => 2,
+                'es_sistema'  => false,
+                'created_at'  => '2025-03-10 09:15:00',
+                'updated_at'  => '2025-03-10 09:15:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 7,  // FGT102 → Transportes del Norte
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa FGT102 y se vinculó a Transportes del Norte.',
+                'idper'       => 4,  // Juan Perez (digitador)
+                'es_sistema'  => false,
+                'created_at'  => '2025-04-02 16:30:00',
+                'updated_at'  => '2025-04-02 16:30:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 9,  // MKL445 → AgroSur S.A.
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa MKL445 y se vinculó a AgroSur S.A.',
+                'idper'       => 2,
+                'es_sistema'  => false,
+                'created_at'  => '2025-05-20 10:00:00',
+                'updated_at'  => '2025-05-20 10:00:00',
+            ],
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 10, // RTY990 → Logiroute Express
+                'accion'      => 'Creación de vehículo',
+                'descripcion' => 'Se registró el vehículo con placa RTY990 y se vinculó a Logiroute Express.',
+                'idper'       => 3,
+                'es_sistema'  => false,
+                'created_at'  => '2025-06-14 08:45:00',
+                'updated_at'  => '2025-06-14 08:45:00',
+            ],
+
+            // ═══ Mantenimiento preventivo ═══
+            [
+                'tabla_ref'   => 'vehiculo',
+                'id_ref'      => 3,  // DEF456 → AgroSur
+                'accion'      => 'Mantenimiento registrado',
+                'descripcion' => 'Se realizó mantenimiento preventivo al vehículo DEF456 (cambio de aceite y filtros).',
+                'idper'       => 4,  // Juan Perez
+                'es_sistema'  => false,
+                'created_at'  => '2025-08-12 14:30:00',
+                'updated_at'  => '2025-08-12 14:30:00',
+            ],
+
+            // ═══ Diagnósticos de vehículos con empresa ═══
+            // Diag #2 → MKL445 (AgroSur) — fecha exacta del DiagSeeder: 2025-10-23 14:15
             [
                 'tabla_ref'   => 'diag',
-                'id_ref'      => 1,
-                'accion'      => 'Actualización de estado',
-                'descripcion' => 'El diagnóstico cambió de "Pendiente" a "Aprobado".',
-                'idper'       => 3,   // usuario (ej. María Gómez)
+                'id_ref'      => 2,
+                'accion'      => 'Diagnóstico creado',
+                'descripcion' => 'Se realizó diagnóstico al vehículo MKL445. Resultado: No aprobado.',
+                'idper'       => 3,  // María Gómez (persona que realizó)
                 'es_sistema'  => false,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'created_at'  => '2025-10-23 14:15:00',
+                'updated_at'  => '2025-10-23 14:15:00',
             ],
+            // Diag #3 → RTY990 (Logiroute) — fecha exacta del DiagSeeder: 2025-10-22 10:45
             [
-                'tabla_ref'   => 'persona',
-                'id_ref'      => 5,
-                'accion'      => 'Cambio de contraseña',
-                'descripcion' => 'El usuario actualizó su contraseña por seguridad.',
-                'idper'       => 5,
+                'tabla_ref'   => 'diag',
+                'id_ref'      => 3,
+                'accion'      => 'Diagnóstico creado',
+                'descripcion' => 'Se realizó diagnóstico al vehículo RTY990. Resultado: Aprobado.',
+                'idper'       => 2,  // Carlos Ruiz
                 'es_sistema'  => false,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'created_at'  => '2025-10-22 10:45:00',
+                'updated_at'  => '2025-10-22 10:45:00',
+            ],
+
+            // ═══ Otros movimientos del sistema ═══
+            [
+                'tabla_ref'   => 'diag',
+                'id_ref'      => 1,  // Diag de HTY092 (sin empresa, pero existe como dato)
+                'accion'      => 'Actualización de estado',
+                'descripcion' => 'El diagnóstico cambió de "Pendiente" a "Reasignado".',
+                'idper'       => 3,
+                'es_sistema'  => false,
+                'created_at'  => '2025-10-24 09:00:00',
+                'updated_at'  => '2025-10-24 09:00:00',
             ],
             [
                 'tabla_ref'   => 'rechazo',
@@ -207,18 +318,8 @@ class DiagSeeder extends Seeder
                 'descripcion' => 'El sistema reasignó el rechazo a un nuevo inspector por inactividad.',
                 'idper'       => null,
                 'es_sistema'  => true,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ],
-            [
-                'tabla_ref'   => 'vehiculo',
-                'id_ref'      => 3,
-                'accion'      => 'Mantenimiento registrado',
-                'descripcion' => 'Se añadió un nuevo mantenimiento preventivo al vehículo.',
-                'idper'       => 4,
-                'es_sistema'  => false,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'created_at'  => '2025-10-25 06:00:00',
+                'updated_at'  => '2025-10-25 06:00:00',
             ],
         ]);
     }

@@ -71,19 +71,19 @@
                         <i class="fa-solid fa-car-side text-[8px] mr-2"></i>
                         Vehículos
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ url($prefix . '/vehiculos-empresa') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/vehiculos-empresa*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-building text-[8px] mr-2"></i>
                         Vehículos Empresa
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ url($prefix . '/historial') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/historial*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-clock-rotate-left text-[8px] mr-2"></i>
                         Historial Mantenimiento
                     </a>
                     
                     @hasanyrole('Administrador|Digitador')
-                        <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                        <a href="{{ url($prefix . '/marcas') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/marcas*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                             <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                             <i class="fa-solid fa-tags text-[8px] mr-2"></i>
                             Marca
