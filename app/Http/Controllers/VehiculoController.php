@@ -33,13 +33,17 @@ class VehiculoController extends Controller
         }
 
         $clasesFiltro = Valor::where('iddom', 1)->where('actval', 1)->orderBy('nomval')->get();
+        $combustibles = Valor::where('iddom', 2)->where('actval', 1)->orderBy('nomval')->get();
+        $cargas       = Valor::where('iddom', 10)->where('actval', 1)->orderBy('nomval')->get();
+        $marcas       = Marca::orderBy('idmar', 'asc')->get(['idmar', 'nommarlin', 'depmar']);
 
         $personas = Persona::where('actper', 1)
             ->orderBy('nomper')
             ->get(['idper', 'nomper', 'apeper', 'ndocper']);
 
         return view('vehiculos.dashboard_vehiculos', compact(
-            'vehiculos', 'empresasFiltro', 'clasesFiltro', 'personas'
+            'vehiculos', 'empresasFiltro', 'clasesFiltro', 'personas',
+            'combustibles', 'cargas', 'marcas'
         ));
     }
 
@@ -125,6 +129,45 @@ class VehiculoController extends Controller
                          'clase', 'combustible', 'tipoMotor', 'categoriaCarga']);
 
         return response()->json(['success' => true, 'vehiculo' => $vehiculo]);
+    }
+
+    /**
+     * Edición rápida inline (desde el dashboard, vía AJAX)
+     * Actualiza campos de tipo select/relación sin recargar la página
+     */
+    public function quickUpdate(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'linveh'       => 'nullable|integer',
+            'clveh'        => 'nullable|integer',
+            'tipo_servicio'=> 'nullable|in:1,2',
+            'idemp'        => 'nullable|integer',
+            'combuveh'     => 'nullable|integer',
+            'crgveh'       => 'nullable|integer',
+            'blinveh'      => 'nullable|in:1,2',
+            'polaveh'      => 'nullable|in:1,2',
+            'prop'         => 'nullable|integer',
+            'cond'         => 'nullable|integer',
+        ]);
+
+        try {
+            $vehiculo = Vehiculo::findOrFail($id);
+
+            // Convertir strings vacíos a null para las FK
+            foreach (['linveh', 'clveh', 'idemp', 'combuveh', 'crgveh', 'prop', 'cond'] as $fk) {
+                if (isset($validated[$fk]) && $validated[$fk] === '') {
+                    $validated[$fk] = null;
+                }
+            }
+
+            $vehiculo->update($validated);
+            $vehiculo->load(['empresa', 'propietario', 'conductor', 'marca',
+                             'clase', 'combustible', 'tipoMotor', 'categoriaCarga']);
+
+            return response()->json(['success' => true, 'vehiculo' => $vehiculo]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     // ─── Helpers privados ────────────────────────────────────

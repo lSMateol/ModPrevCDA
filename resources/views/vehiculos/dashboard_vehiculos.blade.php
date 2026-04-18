@@ -18,6 +18,12 @@
         vinculoForm: { prop: '', cond: '', idemp: '' },
         personas: {{ $personas->toJson() }},
         allEmpresas: {{ $empresasFiltro->toJson() }},
+        allMarcas: {{ $marcas->toJson() }},
+        allClases: {{ $clasesFiltro->toJson() }},
+        allCombustibles: {{ $combustibles->toJson() }},
+        allCargas: {{ $cargas->toJson() }},
+        editForm: {},
+        editSaving: false,
 
         get filteredVehiculos() {
             return this.vehiculos.filter(v => {
@@ -59,12 +65,51 @@
         },
 
         toggleEdit() {
-            this.editMode = !this.editMode;
+            this.editForm = {
+                linveh: this.selectedVehiculo.linveh || '',
+                clveh: this.selectedVehiculo.clveh || '',
+                tipo_servicio: this.selectedVehiculo.tipo_servicio || '',
+                idemp: this.selectedVehiculo.idemp || '',
+                combuveh: this.selectedVehiculo.combuveh || '',
+                crgveh: this.selectedVehiculo.crgveh || '',
+                blinveh: this.selectedVehiculo.blinveh || '',
+                polaveh: this.selectedVehiculo.polaveh || '',
+                prop: this.selectedVehiculo.prop || '',
+                cond: this.selectedVehiculo.cond || '',
+            };
+            this.editMode = true;
         },
         cancelEdit() {
             this.editMode = false;
             const original = this.vehiculos.find(v => v.idveh === this.selectedVehiculo.idveh);
             if (original) this.selectedVehiculo = JSON.parse(JSON.stringify(original));
+        },
+
+        async saveInlineEdit() {
+            this.editSaving = true;
+            try {
+                const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+                const url = '/' + prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/edicion-rapida';
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(this.editForm)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = this.vehiculos.findIndex(v => v.idveh === this.selectedVehiculo.idveh);
+                    if (idx !== -1) this.vehiculos[idx] = data.vehiculo;
+                    this.selectedVehiculo = data.vehiculo;
+                    this.editMode = false;
+                } else {
+                    alert('Error: ' + (data.message || 'Verifique los datos'));
+                }
+            } catch (e) { console.error('Error:', e); alert('Error de red al guardar'); }
+            finally { this.editSaving = false; }
         },
 
         init() {
@@ -328,7 +373,7 @@
                         <div style="display: flex; gap: 8px;">
                             {{-- Botón Editar (solo Admin/Digitador, solo en modo consulta) --}}
                             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                            <button class="vbtn vbtn-edit" x-show="!editMode" @click="editMode = true">
+                            <button class="vbtn vbtn-edit" x-show="!editMode" @click="toggleEdit()">
                                 <i class="fa-solid fa-pen"></i> Editar
                             </button>
                             @endif
@@ -366,7 +411,17 @@
                             </div>
                             <div class="form-group">
                                 <label>Línea (Marca)</label>
-                                <input type="text" :value="selectedVehiculo.marca?.nommarlin || 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.marca?.nommarlin || 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.linveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Seleccionar línea</option>
+                                        <template x-for="m in allMarcas" :key="m.idmar">
+                                            <option :value="m.idmar" x-text="m.idmar + ' - ' + m.nommarlin"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Modelo (Año)</label>
@@ -374,15 +429,43 @@
                             </div>
                             <div class="form-group">
                                 <label>Clase de vehículo</label>
-                                <input type="text" :value="selectedVehiculo.clase?.nomval || 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.clase?.nomval || 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.clveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Seleccionar clase</option>
+                                        <template x-for="c in allClases" :key="c.idval">
+                                            <option :value="c.idval" x-text="c.nomval"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Tipo de servicio</label>
-                                <input type="text" :value="servicioLabel(selectedVehiculo.tipo_servicio)" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="servicioLabel(selectedVehiculo.tipo_servicio)" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.tipo_servicio" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="1">Particular</option>
+                                        <option value="2">Público</option>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>Empresa asociada</label>
-                                <input type="text" :value="empresaDisplay(selectedVehiculo)" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="empresaDisplay(selectedVehiculo)" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.idemp" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Sin empresa / Independiente</option>
+                                        <template x-for="e in allEmpresas" :key="e.idemp">
+                                            <option :value="e.idemp" x-text="e.razsoem"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Color del vehículo</label>
@@ -394,15 +477,35 @@
                             </div>
                             <div class="form-group">
                                 <label>Tipo de combustible</label>
-                                <input type="text" :value="selectedVehiculo.combustible?.nomval || 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.combustible?.nomval || 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.combuveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Seleccionar combustible</option>
+                                        <template x-for="cb in allCombustibles" :key="cb.idval">
+                                            <option :value="cb.idval" x-text="cb.nomval"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Tipo de motor</label>
-                                <input type="text" :value="selectedVehiculo.tipo_motor?.nomval || 'N/A'" readonly />
+                                <input type="text" :value="selectedVehiculo.tipo_motor?.nomval || '4 T'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Categoría de carga</label>
-                                <input type="text" :value="selectedVehiculo.categoria_carga?.nomval || 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.categoria_carga?.nomval || 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.crgveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Seleccionar carga</option>
+                                        <template x-for="cr in allCargas" :key="cr.idval">
+                                            <option :value="cr.idval" x-text="cr.nomval"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Número de sillas</label>
@@ -411,7 +514,15 @@
                             {{-- País de fabricación: RETIRADO (siempre es Colombia, ver tabla de cambios) --}}
                             <div class="form-group">
                                 <label>Blindaje</label>
-                                <input type="text" :value="blindajeLabel(selectedVehiculo.blinveh)" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="blindajeLabel(selectedVehiculo.blinveh)" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.blinveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="2">No</option>
+                                        <option value="1">Sí</option>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>No. motor</label>
@@ -427,7 +538,15 @@
                             </div>
                             <div class="form-group">
                                 <label>Tipo de póliza</label>
-                                <input type="text" :value="polizaLabel(selectedVehiculo.polaveh)" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="polizaLabel(selectedVehiculo.polaveh)" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.polaveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="1">Todo Riesgo</option>
+                                        <option value="2">Terceros</option>
+                                    </select>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -494,11 +613,31 @@
                         <div class="form-grid">
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>Propietario</label>
-                                <input type="text" :value="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '') + ' — CC. ' + (selectedVehiculo.propietario.ndocper || 'N/A')) : 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '') + ' — CC. ' + (selectedVehiculo.propietario.ndocper || 'N/A')) : 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.prop" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Sin asignar</option>
+                                        <template x-for="p in personas" :key="'prop-'+p.idper">
+                                            <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                             <div class="form-group">
                                 <label>Conductor principal</label>
-                                <input type="text" :value="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '') + ' — CC. ' + (selectedVehiculo.conductor.ndocper || 'N/A')) : 'N/A'" readonly />
+                                <template x-if="!editMode">
+                                    <input type="text" :value="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '') + ' — CC. ' + (selectedVehiculo.conductor.ndocper || 'N/A')) : 'N/A'" readonly />
+                                </template>
+                                <template x-if="editMode">
+                                    <select x-model="editForm.cond" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
+                                        <option value="">Sin asignar</option>
+                                        <template x-for="p in personas" :key="'cond-'+p.idper">
+                                            <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
+                                        </template>
+                                    </select>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -506,11 +645,13 @@
 
                 <!-- Footer: Botones solo en modo edición -->
                 <div x-show="editMode" x-cloak style="padding: 16px 24px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: flex-end; gap: 12px; background: #ffffff;">
-                    <button class="vbtn vbtn-secondary" @click="cancelEdit()">
+                    <button class="vbtn vbtn-secondary" @click="cancelEdit()" :disabled="editSaving">
                         <i class="fa-solid fa-xmark"></i> Descartar cambios
                     </button>
-                    <button class="vbtn vbtn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i> Guardar vehículo
+                    <button class="vbtn vbtn-primary" @click="saveInlineEdit()" :disabled="editSaving">
+                        <i class="fa-solid fa-floppy-disk" x-show="!editSaving"></i>
+                        <i class="fa-solid fa-spinner fa-spin" x-show="editSaving"></i>
+                        <span x-text="editSaving ? 'Guardando...' : 'Guardar cambios'"></span>
                     </button>
                 </div>
             </div>

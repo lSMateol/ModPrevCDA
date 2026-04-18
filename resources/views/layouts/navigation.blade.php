@@ -15,6 +15,22 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @php
+                        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin.' : (auth()->user()->hasRole('Digitador') ? 'digitador.' : 'empresa.');
+                    @endphp
+
+                    <x-nav-link :href="route($rolePrefix . 'vehiculos.index')" :active="request()->routeIs($rolePrefix . 'vehiculos.*')">
+                        {{ __('Vehículos') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route($rolePrefix . 'historial.index')" :active="request()->routeIs($rolePrefix . 'historial.index')">
+                        {{ __('Historial') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route($rolePrefix . 'marcas.index')" :active="request()->routeIs($rolePrefix . 'marcas.index')">
+                        {{ __('Marcas') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -75,6 +91,22 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+
+            @php
+                $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin.' : (auth()->user()->hasRole('Digitador') ? 'digitador.' : 'empresa.');
+            @endphp
+            
+            <x-responsive-nav-link :href="route($rolePrefix . 'vehiculos.index')" :active="request()->routeIs($rolePrefix . 'vehiculos.*')">
+                {{ __('Vehículos') }}
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route($rolePrefix . 'historial.index')" :active="request()->routeIs($rolePrefix . 'historial.index')">
+                {{ __('Historial') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route($rolePrefix . 'marcas.index')" :active="request()->routeIs($rolePrefix . 'marcas.index')">
+                {{ __('Marcas') }}
             </x-responsive-nav-link>
         </div>
 

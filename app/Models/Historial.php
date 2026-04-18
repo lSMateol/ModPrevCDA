@@ -8,7 +8,6 @@ class Historial extends Model
 {
     protected $table = 'historial';
     protected $primaryKey = 'idhis';
-    protected $timestamps = true;
 
     protected $fillable = ['tabla_ref', 'id_ref', 'accion', 
     'descripcion', 'idper', 'es_sistema'];

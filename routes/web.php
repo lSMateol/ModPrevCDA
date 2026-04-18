@@ -4,6 +4,9 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DiagnosticoController;
 use App\Http\Controllers\VehiculoController;
+use App\Http\Controllers\VehiculoEmpresaController;
+use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\MarcaController;
 
 // ==========================================
 // REDIRECCIÓN INICIAL (Seguridad)
@@ -81,6 +84,16 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
     Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+    Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
+
+    // Vehículos por Empresa
+    Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
+    Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+
+    Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
@@ -119,6 +132,16 @@ Route::middleware(['auth', 'role:Digitador'])->prefix('digitador')->name('digita
     Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
     Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+    Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
+
+    // Vehículos por Empresa
+    Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
+    Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+
+    Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 });
 
 // ==========================================
@@ -131,6 +154,14 @@ Route::middleware(['auth', 'role:Empresa'])->prefix('empresa')->name('empresa.')
     
     // Gestión Vehicular para Empresa (filtrado automático por idemp)
     Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+
+    // Vehículos por Empresa (solo lectura)
+    Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+    Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+
+    Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 
     // Aquí irán las rutas para que la empresa vea sus certificados
 });
