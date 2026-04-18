@@ -82,7 +82,36 @@
                     return map[nom] || null;
                 },
                 isReadOnly() {
+                    // Mantenemos la función por si queremos aplicar estilos, 
+                    // pero ya no bloquearemos los inputs totalmente.
                     return this.selectedPerfil && this.selectedPerfil.nompef === 'Administrador';
+                },
+                togglePermission(moduloNom, action) {
+                    if (!this.selectedPerfil) return;
+                    
+                    const baseRoute = this.mapModuloToRoute(moduloNom);
+                    if (!baseRoute) return;
+
+                    let targetPermission = '';
+                    switch(action) {
+                        case 'ver': 
+                            targetPermission = (baseRoute.includes('.index') || ['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                                ? baseRoute 
+                                : baseRoute + '.index'; 
+                            break;
+                        case 'crear': targetPermission = baseRoute.replace('.index', '') + '.create'; break;
+                        case 'editar': targetPermission = baseRoute.replace('.index', '') + '.edit'; break;
+                        case 'eliminar': targetPermission = baseRoute.replace('.index', '') + '.destroy'; break;
+                    }
+
+                    const index = this.selectedPerfil.permissions.findIndex(p => p.name === targetPermission);
+                    if (index > -1) {
+                        // Si existe, lo quitamos
+                        this.selectedPerfil.permissions.splice(index, 1);
+                    } else {
+                        // Si no existe, lo agregamos (simulado para el UI)
+                        this.selectedPerfil.permissions.push({ name: targetPermission });
+                    }
                 },
                 get passwordsMatch() {
                     if (!this.password || !this.password_confirmation) return true;
@@ -386,9 +415,10 @@
                                         <!-- VER -->
                                         <div class="flex justify-center">
                                             <input type="checkbox" :name="'permisos[' + mod.nompag + '][ver]'" 
+                                                id="perm-ver"
                                                 :checked="hasPermission(mod.nompag, 'ver')"
-                                                :disabled="isReadOnly()"
-                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                                @change="togglePermission(mod.nompag, 'ver')"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
                                         </div>
 
                                         <!-- CREAR -->
@@ -396,8 +426,8 @@
                                             <template x-if="!['Dashboard', 'Rechazados', 'Historial'].includes(mod.nompag)">
                                                 <input type="checkbox" :name="'permisos[' + mod.nompag + '][crear]'" 
                                                     :checked="hasPermission(mod.nompag, 'crear')"
-                                                    :disabled="isReadOnly()"
-                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                                    @change="togglePermission(mod.nompag, 'crear')"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
                                             </template>
                                             <template x-if="['Dashboard', 'Rechazados', 'Historial'].includes(mod.nompag)">
                                                 <span class="text-gray-200 text-xs">-</span>
@@ -409,8 +439,8 @@
                                             <template x-if="!['Dashboard', 'Alertas'].includes(mod.nompag)">
                                                 <input type="checkbox" :name="'permisos[' + mod.nompag + '][editar]'" 
                                                     :checked="hasPermission(mod.nompag, 'editar')"
-                                                    :disabled="isReadOnly()"
-                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                                    @change="togglePermission(mod.nompag, 'editar')"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
                                             </template>
                                             <template x-if="['Dashboard', 'Alertas'].includes(mod.nompag)">
                                                 <span class="text-gray-200 text-xs">-</span>
@@ -422,8 +452,8 @@
                                             <template x-if="['Usuarios', 'Conductores', 'Propietarios', 'Empresas', 'Vehículos'].includes(mod.nompag)">
                                                 <input type="checkbox" :name="'permisos[' + mod.nompag + '][eliminar]'" 
                                                     :checked="hasPermission(mod.nompag, 'eliminar')"
-                                                    :disabled="isReadOnly()"
-                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] disabled:opacity-50">
+                                                    @change="togglePermission(mod.nompag, 'eliminar')"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
                                             </template>
                                             <template x-if="!['Usuarios', 'Conductores', 'Propietarios', 'Empresas', 'Vehículos'].includes(mod.nompag)">
                                                 <span class="text-gray-200 text-xs">-</span>
