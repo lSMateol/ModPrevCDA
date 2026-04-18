@@ -8,8 +8,18 @@
     showCreateForm: true,
     selectedProfile: null,
     searchQuery: '',
+    viewModal: false,
+    editModal: false,
+    deleteModal: false,
+    selectedUser: null,
     filterProfile(id) {
         this.selectedProfile = id;
+    },
+    openModal(action, user) {
+        this.selectedUser = user;
+        if (action === 'view') this.viewModal = true;
+        if (action === 'edit') this.editModal = true;
+        if (action === 'delete') this.deleteModal = true;
     }
 }">
     <header class="mup-topbar">
@@ -77,9 +87,38 @@
                                 </td>
                                 <td class="text-right">
                                     <div class="flex justify-end gap-2">
-                                        <button class="p-2 bg-blue-50 text-blue-600 rounded-md"><iconify-icon icon="lucide:eye"></iconify-icon></button>
-                                        <button class="p-2 bg-orange-50 text-orange-600 rounded-md"><iconify-icon icon="lucide:pencil"></iconify-icon></button>
-                                        <button class="p-2 bg-red-50 text-red-600 rounded-md"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                                        <button @click="openModal('view', {
+                                            id: '{{ $user->id }}',
+                                            name: '{{ $user->name }}',
+                                            username: '{{ $user->username }}',
+                                            email: '{{ $user->email }}',
+                                            ndocper: '{{ $user->persona->ndocper ?? 0 }}',
+                                            tdocper: '{{ $user->persona->tdocper ?? "" }}',
+                                            telper: '{{ $user->persona->telper ?? "" }}',
+                                            actper: '{{ $user->persona->actper ?? 1 }}',
+                                            nompef: '{{ $user->persona->perfil->nompef ?? "Sin Rol" }}',
+                                            idpef: '{{ $user->persona->idpef ?? "" }}',
+                                            idemp: '{{ $user->idemp ?? "" }}',
+                                            empresa: '{{ $user->empresa->razsoem ?? "Particular" }}'
+                                        })" class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition"><iconify-icon icon="lucide:eye"></iconify-icon></button>
+                                        
+                                        <button @click="openModal('edit', {
+                                            id: '{{ $user->id }}',
+                                            name: '{{ $user->name }}',
+                                            username: '{{ $user->username }}',
+                                            email: '{{ $user->email }}',
+                                            ndocper: '{{ $user->persona->ndocper ?? 0 }}',
+                                            tdocper: '{{ $user->persona->tdocper ?? "" }}',
+                                            telper: '{{ $user->persona->telper ?? "" }}',
+                                            actper: '{{ $user->persona->actper ?? 1 }}',
+                                            idpef: '{{ $user->persona->idpef ?? "" }}',
+                                            idemp: '{{ $user->idemp ?? "" }}'
+                                        })" class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition"><iconify-icon icon="lucide:pencil"></iconify-icon></button>
+                                        
+                                        <button @click="openModal('delete', {
+                                            id: '{{ $user->id }}',
+                                            name: '{{ $user->name }}'
+                                        })" class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                                     </div>
                                 </td>
                             </tr>
@@ -309,6 +348,175 @@
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+
+    {{-- MODAL: Visualizar Usuario --}}
+    <div x-show="viewModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" @click.away="viewModal = false">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <iconify-icon icon="lucide:user" class="text-xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800" x-text="'Detalle de: ' + selectedUser?.name"></h3>
+                        <p class="text-xs text-gray-500" x-text="'ID de sistema: USR-' + String(selectedUser?.id).padStart(3, '0')"></p>
+                    </div>
+                </div>
+                <button @click="viewModal = false" class="text-gray-400 hover:text-red-500 transition">
+                    <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Completo</span>
+                        <p class="font-medium text-gray-800" x-text="selectedUser?.name"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Usuario (Alias)</span>
+                        <p class="font-medium text-gray-800" x-text="selectedUser?.username"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Documento</span>
+                        <p class="font-medium text-gray-800" x-text="selectedUser?.ndocper"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Correo Electrónico</span>
+                        <p class="font-medium text-gray-800" x-text="selectedUser?.email"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rol / Perfil</span>
+                        <p class="font-medium text-blue-600" x-text="selectedUser?.nompef"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Empresa</span>
+                        <p class="font-medium text-gray-800" x-text="selectedUser?.empresa"></p>
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end">
+                    <button @click="viewModal = false" class="mup-btn mup-btn-primary w-full sm:w-auto">Cerrar detalle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAL: Editar Usuario --}}
+    <div x-show="editModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden" @click.away="editModal = false">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                        <iconify-icon icon="lucide:pencil" class="text-xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800">Modificar Usuario</h3>
+                        <p class="text-xs text-gray-500">Actualiza la información de acceso y personal del usuario.</p>
+                    </div>
+                </div>
+                <button @click="editModal = false" class="text-gray-400 hover:text-red-500 transition">
+                    <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+            <form :action="'{{ route('admin.mup.usuarios.store') }}/' + selectedUser?.id" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="p-8 max-h-[70vh] overflow-y-auto">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="mup-form-group span-2">
+                            <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
+                            <input type="text" name="nombre_completo" class="mup-input" required :value="selectedUser?.name">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Tipo de documento <span class="mup-required">*</span></label>
+                            <select name="tdocper" class="mup-input" required :value="selectedUser?.tdocper">
+                                @foreach($tiposDoc as $tipo)
+                                    <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Número de documento <span class="mup-required">*</span></label>
+                            <input type="number" name="ndocper" class="mup-input" required :value="selectedUser?.ndocper">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Correo electrónico <span class="mup-required">*</span></label>
+                            <input type="email" name="emaper" class="mup-input" required :value="selectedUser?.email">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Teléfono</label>
+                            <input type="text" name="telper" class="mup-input" :value="selectedUser?.telper">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Nombre de usuario <span class="mup-required">*</span></label>
+                            <input type="text" name="username" class="mup-input" required :value="selectedUser?.username">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Estado <span class="mup-required">*</span></label>
+                            <select name="actper" class="mup-input" :value="selectedUser?.actper">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Nueva Contraseña (Opcional)</label>
+                            <input type="password" name="password" class="mup-input" placeholder="********">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Confirmar Contraseña</label>
+                            <input type="password" name="password_confirmation" class="mup-input" placeholder="********">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
+                            <select name="idpef" class="mup-input" required :value="selectedUser?.idpef">
+                                @foreach($perfiles as $perf)
+                                    <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Empresa asociada</label>
+                            <select name="idemp" class="mup-input" :value="selectedUser?.idemp">
+                                <option value="">Particular (Sin empresa)</option>
+                                @foreach($empresas as $emp)
+                                    <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                    <button type="button" @click="editModal = false" class="mup-btn mup-btn-outline">Cancelar</button>
+                    <button type="submit" class="mup-btn mup-btn-primary">Actualizar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- MODAL: Eliminar Usuario --}}
+    <div x-show="deleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" @click.away="deleteModal = false">
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                    <iconify-icon icon="lucide:alert-triangle" class="text-3xl"></iconify-icon>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">¿Confirmar eliminación?</h3>
+                <p class="text-sm text-gray-500 mb-6">
+                    Estás a punto de eliminar permanentemente a <strong x-text="selectedUser?.name"></strong>. Esta acción no se puede deshacer y eliminará todos sus accesos vinculados.
+                </p>
+                <div class="flex flex-col gap-2">
+                    <form :action="'{{ route('admin.mup.usuarios.store') }}/' + selectedUser?.id" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Eliminar permanentemente</button>
+                    </form>
+                    <button @click="deleteModal = false" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-bold transition">Cancelar</button>
+                </div>
+            </div>
+            <div class="bg-red-50 p-4 text-[10px] text-red-400 font-bold uppercase tracking-widest text-center border-t border-red-100">
+                Atención: Borrado físico confirmado
+            </div>
         </div>
     </div>
 </div>

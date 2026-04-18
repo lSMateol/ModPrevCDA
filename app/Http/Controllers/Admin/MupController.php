@@ -397,4 +397,95 @@ class MupController extends Controller
             return redirect()->back()->with('error', 'Error al registrar empresa: ' . $e->getMessage())->withInput();
         }
     }
+
+    /**
+     * Update an existing User + Persona.
+     */
+    public function updateUsuario(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required',
+            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $user->idper . ',idper',
+            'emaper' => 'required|email|unique:persona,emaper,' . $user->idper . ',idper',
+            'telper' => 'nullable|string',
+            'username' => 'required|string|unique:users,username,' . $user->id,
+            'password' => 'nullable|string|min:6|confirmed',
+            'idpef' => 'required|exists:perfil,idpef',
+            'idemp' => 'nullable|exists:empresa,idemp',
+            'actper' => 'required|in:0,1',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            // Update Persona
+            $user->persona->update([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'idpef' => $request->idpef,
+                'idemp' => $request->idemp,
+                'actper' => $request->actper,
+            ]);
+
+            // Update User
+            $userData = [
+                'name' => $request->nombre_completo,
+                'username' => $request->username,
+                'email' => $request->emaper,
+                'idemp' => $request->idemp,
+            ];
+            if ($request->filled('password')) {
+                $userData['password'] = Hash::make($request->password);
+            }
+            $user->update($userData);
+
+            // Sync Role
+            $perfil = Perfil::find($request->idpef);
+            $user->syncRoles([$perfil->nompef]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Usuario actualizado exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando usuario: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al actualizar usuario: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Physically delete a User + Persona.
+     */
+    public function destroyUsuario($id)
+    {
+        try {
+            DB::beginTransaction();
+            $user = User::findOrFail($id);
+            $idper = $user->idper;
+
+            // Delete User first
+            $user->delete();
+
+            // Delete Persona
+            if ($idper) {
+                Persona::where('idper', $idper)->delete();
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Usuario eliminado permanentemente del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error eliminando usuario: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al eliminar usuario: ' . $e->getMessage());
+        }
+    }
 }
