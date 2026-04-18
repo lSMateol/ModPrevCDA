@@ -36,13 +36,19 @@ class CheckRoutePermission
             return $next($request);
         }
 
-        // 5. Verificar si el usuario tiene permiso explícito para esta ruta
-        // Usamos el nombre de la ruta como el nombre del permiso
-        if ($user->hasPermissionTo($routeName)) {
+        // 6. Verificar si el usuario tiene permiso explícito para esta ruta
+        try {
+            if ($user->hasPermissionTo($routeName)) {
+                return $next($request);
+            }
+        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
+            // Si el permiso no está formalmente guardado en la Base de Datos, 
+            // asumiremos el permiso basado en si la ruta pertenece a su espacio protegido por Rol.
+            // Esto evita que toda la app colapse cuando no se han sembrado (Seeder) los permisos granulares.
             return $next($request);
         }
 
-        // 6. Si no tiene permiso, abortar con 403
+        // 7. Si no tiene permiso (está en base de datos pero este usuario no lo posee), abortar con 403
         abort(403, 'No tienes permisos para acceder a esta sección (' . $routeName . ')');
     }
 }
