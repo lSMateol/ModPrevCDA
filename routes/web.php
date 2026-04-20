@@ -58,6 +58,8 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::prefix('entidades/mup')->name('mup.')->group(function () {
         Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores');
         Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+        Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
+        Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
         
         // Perfiles
         Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
@@ -73,10 +75,14 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
         // Propietarios
         Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios');
         Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+        Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
+        Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
 
         // Empresas
         Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas');
         Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
+        Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
+        Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
     });
 
     

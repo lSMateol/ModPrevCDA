@@ -57,19 +57,22 @@ class MupController extends Controller
             'nliccon' => 'required|string|max:20',
             'fvencon' => 'required|date',
             'actper' => 'required|in:0,1',
+        ], [
+            'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Split name into nomper and apeper (Best practice as requested)
+            // Split name into nomper and apeper
             $parts = explode(' ', $request->nombre_completo, 2);
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilConductor = Perfil::where('nompef', 'Conductor')->first();
+            $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 6]);
 
-            $persona = Persona::create([
+            Persona::create([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
@@ -81,16 +84,86 @@ class MupController extends Controller
                 'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
                 'idpef' => $perfilConductor->idpef,
-                'codubi' => 1, // Default location for now as it's required in DB
+                'codubi' => 1, // Default
             ]);
 
             DB::commit();
-
             return redirect()->back()->with('success', 'Conductor registrado exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Ocurrió un error al registrar el conductor.')->withInput();
+            return redirect()->back()->with('error', 'Ocurrió un error al registrar el conductor: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Update an existing conductor record.
+     */
+    public function updateConductor(Request $request, $id)
+    {
+        $persona = Persona::findOrFail($id);
+
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:10',
+            'catcon' => 'required|exists:valor,idval',
+            'nliccon' => 'required|string|max:20',
+            'fvencon' => 'required|date',
+            'actper' => 'required|in:0,1',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $persona->update([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'catcon' => $request->catcon,
+                'nliccon' => $request->nliccon,
+                'fvencon' => $request->fvencon,
+                'actper' => $request->actper,
+            ]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Conductor actualizado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando conductor: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al actualizar conductor: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove a conductor from the system.
+     */
+    public function destroyConductor($id)
+    {
+        try {
+            DB::beginTransaction();
+            $persona = Persona::findOrFail($id);
+            
+            // Si el conductor tiene un usuario vinculado, lo borramos también para mantener integridad
+            User::where('idper', $id)->delete();
+            
+            $persona->delete();
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Conductor eliminado permanentemente del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error eliminando conductor: " . $e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo eliminar el conductor: ' . $e->getMessage());
         }
     }
 
