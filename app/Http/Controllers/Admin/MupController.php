@@ -594,18 +594,20 @@ class MupController extends Controller
             'nonitem' => 'required|string|unique:empresa,nonitem',
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
-            'ciudeem' => 'nullable|string|max:50', // mapeado a direm/telem según tabla real si aplica
             'nomger' => 'required|string|max:100',
             'telem' => 'required|string|max:15',
             'emaem' => 'required|email|max:60',
             'username' => 'required|string|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
+        ], [
+            'nonitem.unique' => 'El NIT de esta empresa ya se encuentra registrado.',
+            'username.unique' => 'El nombre de usuario ya está asignado a otra entidad o usuario.',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $perfilEmpresa = Perfil::where('nompef', 'Empresa')->first();
+            $perfilEmpresa = Perfil::firstOrCreate(['nompef' => 'Empresa'], ['idpef' => 8]);
 
             // 1. Crear Empresa
             $empresa = Empresa::create([
@@ -619,7 +621,7 @@ class MupController extends Controller
                 'idpef' => $perfilEmpresa->idpef,
                 'codubi' => 1,
                 'usuaemp' => $request->username,
-                'passemp' => $request->password, // guardamos texto plano según el modelo Empresa o hash? User usa Hash.
+                'passemp' => Hash::make($request->password), 
             ]);
 
             // 2. Crear User vinculado
@@ -635,12 +637,76 @@ class MupController extends Controller
             $user->assignRole($perfilEmpresa->nompef);
 
             DB::commit();
-
             return redirect()->back()->with('success', 'Empresa y usuario de acceso creados exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando empresa: " . $e->getMessage());
             return redirect()->back()->with('error', 'Error al registrar empresa: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Update an existing Empresa.
+     */
+    public function updateEmpresa(Request $request, $id)
+    {
+        $empresa = Empresa::findOrFail($id);
+
+        $request->validate([
+            'razsoem' => 'required|string|max:100',
+            'nonitem' => 'required|string|unique:empresa,nonitem,' . $id . ',idemp',
+            'abremp' => 'nullable|string|max:10',
+            'direm' => 'nullable|string|max:100',
+            'nomger' => 'required|string|max:100',
+            'telem' => 'required|string|max:15',
+            'emaem' => 'required|email|max:60',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $empresa->update([
+                'razsoem' => $request->razsoem,
+                'nonitem' => $request->nonitem,
+                'abremp' => $request->abremp,
+                'direm' => $request->direm,
+                'telem' => $request->telem,
+                'emaem' => $request->emaem,
+                'nomger' => $request->nomger,
+            ]);
+
+            // Sync email with the system user if exists
+            User::where('idemp', $id)->update(['email' => $request->emaem, 'name' => $request->razsoem]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Empresa actualizada correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando empresa: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al actualizar empresa: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete an Empresa.
+     */
+    public function destroyEmpresa($id)
+    {
+        try {
+            DB::beginTransaction();
+            $empresa = Empresa::findOrFail($id);
+            
+            // Critical cleanup: Companies often have many linked records. 
+            // We clean User access first.
+            User::where('idemp', $id)->delete();
+            $empresa->delete();
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Empresa eliminada del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error eliminando empresa: " . $e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo eliminar la empresa: ' . $e->getMessage());
         }
     }
 
