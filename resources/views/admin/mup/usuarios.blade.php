@@ -35,6 +35,7 @@
                 perfiles: @json($perfiles),
                 modulos: @json($modulos),
                 selectedPerfil: null,
+                activeMatrixTab: 'modulos',
                 
                 // Validation for New User
                 password: '',
@@ -411,9 +412,15 @@
                             </div>
 
                             <div class="flex gap-6 border-b mb-6 text-sm font-medium">
-                                <div class="text-[#0d3b5a] border-b-2 border-[#0d3b5a] pb-2 cursor-pointer">Módulos</div>
-                                <div class="text-gray-400 pb-2 cursor-pointer">Resumen</div>
+                                <div @click="activeMatrixTab = 'modulos'" 
+                                    :class="activeMatrixTab === 'modulos' ? 'text-[#0d3b5a] border-b-2 border-[#0d3b5a]' : 'text-gray-400'"
+                                    class="pb-2 cursor-pointer transition-all">Módulos</div>
+                                <div @click="activeMatrixTab = 'resumen'" 
+                                    :class="activeMatrixTab === 'resumen' ? 'text-[#0d3b5a] border-b-2 border-[#0d3b5a]' : 'text-gray-400'"
+                                    class="pb-2 cursor-pointer transition-all">Resumen</div>
                             </div>
+
+                            <div x-show="activeMatrixTab === 'modulos'" x-transition>
 
                             <div class="space-y-4">
                                 <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase mb-2">
@@ -477,6 +484,40 @@
                                         </div>
                                     </div>
                                 </template>
+                            </div>
+
+                            {{-- SECCIÓN: Resumen de Permisos --}}
+                            <div x-show="activeMatrixTab === 'resumen'" x-transition class="space-y-6">
+                                <template x-if="selectedPerfil.permission_names.length === 0">
+                                    <div class="py-12 text-center">
+                                        <div class="w-16 h-16 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <iconify-icon icon="lucide:shield-off" class="text-3xl"></iconify-icon>
+                                        </div>
+                                        <p class="text-gray-400 text-sm font-medium">Este perfil no tiene permisos asignados.</p>
+                                    </div>
+                                </template>
+                                
+                                <div class="grid grid-cols-1 gap-3">
+                                    <template x-for="mod in modulos" :key="'res-' + mod.idpag">
+                                        <template x-if="hasPermission(mod.nompag, 'ver')">
+                                            <div class="p-4 bg-blue-50/30 border border-blue-100 rounded-xl flex items-center justify-between">
+                                                <div class="flex items-center gap-3">
+                                                    <iconify-icon :icon="mod.icopag || 'lucide:check-circle'" class="text-blue-600 text-lg"></iconify-icon>
+                                                    <span class="text-sm font-bold text-gray-700" x-text="mod.nompag"></span>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <span class="px-2 py-0.5 bg-[#0d3b5a] text-white text-[9px] font-black uppercase rounded" x-show="hasPermission(mod.nompag, 'ver')">Ver</span>
+                                                    <span class="px-2 py-0.5 bg-green-600 text-white text-[9px] font-black uppercase rounded" x-show="hasPermission(mod.nompag, 'crear')">Crear</span>
+                                                    <span class="px-2 py-0.5 bg-orange-500 text-white text-[9px] font-black uppercase rounded" x-show="hasPermission(mod.nompag, 'editar')">Edit</span>
+                                                    <span class="px-2 py-0.5 bg-red-600 text-white text-[9px] font-black uppercase rounded" x-show="hasPermission(mod.nompag, 'eliminar')">Elim</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg text-[10px] text-gray-400 italic">
+                                    Esta vista solo muestra los módulos donde el perfil tiene acceso activo.
+                                </div>
                             </div>
 
                             <div class="mt-8 flex justify-end gap-3 pt-6 border-t" x-show="!isReadOnly()">
