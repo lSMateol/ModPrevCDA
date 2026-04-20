@@ -453,6 +453,9 @@ class MupController extends Controller
             'actper' => 'required|in:0,1',
             'dirper' => 'nullable|string|max:100',
             'ciuper' => 'nullable|string|max:50',
+        ], [
+            'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
         ]);
 
         try {
@@ -462,9 +465,9 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilPropietario = Perfil::where('nompef', 'Propietario')->first();
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 7]);
 
-            $persona = Persona::create([
+            Persona::create([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
@@ -475,20 +478,92 @@ class MupController extends Controller
                 'nliccon' => $request->nliccon,
                 'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
+                'dirper' => $request->dirper,
+                'ciuper' => $request->ciuper,
                 'idpef' => $perfilPropietario->idpef,
                 'codubi' => 1,
-                // Si tienes columnas dirper o ciuper en tu tabla persona, descomenta abajo:
-                // 'dirper' => $request->dirper,
-                // 'ciuper' => $request->ciuper,
             ]);
 
             DB::commit();
-
             return redirect()->back()->with('success', 'Propietario registrado exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando propietario: " . $e->getMessage());
             return redirect()->back()->with('error', 'Error al registrar propietario: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Update an existing propietario.
+     */
+    public function updatePropietario(Request $request, $id)
+    {
+        $persona = Persona::findOrFail($id);
+
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:10',
+            'catcon' => 'required|exists:valor,idval',
+            'nliccon' => 'required|string|max:20',
+            'fvencon' => 'required|date',
+            'actper' => 'required|in:0,1',
+            'dirper' => 'nullable|string|max:100',
+            'ciuper' => 'nullable|string|max:50',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $persona->update([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'catcon' => $request->catcon,
+                'nliccon' => $request->nliccon,
+                'fvencon' => $request->fvencon,
+                'actper' => $request->actper,
+                'dirper' => $request->dirper,
+                'ciuper' => $request->ciuper,
+            ]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Propietario actualizado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando propietario: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error al actualizar propietario: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a propietario.
+     */
+    public function destroyPropietario($id)
+    {
+        try {
+            DB::beginTransaction();
+            $persona = Persona::findOrFail($id);
+            
+            // Clean linked records if any
+            User::where('idper', $id)->delete();
+            $persona->delete();
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Propietario eliminado del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error eliminando propietario: " . $e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo eliminar el propietario: ' . $e->getMessage());
         }
     }
 

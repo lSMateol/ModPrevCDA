@@ -11,7 +11,7 @@ class Persona extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'ndocper', 'tdocper', 'nomper', 'apeper', 'dirper',
+        'ndocper', 'tdocper', 'nomper', 'apeper', 'dirper', 'ciuper',
         'telper', 'codubi', 'idpef', 'pass', 'emaper',
         'idemp', 'nliccon', 'fvencon', 'catcon', 'actper'
     ];

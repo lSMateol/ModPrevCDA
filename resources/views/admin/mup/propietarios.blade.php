@@ -4,121 +4,154 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="{ 
-    showCreateForm: true,
-    searchQuery: '',
-    marcarTodos: function() {
-        const checkboxes = document.querySelectorAll('#permissions-card input[type=checkbox]');
-        checkboxes.forEach(c => c.checked = true);
-    }
-}">
+<div class="mup-container" x-data="propietarioManager()">
     <header class="mup-topbar">
         <div class="mup-page-title">
-            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
-            <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
+            <h1 class="flex items-center gap-3">
+                <div class="p-2 bg-[#0d3b5a] rounded-lg shadow-lg shadow-[#0d3b5a]/20">
+                    <iconify-icon icon="lucide:user-cog" class="text-white text-xl"></iconify-icon>
+                </div>
+                <span class="text-[#0d3b5a] font-black tracking-tight">Gestión de Propietarios</span>
+            </h1>
+            <p>Control maestro de propietarios de vehículos, licencias y perfiles operativos vinculados al CDA.</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">Propietario</a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
+            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">
+                <iconify-icon icon="lucide:contact"></iconify-icon>
+                Conductor
+            </a>
+            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">
+                <iconify-icon icon="lucide:user-cog"></iconify-icon>
+                Propietario
+            </a>
+            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">
+                <iconify-icon icon="lucide:building"></iconify-icon>
+                Empresas
+            </a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">
+                <iconify-icon icon="lucide:users-round"></iconify-icon>
+                Usuario
+            </a>
         </div>
     </header>
 
     <div class="mup-content-scroll">
-        <div class="stack-layout">
-            {{-- SECCIÓN: Listado de Propietarios --}}
-            <section class="mup-card">
-                <div class="mup-card-header-plain">
+        <div class="space-y-6 pb-12">
+            
+            {{-- SECCIÓN: Listado Maestro --}}
+            <section class="mup-card animate-fade-in shadow-xl">
+                <div class="mup-card-header-plain flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <div class="mup-card-title text-gray-800">Listado de propietarios</div>
-                        <div class="mup-card-subtitle">Consulta, edita y exporta el listado de propietarios registrados en el sistema.</div>
+                        <div class="mup-card-title text-gray-800">Directorio de Propietarios</div>
+                        <div class="mup-card-subtitle">Consulta avanzada de identificación y estados operativos.</div>
                     </div>
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <div class="export-group">
-                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
-                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
-                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                        <div class="flex border rounded-xl p-1 bg-gray-50/50 shadow-sm overflow-hidden border-gray-200">
+                            <button class="px-4 py-1.5 text-[10px] font-black text-blue-600 hover:bg-white hover:text-blue-800 transition rounded-lg">CSV</button>
+                            <button class="px-4 py-1.5 text-[10px] font-black text-green-600 hover:bg-white hover:text-green-800 transition rounded-lg mx-1">EXCEL</button>
+                            <button class="px-4 py-1.5 text-[10px] font-black text-red-600 hover:bg-white hover:text-red-800 transition rounded-lg">PDF</button>
                         </div>
-                        <div class="relative">
-                            <input type="text" x-model="searchQuery" placeholder="Buscar por nombre o documento..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-80 bg-gray-50">
-                            <div class="absolute left-3 top-2.5 text-gray-400">
-                                <iconify-icon icon="lucide:search"></iconify-icon>
+                        <div class="relative flex-1 md:flex-none">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." 
+                                   class="pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm w-full md:w-80 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#0d3b5a]/10 transition-all">
+                            <div class="absolute left-4 top-3 text-gray-400">
+                                <iconify-icon icon="lucide:search" class="text-lg"></iconify-icon>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="mup-table-wrap">
-                    <table class="mup-data-table">
+                
+                <div class="mup-table-wrap overflow-x-auto">
+                    <table class="mup-data-table min-w-[900px]">
                         <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Documento</th>
-                                <th>Correo</th>
-                                <th>Estado</th>
-                                <th class="text-right">Acciones</th>
+                            <tr class="bg-gray-50/80">
+                                <th class="w-16">ID</th>
+                                <th>Propietario</th>
+                                <th>Identificación</th>
+                                <th>Localización</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-right px-6">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($propietarios as $prop)
-                            <tr x-show="(searchQuery === '' || '{{ strtolower($prop->nomper.' '.$prop->apeper) }}'.includes(searchQuery.toLowerCase()))">
-                                <td>PRO-{{ str_pad($prop->idper, 3, '0', STR_PAD_LEFT) }}</td>
-                                <td><strong>{{ $prop->nomper }} {{ $prop->apeper }}</strong></td>
-                                <td>{{ number_format($prop->ndocper, 0, ',', '.') }}</td>
-                                <td>{{ $prop->emaper }}</td>
-                                <td>
-                                    <span class="mup-state-badge {{ ($prop->actper) ? 'mup-state-active' : 'mup-state-inactive' }}">
-                                        <div class="w-2 h-2 rounded-full bg-current"></div>
-                                        {{ ($prop->actper) ? 'Activo' : 'Inactivo' }}
-                                    </span>
-                                </td>
-                                <td class="text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <button class="p-2 bg-blue-50 text-blue-600 rounded-md"><iconify-icon icon="lucide:eye"></iconify-icon></button>
-                                        <button class="p-2 bg-orange-50 text-orange-600 rounded-md"><iconify-icon icon="lucide:pencil"></iconify-icon></button>
-                                        <button class="p-2 bg-red-50 text-red-600 rounded-md"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-10 text-gray-500">No hay propietarios registrados.</td>
-                            </tr>
-                            @endforelse
+                            <template x-for="p in filteredPropietarios()" :key="p.idper">
+                                <tr class="hover:bg-[#0d3b5a]/[0.02] transition-colors border-b border-gray-50 last:border-0 group">
+                                    <td class="text-xs font-bold text-gray-400" x-text="'P-'+p.idper"></td>
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-[#0d3b5a]/10 flex items-center justify-center text-[#0d3b5a] font-black text-xs" 
+                                                 x-text="p.nomper[0] + (p.apeper ? p.apeper[0] : '')"></div>
+                                            <div>
+                                                <div class="font-bold text-gray-800" x-text="p.nomper + ' ' + (p.apeper || '')"></div>
+                                                <div class="text-[11px] text-gray-400" x-text="p.emaper"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-sm text-gray-700 font-medium" x-text="numberFormat(p.ndocper)"></div>
+                                        <div class="text-[10px] text-gray-400 uppercase tracking-tighter" x-text="'Tipo: ' + getDocType(p.tdocper)"></div>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-bold text-[#0d3b5a]" x-text="p.ciuper || 'Sin ciudad'"></span>
+                                            <span class="text-[10px] text-gray-500 flex items-center gap-1">
+                                                <iconify-icon icon="lucide:map-pin" class="text-gray-400 text-[8px]"></iconify-icon>
+                                                <span x-text="p.dirper || 'Sin dirección'"></span>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span :class="p.actper ? 'mup-state-active' : 'mup-state-inactive'" class="inline-flex items-center shadow-sm">
+                                            <div class="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></div>
+                                            <span x-text="p.actper ? 'Activo' : 'Inactivo'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="text-right px-6">
+                                        <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button @click="editPropietario(p)" class="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Editar">
+                                                <iconify-icon icon="lucide:pencil"></iconify-icon>
+                                            </button>
+                                            <button @click="deletePropietario(p)" class="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Eliminar">
+                                                <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {{-- CARD: Nuevo Propietario --}}
-                <section class="mup-card" x-show="showCreateForm">
-                    <div class="mup-card-header-soft">
+            <div class="mup-management-row">
+                {{-- FORMULARIO: Registro Propietario --}}
+                <section class="mup-card shadow-xl border-t-4 border-[#0d3b5a]">
+                    <div class="mup-card-header-soft pb-6">
                         <div class="flex items-center gap-3">
-                            <iconify-icon icon="lucide:user-round-plus" class="text-2xl text-[#0d3b5a]"></iconify-icon>
+                            <div class="p-3 bg-[#0d3b5a]/10 rounded-xl">
+                                <iconify-icon icon="lucide:user-plus" class="text-2xl text-[#0d3b5a]"></iconify-icon>
+                            </div>
                             <div>
-                                <div class="mup-card-title">Nuevo propietario</div>
-                                <div class="mup-card-subtitle">Registra un nuevo propietario con información personal y datos operativos.</div>
+                                <div class="mup-card-title text-xl tracking-tight">Registro de Propietario</div>
+                                <div class="mup-card-subtitle">Alta de ficha personal y datos de localización.</div>
                             </div>
                         </div>
-                        <button @click="showCreateForm = false" class="text-gray-400 hover:text-red-500 transition">
-                            <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
-                        </button>
                     </div>
                     <div class="mup-card-body">
                         <form action="{{ route('admin.mup.propietarios.store') }}" method="POST">
                             @csrf
-                            <div class="text-[13px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-wider">Información personal</div>
-                            <div class="border-b mb-6"></div>
-                            
+                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span>Información Identitaria</span>
+                                <div class="flex-1 h-px bg-gray-100"></div>
+                            </div>
+
                             <div class="mup-form-grid">
                                 <div class="mup-form-group span-2">
-                                    <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
-                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Carlos Martínez" required value="{{ old('nombre_completo') }}">
+                                    <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
+                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Tipo de documento <span class="mup-required">*</span></label>
+                                    <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
                                     <select name="tdocper" class="mup-input" required>
                                         @foreach($tiposDoc as $tipo)
                                             <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
@@ -127,32 +160,36 @@
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
-                                    <input type="number" name="ndocper" class="mup-input" placeholder="Ej. 79123456" required value="{{ old('ndocper') }}">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Dirección</label>
-                                    <input type="text" name="dirper" class="mup-input" placeholder="Ej. Calle 123" value="{{ old('dirper') }}">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Ciudad</label>
-                                    <input type="text" name="ciuper" class="mup-input" placeholder="Ej. Bogotá" value="{{ old('ciuper') }}">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Teléfono</label>
-                                    <input type="text" name="telper" class="mup-input" placeholder="Ej. 300 123 4567" value="{{ old('telper') }}">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">E-mail <span class="mup-required">*</span></label>
-                                    <input type="email" name="emaper" class="mup-input" placeholder="Ej. correo@ejemplo.com" required value="{{ old('emaper') }}">
+                                    <input type="number" name="ndocper" class="mup-input" placeholder="Sin puntos ni comas" required>
                                 </div>
                             </div>
 
-                            <div class="text-[13px] font-bold text-[#0d3b5a] mt-8 mb-4 uppercase tracking-wider">Datos operativos</div>
-                            <div class="border-b mb-6"></div>
+                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mt-10 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span>Localización y Contacto</span>
+                                <div class="flex-1 h-px bg-gray-100"></div>
+                            </div>
 
                             <div class="mup-form-grid">
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Categoría del pase <span class="mup-required">*</span></label>
+                                    <label class="mup-label">Ciudad</label>
+                                    <input type="text" name="ciuper" class="mup-input" placeholder="Ej. Bogotá">
+                                </div>
+                                <div class="mup-form-group">
+                                    <label class="mup-label">Dirección</label>
+                                    <input type="text" name="dirper" class="mup-input" placeholder="Ej. Carrera 7 # 12-34">
+                                </div>
+                                <div class="mup-form-group">
+                                    <label class="mup-label">E-mail <span class="mup-required">*</span></label>
+                                    <input type="email" name="emaper" class="mup-input" placeholder="propietario@email.com" required>
+                                </div>
+                                <div class="mup-form-group">
+                                    <label class="mup-label">Teléfono</label>
+                                    <input type="text" name="telper" class="mup-input" placeholder="300 123 4567">
+                                </div>
+                                
+                                {{-- Campos adicionales operativos que requiere Persona para Propietarios --}}
+                                <div class="mup-form-group">
+                                    <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
                                     <select name="catcon" class="mup-input" required>
                                         @foreach($categorias as $cat)
                                             <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
@@ -160,96 +197,231 @@
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">No. licencia de tránsito <span class="mup-required">*</span></label>
-                                    <input type="text" name="nliccon" class="mup-input" placeholder="Ej. 12345678" required value="{{ old('nliccon') }}">
+                                    <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
+                                    <input type="text" name="nliccon" class="mup-input" placeholder="Nro de pase" required>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Fecha vencimiento licencia <span class="mup-required">*</span></label>
-                                    <input type="date" name="fvencon" class="mup-input" required value="{{ old('fvencon') }}">
+                                    <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
+                                    <input type="date" name="fvencon" class="mup-input" required>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Activo (SI/NO) <span class="mup-required">*</span></label>
-                                    <select name="actper" class="mup-input">
-                                        <option value="1">SI</option>
-                                        <option value="0">NO</option>
+                                    <label class="mup-label">Estado Inicial</label>
+                                    <select name="actper" class="mup-input" required>
+                                        <option value="1">Activo</option>
+                                        <option value="0">Inactivo</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div class="mt-4 p-3 bg-blue-50 rounded-md flex items-center gap-3 text-blue-800 text-xs">
-                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <span>Ficha de propietario organizada por bloques para facilitar el registro operativo.</span>
-                            </div>
-
-                            <div class="mt-8 flex justify-end gap-3 pt-6 border-t">
-                                <button type="reset" class="mup-btn mup-btn-outline">Cancelar</button>
-                                <button type="submit" class="mup-btn mup-btn-primary">
-                                    <iconify-icon icon="lucide:save"></iconify-icon>
-                                    Guardar propietario
+                            <div class="mt-10 flex justify-end gap-3 pt-6 border-t border-gray-100">
+                                <button type="reset" class="mup-btn mup-btn-outline">Reiniciar</button>
+                                <button type="submit" class="mup-btn mup-btn-primary shadow-lg shadow-[#0d3b5a]/20">
+                                    <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
+                                    Guardar Propietario
                                 </button>
                             </div>
                         </form>
                     </div>
                 </section>
 
-                {{-- CARD: Permisos (Sidebar format) --}}
-                <section class="mup-card h-full" id="permissions-card">
-                    <div class="mup-card-body pt-8">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <div class="mup-card-title text-lg">Permisos del perfil: Propietarios</div>
-                                <div class="mup-card-subtitle">Configuración específica para el perfil propietario dentro del sistema del CDA.</div>
+                {{-- CARD: Permisos Estáticos (Mismo estilo que Usuarios) --}}
+                <section class="mup-card bg-[#f8fafc] border border-gray-200">
+                    <div class="mup-card-header-soft pb-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
+                                    <iconify-icon icon="lucide:shield-check" class="text-2xl text-[#0d3b5a]"></iconify-icon>
+                                </div>
+                                <div>
+                                    <div class="mup-card-title text-xl tracking-tight">Permisos de Perfil</div>
+                                    <div class="mup-card-subtitle">Acceso global para el rol de Propietario.</div>
+                                </div>
                             </div>
-                            <button type="button" @click="marcarTodos" class="px-3 py-1 bg-gray-100 text-[#0d3b5a] rounded text-[10px] font-bold">Marcar todos</button>
+                            <button class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest">Marcar Todos</button>
                         </div>
-
-                        <div class="flex gap-6 border-b mb-6 text-sm font-medium">
-                            <div class="text-[#0d3b5a] border-b-2 border-[#0d3b5a] pb-2 cursor-pointer">Módulos</div>
-                            <div class="text-gray-400 pb-2 cursor-pointer">Resumen</div>
-                        </div>
-
-                        <div class="space-y-4">
+                    </div>
+                    
+                    <div class="mup-card-body">
+                        <div class="space-y-3">
                             @php
                                 $modulosProp = ['Dashboard', 'Agenda de revisión', 'Historial de vehículos', 'Documentos asociados', 'Alertas de vencimiento', 'Actualización de datos'];
                             @endphp
-                            <div class="grid grid-cols-5 text-[11px] font-bold text-gray-400 uppercase mb-2">
-                                <div class="col-span-1">Módulo</div>
+                            <div class="grid grid-cols-6 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                                <div class="col-span-2">Módulo</div>
                                 <div class="text-center">Ver</div>
                                 <div class="text-center">Crear</div>
                                 <div class="text-center">Edit</div>
                                 <div class="text-center">Elim</div>
                             </div>
                             @foreach($modulosProp as $mod)
-                            <div class="grid grid-cols-5 py-3 border-t items-center">
-                                <div class="text-sm font-medium">{{ $mod }}</div>
-                                <div class="flex justify-center"><input type="checkbox" checked class="rounded border-gray-300"></div>
-                                <div class="text-center">
-                                    @if(in_array($mod, ['Documentos asociados', 'Actualización de datos']))
-                                        <input type="checkbox" checked class="rounded border-gray-300">
-                                    @else
-                                        <span class="text-gray-300">-</span>
-                                    @endif
-                                </div>
-                                <div class="text-center">
-                                    @if(in_array($mod, ['Actualización de datos']))
-                                        <input type="checkbox" checked class="rounded border-gray-300">
-                                    @else
-                                        <span class="text-gray-300">-</span>
-                                    @endif
-                                </div>
-                                <div class="text-center text-gray-300">-</div>
+                            <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm">
+                                <div class="col-span-2 text-xs font-bold text-gray-700">{{ $mod }}</div>
+                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                <div class="flex justify-center opacity-10"><input type="checkbox" disabled class="w-4 h-4 rounded border-gray-300"></div>
                             </div>
                             @endforeach
-                        </div>
-
-                        <div class="mt-8 flex justify-end gap-3 pt-6 border-t">
-                            <button class="mup-btn mup-btn-outline">Cancelar</button>
-                            <button class="mup-btn mup-btn-primary">Guardar cambios</button>
                         </div>
                     </div>
                 </section>
             </div>
         </div>
     </div>
+
+    {{-- MODAL DE EDICIÓN --}}
+    <div x-show="editing" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
+        
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-zoom-in" @click.away="closeModal()">
+            <div class="p-8 bg-[#0d3b5a] text-white flex justify-between items-center bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/10 rounded-2xl">
+                        <iconify-icon icon="lucide:user-round-cog" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black tracking-tight" x-text="'Editando: ' + currentProp.nomper"></h2>
+                        <p class="text-[#89b3d0] text-[11px] uppercase tracking-widest font-bold">Actualización de ficha de propiedad</p>
+                    </div>
+                </div>
+                <button @click="closeModal()" class="p-2 hover:bg-white/10 rounded-xl transition-all">
+                    <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
+                </button>
+            </div>
+
+            <form :action="'{{ url('entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8">
+                @csrf
+                @method('PUT')
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="col-span-2">
+                        <label class="mup-label">Nombre Completo</label>
+                        <input type="text" name="nombre_completo" x-model="currentProp.nombre_completo" class="mup-input" required>
+                    </div>
+                    <div>
+                        <label class="mup-label">No. Documento</label>
+                        <input type="number" name="ndocper" x-model="currentProp.ndocper" class="mup-input" required>
+                    </div>
+                    <div>
+                        <label class="mup-label">Email</label>
+                        <input type="email" name="emaper" x-model="currentProp.emaper" class="mup-input" required>
+                    </div>
+                    <div>
+                        <label class="mup-label">Ciudad</label>
+                        <input type="text" name="ciuper" x-model="currentProp.ciuper" class="mup-input">
+                    </div>
+                    <div>
+                        <label class="mup-label">Dirección</label>
+                        <input type="text" name="dirper" x-model="currentProp.dirper" class="mup-input">
+                    </div>
+                    <div>
+                        <label class="mup-label">Estado</label>
+                        <select name="actper" x-model="currentProp.actper" class="mup-input" required>
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                    {{-- Hidden defaults --}}
+                    <input type="hidden" name="tdocper" x-model="currentProp.tdocper">
+                    <input type="hidden" name="catcon" x-model="currentProp.catcon">
+                    <input type="hidden" name="nliccon" x-model="currentProp.nliccon">
+                    <input type="hidden" name="fvencon" x-model="currentProp.fvencon">
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button type="button" @click="closeModal()" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 py-4 bg-[#0d3b5a] text-white font-bold rounded-2xl shadow-xl shadow-[#0d3b5a]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        Actualizar Propietario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- MODAL ELIMINAR --}}
+    <div x-show="deleting" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-zoom-in" @click.away="deleting = false">
+            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <iconify-icon icon="lucide:alert-circle" style="font-size: 40px;"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-black text-gray-800 mb-2">¿Eliminar Propietario?</h3>
+            <p class="text-sm text-gray-400 mb-8 leading-relaxed">
+                Esta acción es definitiva. Se borrará la ficha de <span class="text-gray-900 font-bold" x-text="currentProp.nomper"></span>.
+            </p>
+            
+            <div class="flex gap-3">
+                <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
+                <form :action="'{{ url('entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+function propietarioManager() {
+    return {
+        search: '',
+        editing: false,
+        deleting: false,
+        currentProp: {},
+        propietarios: @json($propietarios),
+
+        filteredPropietarios() {
+            if (!this.search) return this.propietarios;
+            const q = this.search.toLowerCase();
+            return this.propietarios.filter(p => 
+                p.nomper.toLowerCase().includes(q) || 
+                (p.apeper && p.apeper.toLowerCase().includes(q)) ||
+                p.ndocper.toString().includes(q) ||
+                (p.ciuper && p.ciuper.toLowerCase().includes(q))
+            );
+        },
+
+        editPropietario(p) {
+            this.currentProp = { 
+                ...p, 
+                nombre_completo: p.nomper + ' ' + (p.apeper || '') 
+            };
+            this.editing = true;
+        },
+
+        deletePropietario(p) {
+            this.currentProp = p;
+            this.deleting = true;
+        },
+
+        closeModal() {
+            this.editing = false;
+            this.currentProp = {};
+        },
+
+        getDocType(id) {
+            const types = @json($tiposDoc->pluck('nomval', 'idval'));
+            return types[id] || 'N/A';
+        },
+
+        numberFormat(num) {
+            return new Intl.NumberFormat('es-CO').format(num);
+        }
+    }
+}
+</script>
+
+<style>
+    .animate-zoom-in { animation: zoomIn 0.3s ease-out; }
+    @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 @endsection
