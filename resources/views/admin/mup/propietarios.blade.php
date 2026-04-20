@@ -224,43 +224,80 @@
                     </div>
                 </section>
 
-                {{-- CARD: Permisos Estáticos (Mismo estilo que Usuarios) --}}
+                {{-- CARD: Permisos de Perfil (FUNCIONAL) --}}
                 <section class="mup-card bg-[#f8fafc] border border-gray-200">
-                    <div class="mup-card-header-soft pb-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
-                                    <iconify-icon icon="lucide:shield-check" class="text-2xl text-[#0d3b5a]"></iconify-icon>
+                    <form :action="'{{ url('admin/entidades/mup/perfil') }}/' + perfil.idpef" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="nompef" :value="perfil.nompef">
+
+                        <div class="mup-card-header-soft pb-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
+                                        <iconify-icon icon="lucide:shield-check" class="text-2xl text-[#0d3b5a]"></iconify-icon>
+                                    </div>
+                                    <div>
+                                        <div class="mup-card-title text-xl tracking-tight">Acceso de Propietario</div>
+                                        <div class="mup-card-subtitle">Permisos globales para el rol Propietario.</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div class="mup-card-title text-xl tracking-tight">Permisos de Perfil</div>
-                                    <div class="mup-card-subtitle">Acceso global para el rol de Propietario.</div>
-                                </div>
+                                <button type="button" @click="toggleAllPermissions()" class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-colors">Marcar Todos</button>
                             </div>
-                            <button @click="toggleAllPermissions()" class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-colors">Marcar Todos</button>
                         </div>
-                    </div>
-                    
-                    <div class="mup-card-body">
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-6 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                <div class="col-span-2">Módulo</div>
-                                <div class="text-center">Ver</div>
-                                <div class="text-center">Crear</div>
-                                <div class="text-center">Edit</div>
-                                <div class="text-center">Elim</div>
-                            </div>
-                            <template x-for="(perms, mod) in permissions" :key="mod">
-                                <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm">
-                                    <div class="col-span-2 text-xs font-bold text-gray-700" x-text="mod"></div>
-                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.ver" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.crear" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.editar" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                    <div class="flex justify-center opacity-10"><input type="checkbox" disabled class="w-4 h-4 rounded border-gray-300"></div>
+                        
+                        <div class="mup-card-body">
+                            <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div class="grid grid-cols-6 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                                    <div class="col-span-2">Módulo</div>
+                                    <div class="text-center">Ver</div>
+                                    <div class="text-center">Crear</div>
+                                    <div class="text-center">Edit</div>
+                                    <div class="text-center">Elim</div>
                                 </div>
-                            </template>
+                                <template x-for="mod in modulos" :key="mod.idpag">
+                                    <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm hover:border-[#0d3b5a]/30 transition-colors">
+                                        <div class="col-span-2 flex items-center gap-2">
+                                            <iconify-icon :icon="mod.icopag || 'lucide:layers'" class="text-gray-400 text-sm"></iconify-icon>
+                                            <span class="text-xs font-bold text-gray-700" x-text="mod.nompag"></span>
+                                        </div>
+                                        <div class="flex justify-center">
+                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][ver]'" 
+                                                :checked="hasPermission(mod.nompag, 'ver')"
+                                                @change="togglePermission(mod.nompag, 'ver')"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
+                                        </div>
+                                        <div class="flex justify-center" x-show="!['Dashboard', 'Rechazados'].includes(mod.nompag)">
+                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][crear]'" 
+                                                :checked="hasPermission(mod.nompag, 'crear')"
+                                                @change="togglePermission(mod.nompag, 'crear')"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
+                                        </div>
+                                        <div class="flex justify-center" x-show="!['Dashboard', 'Alertas'].includes(mod.nompag)">
+                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][editar]'" 
+                                                :checked="hasPermission(mod.nompag, 'editar')"
+                                                @change="togglePermission(mod.nompag, 'editar')"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
+                                        </div>
+                                        <div class="flex justify-center" x-show="['Vehículos', 'Historial'].includes(mod.nompag)">
+                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][eliminar]'" 
+                                                :checked="hasPermission(mod.nompag, 'eliminar')"
+                                                @change="togglePermission(mod.nompag, 'eliminar')"
+                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="mt-8 pt-6 border-t flex flex-col gap-4">
+                                <p class="text-[10px] text-gray-400 italic">Los cambios de acceso se aplican en el siguiente inicio de sesión de los propietarios.</p>
+                                <button type="submit" class="mup-btn mup-btn-primary w-full shadow-lg shadow-[#0d3b5a]/20">
+                                    <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
+                                    Actualizar Permisos Globales
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </section>
             </div>
         </div>
@@ -292,7 +329,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8">
+            <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8">
                 @csrf
                 @method('PUT')
                 
@@ -354,7 +391,7 @@
             
             <div class="flex gap-3">
                 <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
-                <form :action="'{{ url('entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
+                <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>
@@ -373,13 +410,64 @@ function propietarioManager() {
         deleting: false,
         currentProp: {},
         propietarios: @json($propietarios),
-        permissions: {
-            'Dashboard': { ver: true, crear: false, editar: false },
-            'Agenda de revisión': { ver: true, crear: false, editar: false },
-            'Historial de vehículos': { ver: true, crear: false, editar: false },
-            'Documentos asociados': { ver: true, crear: true, editar: false },
-            'Alertas de vencimiento': { ver: true, crear: false, editar: false },
-            'Actualización de datos': { ver: true, crear: true, editar: true }
+        perfil: @json($perfil),
+        modulos: @json($modulos),
+
+        hasPermission(moduloNom, action) {
+            if (!this.perfil || !this.perfil.permission_names) return false;
+            const baseRoute = this.mapModuloToRoute(moduloNom);
+            if (!baseRoute) return false;
+
+            let representativePermission = '';
+            switch(action) {
+                case 'ver': 
+                    representativePermission = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                        ? baseRoute : baseRoute + '.index'; break;
+                case 'crear': representativePermission = baseRoute + '.create'; break;
+                case 'editar': representativePermission = baseRoute + '.edit'; break;
+                case 'eliminar': representativePermission = baseRoute + '.destroy'; break;
+            }
+            return this.perfil.permission_names.includes(representativePermission);
+        },
+
+        togglePermission(moduloNom, action) {
+            const baseRoute = this.mapModuloToRoute(moduloNom);
+            if (!baseRoute) return;
+
+            let routesToAdd = [];
+            switch(action) {
+                case 'ver': 
+                    routesToAdd = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                        ? [baseRoute] : [baseRoute + '.index', baseRoute + '.show']; break;
+                case 'crear': routesToAdd = [baseRoute + '.create', baseRoute + '.store']; break;
+                case 'editar': routesToAdd = [baseRoute + '.edit', baseRoute + '.update']; break;
+                case 'eliminar': routesToAdd = [baseRoute + '.destroy']; break;
+            }
+
+            const exists = this.perfil.permission_names.includes(routesToAdd[0]);
+            if (exists) {
+                this.perfil.permission_names = this.perfil.permission_names.filter(p => !routesToAdd.includes(p));
+            } else {
+                routesToAdd.forEach(r => {
+                    if (!this.perfil.permission_names.includes(r)) this.perfil.permission_names.push(r);
+                });
+            }
+        },
+
+        mapModuloToRoute(nom) {
+            const map = {
+                'Dashboard': 'admin.dashboard',
+                'Diagnóstico': 'admin.diagnosticos',
+                'Vehículos': 'admin.vehiculos',
+                'Alertas': 'admin.alertas',
+                'Mantenimiento': 'admin.dashboard',
+                'Empresas': 'admin.mup.empresas',
+                'Usuarios': 'admin.mup.usuarios',
+                'Conductores': 'admin.mup.conductores',
+                'Propietarios': 'admin.mup.propietarios',
+                'Rechazados': 'admin.rechazados'
+            };
+            return map[nom] || null;
         },
 
         filteredPropietarios() {
@@ -394,11 +482,21 @@ function propietarioManager() {
         },
 
         toggleAllPermissions() {
-            const anyUnchecked = Object.values(this.permissions).some(p => !p.ver || !p.crear || !p.editar);
-            Object.keys(this.permissions).forEach(mod => {
-                this.permissions[mod].ver = anyUnchecked;
-                this.permissions[mod].crear = anyUnchecked;
-                this.permissions[mod].editar = anyUnchecked;
+            const allModNames = this.modulos.map(m => m.nompag);
+            const allAllowed = allModNames.every(m => this.hasPermission(m, 'ver'));
+            
+            allModNames.forEach(m => {
+                if (allAllowed) {
+                    this.togglePermission(m, 'ver');
+                    this.togglePermission(m, 'crear');
+                    this.togglePermission(m, 'editar');
+                    this.togglePermission(m, 'eliminar');
+                } else {
+                    if (!this.hasPermission(m, 'ver')) this.togglePermission(m, 'ver');
+                    if (!this.hasPermission(m, 'crear')) this.togglePermission(m, 'crear');
+                    if (!this.hasPermission(m, 'editar')) this.togglePermission(m, 'editar');
+                    if (!this.hasPermission(m, 'eliminar')) this.togglePermission(m, 'eliminar');
+                }
             });
         },
 

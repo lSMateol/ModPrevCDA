@@ -221,56 +221,68 @@
 
                 {{-- CARD: Permisos Corporativos --}}
                 <section class="lg:col-span-2 mup-card h-full flex flex-col">
-                    <div class="mup-card-header-soft pb-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
-                                    <iconify-icon icon="lucide:shield-check" class="text-2xl text-blue-600"></iconify-icon>
+                    <form :action="'{{ url('admin/entidades/mup/perfil') }}/' + perfil.idpef" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="nompef" :value="perfil.nompef">
+
+                        <div class="mup-card-header-soft pb-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
+                                        <iconify-icon icon="lucide:shield-check" class="text-2xl text-blue-600"></iconify-icon>
+                                    </div>
+                                    <div>
+                                        <div class="mup-card-title text-lg tracking-tight">Privilegios Corporativos</div>
+                                        <div class="mup-card-subtitle text-[11px]">Control de módulos para empresas.</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div class="mup-card-title text-lg tracking-tight">Privilegios Corporativos</div>
-                                    <div class="mup-card-subtitle text-[11px]">Control de módulos para empresas.</div>
-                                </div>
+                                <button type="button" @click="toggleAllPermissions()" class="text-[9px] bg-[#0d3b5a] text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-all">Marcar todos</button>
                             </div>
-                            <button @click="toggleAllPermissions()" class="text-[9px] bg-[#0d3b5a] text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-all">Marcar todos</button>
                         </div>
-                    </div>
-                    <div class="mup-card-body flex-1">
-                        <div class="space-y-3">
-                            <template x-for="(perms, mod) in permissions" :key="mod">
-                                <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-white hover:shadow-md transition-all group">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-800 shadow-sm transition-transform group-hover:scale-110">
-                                            <iconify-icon icon="lucide:check-square" class="text-sm"></iconify-icon>
+                        <div class="mup-card-body flex-1">
+                            <div class="space-y-3">
+                                <template x-for="mod in modulos" :key="mod.idpag">
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-white hover:shadow-md transition-all group">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-800 shadow-sm transition-transform group-hover:scale-110">
+                                                <iconify-icon :icon="mod.icopag || 'lucide:check-square'" class="text-sm"></iconify-icon>
+                                            </div>
+                                            <span class="text-xs font-bold text-gray-700" x-text="mod.nompag"></span>
                                         </div>
-                                        <span class="text-xs font-bold text-gray-700" x-text="mod"></span>
+                                        <div class="flex gap-2">
+                                            <div class="flex flex-col items-center gap-1">
+                                                <input type="checkbox" :name="'permisos[' + mod.nompag + '][ver]'" 
+                                                    :checked="hasPermission(mod.nompag, 'ver')"
+                                                    @change="togglePermission(mod.nompag, 'ver')"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]">
+                                                <span class="text-[7px] font-black uppercase text-gray-400">Ver</span>
+                                            </div>
+                                            <div class="flex flex-col items-center gap-1" x-show="!['Dashboard', 'Rechazados'].includes(mod.nompag)">
+                                                <input type="checkbox" :name="'permisos[' + mod.nompag + '][crear]'" 
+                                                    :checked="hasPermission(mod.nompag, 'crear')"
+                                                    @change="togglePermission(mod.nompag, 'crear')"
+                                                    class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]">
+                                                <span class="text-[7px] font-black uppercase text-gray-400">Add</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <div class="flex flex-col items-center gap-1">
-                                            <input type="checkbox" x-model="perms.ver" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]">
-                                            <span class="text-[7px] font-black uppercase text-gray-400">Ver</span>
-                                        </div>
-                                        <div class="flex flex-col items-center gap-1">
-                                            <input type="checkbox" x-model="perms.crear" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]">
-                                            <span class="text-[7px] font-black uppercase text-gray-400">Add</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
+                                </template>
+                            </div>
 
-                        <div class="mt-8 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-[10px] text-blue-800 leading-relaxed italic">
-                            <iconify-icon icon="lucide:info" class="mr-1"></iconify-icon>
-                            Los cambios en este panel afectan globalmente a todos los perfiles de tipo Empresa vinculados a este CDA.
-                        </div>
+                            <div class="mt-8 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-[10px] text-blue-800 leading-relaxed italic">
+                                <iconify-icon icon="lucide:info" class="mr-1"></iconify-icon>
+                                Los cambios en este panel afectan globalmente a todos los perfiles de tipo Empresa vinculados a este CDA.
+                            </div>
 
-                        <div class="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-100">
-                            <button @click="alert('Permisos corporativos actualizados en el perfil Empresa')" class="mup-btn mup-btn-primary w-full shadow-lg shadow-[#0d3b5a]/20">
-                                <iconify-icon icon="lucide:shield-check"></iconify-icon>
-                                Guardar cambios de perfil
-                            </button>
+                            <div class="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-100">
+                                <button type="submit" class="mup-btn mup-btn-primary w-full shadow-lg shadow-[#0d3b5a]/20">
+                                    <iconify-icon icon="lucide:shield-check"></iconify-icon>
+                                    Guardar cambios de perfil
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </section>
             </div>
         </div>
@@ -300,7 +312,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="p-8">
+            <form :action="'{{ url('admin/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="p-8">
                 @csrf
                 @method('PUT')
                 
@@ -354,7 +366,7 @@
             
             <div class="flex gap-4">
                 <button @click="deleting = false" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-100 rounded-2xl transition-all">No, cancelar</button>
-                <form :action="'{{ url('entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="flex-1">
+                <form :action="'{{ url('admin/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl shadow-xl shadow-red-200">Confirmar</button>
@@ -373,13 +385,60 @@ function empresaManager() {
         deleting: false,
         currentEmp: {},
         empresas: @json($empresas),
-        permissions: {
-            'Dashboard Corporativo': { ver: true, crear: false },
-            'Flota de vehículos': { ver: true, crear: true },
-            'Historial de servicios': { ver: true, crear: false },
-            'Facturación': { ver: true, crear: false },
-            'Reportes y analítica': { ver: true, crear: true },
-            'Actualización de datos': { ver: true, crear: true }
+        perfil: @json($perfil),
+        modulos: @json($modulos),
+
+        hasPermission(moduloNom, action) {
+            if (!this.perfil || !this.perfil.permission_names) return false;
+            const baseRoute = this.mapModuloToRoute(moduloNom);
+            if (!baseRoute) return false;
+
+            let representativePermission = '';
+            switch(action) {
+                case 'ver': 
+                    representativePermission = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                        ? baseRoute : baseRoute + '.index'; break;
+                case 'crear': representativePermission = baseRoute + '.create'; break;
+            }
+            return this.perfil.permission_names.includes(representativePermission);
+        },
+
+        togglePermission(moduloNom, action) {
+            const baseRoute = this.mapModuloToRoute(moduloNom);
+            if (!baseRoute) return;
+
+            let routesToAdd = [];
+            switch(action) {
+                case 'ver': 
+                    routesToAdd = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
+                        ? [baseRoute] : [baseRoute + '.index', baseRoute + '.show']; break;
+                case 'crear': routesToAdd = [baseRoute + '.create', baseRoute + '.store']; break;
+            }
+
+            const exists = this.perfil.permission_names.includes(routesToAdd[0]);
+            if (exists) {
+                this.perfil.permission_names = this.perfil.permission_names.filter(p => !routesToAdd.includes(p));
+            } else {
+                routesToAdd.forEach(r => {
+                    if (!this.perfil.permission_names.includes(r)) this.perfil.permission_names.push(r);
+                });
+            }
+        },
+
+        mapModuloToRoute(nom) {
+            const map = {
+                'Dashboard': 'admin.dashboard',
+                'Diagnóstico': 'admin.diagnosticos',
+                'Vehículos': 'admin.vehiculos',
+                'Alertas': 'admin.alertas',
+                'Mantenimiento': 'admin.dashboard',
+                'Empresas': 'admin.mup.empresas',
+                'Usuarios': 'admin.mup.usuarios',
+                'Conductores': 'admin.mup.conductores',
+                'Propietarios': 'admin.mup.propietarios',
+                'Rechazados': 'admin.rechazados'
+            };
+            return map[nom] || null;
         },
 
         filteredEmpresas() {
@@ -394,10 +453,19 @@ function empresaManager() {
         },
 
         toggleAllPermissions() {
-            const anyUn = Object.values(this.permissions).some(p => !p.ver || !p.crear);
-            Object.keys(this.permissions).forEach(k => {
-                this.permissions[k].ver = anyUn;
-                this.permissions[k].crear = anyUn;
+            const allModNames = this.modulos.map(m => m.nompag);
+            const allAllowed = allModNames.every(m => this.hasPermission(m, 'ver'));
+            
+            allModNames.forEach(m => {
+                if (allAllowed) {
+                    // Si todos están marcados, desmarcamos todos
+                    if (this.hasPermission(m, 'ver')) this.togglePermission(m, 'ver');
+                    if (this.hasPermission(m, 'crear')) this.togglePermission(m, 'crear');
+                } else {
+                    // Si falta alguno, marcamos todos
+                    if (!this.hasPermission(m, 'ver')) this.togglePermission(m, 'ver');
+                    if (!this.hasPermission(m, 'crear')) this.togglePermission(m, 'crear');
+                }
             });
         },
 

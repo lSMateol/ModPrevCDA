@@ -419,21 +419,26 @@ class MupController extends Controller
     public function propietarios()
     {
         // 1. Asegurar que el perfil 'Propietario' existe
-        $perfilPropietario = Perfil::firstOrCreate(
+        $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Propietario'],
-            ['idpef' => 7, 'pagpri' => null] // ID 7 siguiendo el orden (5 del seeder, 6 conductores)
+            ['idpef' => 7, 'pagpri' => null] 
         );
 
+        // Inyectamos permisos de Spatie para la matriz
+        $role = \Spatie\Permission\Models\Role::where('name', $perfil->nompef)->first();
+        $perfil->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
+
         // 2. Obtener listado de propietarios
-        $propietarios = Persona::where('idpef', $perfilPropietario->idpef)
+        $propietarios = Persona::where('idpef', $perfil->idpef)
             ->orderBy('idper', 'desc')
             ->get();
 
-        // 3. Obtener datos para combos
+        // 3. Obtener datos para combos y módulos
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
+        $modulos = Pagina::orderBy('ordpag')->get();
 
-        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
+        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias', 'perfil', 'modulos'));
     }
 
     /**
@@ -573,15 +578,20 @@ class MupController extends Controller
     public function empresas()
     {
         // 1. Asegurar perfil 'Empresa' (ID 8)
-        Perfil::firstOrCreate(
+        $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Empresa'],
             ['idpef' => 8, 'pagpri' => null]
         );
 
-        // 2. Obtener listado
-        $empresas = Empresa::with('perfil')->orderBy('idemp', 'desc')->get();
+        // Inyectamos permisos de Spatie
+        $role = \Spatie\Permission\Models\Role::where('name', $perfil->nompef)->first();
+        $perfil->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
 
-        return view('admin.mup.empresas', compact('empresas'));
+        // 2. Obtener listado y módulos
+        $empresas = Empresa::with('perfil')->orderBy('idemp', 'desc')->get();
+        $modulos = Pagina::orderBy('ordpag')->get();
+
+        return view('admin.mup.empresas', compact('empresas', 'perfil', 'modulos'));
     }
 
     /**
