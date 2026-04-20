@@ -237,15 +237,12 @@
                                     <div class="mup-card-subtitle">Acceso global para el rol de Propietario.</div>
                                 </div>
                             </div>
-                            <button class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest">Marcar Todos</button>
+                            <button @click="toggleAllPermissions()" class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-colors">Marcar Todos</button>
                         </div>
                     </div>
                     
                     <div class="mup-card-body">
                         <div class="space-y-3">
-                            @php
-                                $modulosProp = ['Dashboard', 'Agenda de revisión', 'Historial de vehículos', 'Documentos asociados', 'Alertas de vencimiento', 'Actualización de datos'];
-                            @endphp
                             <div class="grid grid-cols-6 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">
                                 <div class="col-span-2">Módulo</div>
                                 <div class="text-center">Ver</div>
@@ -253,15 +250,15 @@
                                 <div class="text-center">Edit</div>
                                 <div class="text-center">Elim</div>
                             </div>
-                            @foreach($modulosProp as $mod)
-                            <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm">
-                                <div class="col-span-2 text-xs font-bold text-gray-700">{{ $mod }}</div>
-                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                <div class="flex justify-center"><input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
-                                <div class="flex justify-center opacity-10"><input type="checkbox" disabled class="w-4 h-4 rounded border-gray-300"></div>
-                            </div>
-                            @endforeach
+                            <template x-for="(perms, mod) in permissions" :key="mod">
+                                <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm">
+                                    <div class="col-span-2 text-xs font-bold text-gray-700" x-text="mod"></div>
+                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.ver" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.crear" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                    <div class="flex justify-center"><input type="checkbox" x-model="perms.editar" class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a]"></div>
+                                    <div class="flex justify-center opacity-10"><input type="checkbox" disabled class="w-4 h-4 rounded border-gray-300"></div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </section>
@@ -376,6 +373,14 @@ function propietarioManager() {
         deleting: false,
         currentProp: {},
         propietarios: @json($propietarios),
+        permissions: {
+            'Dashboard': { ver: true, crear: false, editar: false },
+            'Agenda de revisión': { ver: true, crear: false, editar: false },
+            'Historial de vehículos': { ver: true, crear: false, editar: false },
+            'Documentos asociados': { ver: true, crear: true, editar: false },
+            'Alertas de vencimiento': { ver: true, crear: false, editar: false },
+            'Actualización de datos': { ver: true, crear: true, editar: true }
+        },
 
         filteredPropietarios() {
             if (!this.search) return this.propietarios;
@@ -386,6 +391,15 @@ function propietarioManager() {
                 p.ndocper.toString().includes(q) ||
                 (p.ciuper && p.ciuper.toLowerCase().includes(q))
             );
+        },
+
+        toggleAllPermissions() {
+            const anyUnchecked = Object.values(this.permissions).some(p => !p.ver || !p.crear || !p.editar);
+            Object.keys(this.permissions).forEach(mod => {
+                this.permissions[mod].ver = anyUnchecked;
+                this.permissions[mod].crear = anyUnchecked;
+                this.permissions[mod].editar = anyUnchecked;
+            });
         },
 
         editPropietario(p) {
