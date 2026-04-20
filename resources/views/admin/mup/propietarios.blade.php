@@ -18,10 +18,10 @@
             <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores') }}" class="mup-tab">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios') }}" class="mup-tab active">Propietario</a>
-            <a href="{{ route('admin.mup.empresas') }}" class="mup-tab">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios') }}" class="mup-tab">Usuario</a>
+            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
+            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">Propietario</a>
+            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
         </div>
     </header>
 

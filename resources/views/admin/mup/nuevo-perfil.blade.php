@@ -8,7 +8,7 @@
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1 class="flex items-center gap-3">
-                <a href="{{ route('admin.mup.usuarios') }}" class="flex items-center justify-center bg-gray-100 p-2 rounded-md text-sm hover:bg-gray-200 transition">
+                <a href="{{ route('admin.mup.usuarios.index') }}" class="flex items-center justify-center bg-gray-100 p-2 rounded-md text-sm hover:bg-gray-200 transition">
                     <iconify-icon icon="lucide:arrow-left" style="font-size: 16px; color: var(--primary)"></iconify-icon>
                 </a>
                 <span class="text-[#0d3b5a] font-black tracking-tight">Nuevo Perfil del Sistema</span>
@@ -16,7 +16,7 @@
             <p>Crea un nuevo rol y define sus alcances, permisos y accesos en el sistema del CDA.</p>
         </div>
         <div class="flex gap-3">
-            <a href="{{ route('admin.mup.usuarios') }}" class="mup-btn mup-btn-outline">Cancelar</a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-btn mup-btn-outline">Cancelar</a>
             <button type="submit" form="form-nuevo-perfil" class="mup-btn mup-btn-primary" :disabled="submitting">
                 <template x-if="!submitting">
                     <span class="flex items-center gap-2">
