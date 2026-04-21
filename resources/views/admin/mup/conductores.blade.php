@@ -7,31 +7,14 @@
 <div class="mup-container" x-data="conductorManager()">
     <header class="mup-topbar">
         <div class="mup-page-title">
-            <h1 class="flex items-center gap-3">
-                <div class="p-2 bg-[#0d3b5a] rounded-lg shadow-lg shadow-[#0d3b5a]/20">
-                    <iconify-icon icon="lucide:user-round" class="text-white text-xl"></iconify-icon>
-                </div>
-                <span class="text-[#0d3b5a] font-black tracking-tight">Gestión de Conductores</span>
-            </h1>
-            <p>Administra la base de datos de conductores, licencias y estados operativos del CDA.</p>
+            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
+            <p>Gestión de conductores, licencias y estados operativos del CDA.</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab active">
-                <iconify-icon icon="lucide:contact"></iconify-icon>
-                Conductor
-            </a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:user-cog"></iconify-icon>
-                Propietario
-            </a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:building"></iconify-icon>
-                Empresas
-            </a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:users-round"></iconify-icon>
-                Usuario
-            </a>
+            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab active">Conductor</a>
+            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab">Propietario</a>
+            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
         </div>
     </header>
 
@@ -39,32 +22,46 @@
         <div class="space-y-6 pb-12">
             
             {{-- SECCIÓN: Listado de Conductores --}}
-            <section class="mup-card animate-fade-in shadow-xl">
-                <div class="mup-card-header-plain flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <section class="mup-card">
+                <div class="mup-card-header-plain" style="flex-wrap: wrap;">
                     <div>
                         <div class="mup-card-title text-gray-800">Listado Maestro de Conductores</div>
                         <div class="mup-card-subtitle">Consulta, edita y exporta el listado de conductores registrados.</div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                        <div class="flex border rounded-xl p-1 bg-gray-50/50 shadow-sm overflow-hidden border-gray-200">
-                            <button class="px-4 py-1.5 text-[10px] font-black text-blue-600 hover:bg-white hover:text-blue-800 transition rounded-lg">CSV</button>
-                            <button class="px-4 py-1.5 text-[10px] font-black text-green-600 hover:bg-white hover:text-green-800 transition rounded-lg mx-1">EXCEL</button>
-                            <button class="px-4 py-1.5 text-[10px] font-black text-red-600 hover:bg-white hover:text-red-800 transition rounded-lg">PDF</button>
+                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                        <div class="export-group">
+                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
+                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
+                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
                         </div>
-                        <div class="relative flex-1 md:flex-none">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o licencia..." 
-                                   class="pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm w-full md:w-80 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#0d3b5a]/10 transition-all">
-                            <div class="absolute left-4 top-3 text-gray-400">
-                                <iconify-icon icon="lucide:search" class="text-lg"></iconify-icon>
+                        <div class="relative">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o licencia..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-6 pb-4">
+                    <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
+                        <div class="text-xl font-bold text-gray-800" x-text="conductores.length"></div>
+                    </div>
+                    <div class="bg-green-50 border border-green-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-green-700 uppercase tracking-wider">Activos</div>
+                        <div class="text-xl font-bold text-green-700" x-text="activeCount()"></div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-blue-700 uppercase tracking-wider">Resultados filtro</div>
+                        <div class="text-xl font-bold text-blue-700" x-text="filteredConductores().length"></div>
+                    </div>
+                </div>
                 
                 <div class="mup-table-wrap overflow-x-auto">
-                    <table class="mup-data-table min-w-[900px]">
+                    <table class="mup-data-table">
                         <thead>
-                            <tr class="bg-gray-50/80">
+                            <tr>
                                 <th class="w-16">ID</th>
                                 <th>Conductor</th>
                                 <th>Identificación</th>
@@ -75,43 +72,40 @@
                         </thead>
                         <tbody>
                             <template x-for="con in filteredConductores()" :key="con.idper">
-                                <tr class="hover:bg-[#0d3b5a]/[0.02] transition-colors border-b border-gray-50 last:border-0 group">
-                                    <td class="text-xs font-bold text-gray-400" x-text="'C-'+con.idper"></td>
+                                <tr class="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0 group">
+                                    <td class="text-[10px] font-bold text-gray-400" x-text="'C-'+con.idper"></td>
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-[#0d3b5a]/10 flex items-center justify-center text-[#0d3b5a] font-black text-xs" 
+                                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] text-white flex items-center justify-center font-black text-[10px] shadow-sm uppercase"
                                                  x-text="con.nomper[0] + (con.apeper ? con.apeper[0] : '')"></div>
                                             <div>
-                                                <div class="font-bold text-gray-800" x-text="con.nomper + ' ' + (con.apeper || '')"></div>
-                                                <div class="text-[11px] text-gray-400" x-text="con.emaper"></div>
+                                                <div class="font-bold text-gray-800 text-sm leading-tight" x-text="con.nomper + ' ' + (con.apeper || '')"></div>
+                                                <div class="text-[10px] text-gray-400" x-text="con.emaper"></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="text-sm text-gray-700 font-medium" x-text="con.ndocper"></div>
-                                        <div class="text-[10px] text-gray-400 uppercase tracking-tighter" x-text="'Tipo: ' + getDocType(con.tdocper)"></div>
+                                        <div class="text-xs text-gray-700 font-bold" x-text="numberFormat(con.ndocper)"></div>
+                                        <div class="text-[9px] text-gray-400 uppercase font-black" x-text="getDocType(con.tdocper)"></div>
                                     </td>
                                     <td>
                                         <div class="flex flex-col">
-                                            <span class="text-xs font-bold text-[#0d3b5a]" x-text="con.nliccon || 'N/A'"></span>
-                                            <span class="text-[10px] text-gray-500 flex items-center gap-1">
-                                                <iconify-icon icon="lucide:calendar-clock" class="text-gray-400"></iconify-icon>
-                                                <span x-text="formatDate(con.fvencon)"></span>
-                                            </span>
+                                            <span class="text-[11px] font-bold text-[#0d3b5a]" x-text="con.nliccon || 'N/A'"></span>
+                                            <span class="text-[10px] text-gray-400" x-text="formatDate(con.fvencon)"></span>
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span :class="con.actper ? 'mup-state-active' : 'mup-state-inactive'" class="inline-flex items-center shadow-sm">
-                                            <div class="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></div>
+                                        <span :class="con.actper ? 'mup-badge-active' : 'mup-badge-inactive'">
+                                            <div class="w-1 h-1 rounded-full bg-current"></div>
                                             <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
                                         </span>
                                     </td>
                                     <td class="text-right px-6">
-                                        <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button @click="editConductor(con)" class="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Editar Conductor">
+                                        <div class="flex justify-end gap-1">
+                                            <button @click="editConductor(con)" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Editar Conductor">
                                                 <iconify-icon icon="lucide:pencil"></iconify-icon>
                                             </button>
-                                            <button @click="deleteConductor(con)" class="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Eliminar">
+                                            <button @click="deleteConductor(con)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Eliminar">
                                                 <iconify-icon icon="lucide:trash-2"></iconify-icon>
                                             </button>
                                         </div>
@@ -119,31 +113,29 @@
                                 </tr>
                             </template>
                             <tr x-show="filteredConductores().length === 0">
-                                <td colspan="6" class="text-center py-20">
-                                    <div class="flex flex-col items-center justify-center text-gray-400">
-                                        <iconify-icon icon="lucide:user-search" class="text-5xl mb-3 opacity-20"></iconify-icon>
-                                        <p class="text-sm font-medium">No se encontraron conductores con ese criterio.</p>
+                                <td colspan="6" class="text-center py-10">
+                                    <div class="flex flex-col items-center gap-2 text-gray-500">
+                                        <iconify-icon icon="lucide:search-x" class="text-2xl"></iconify-icon>
+                                        <span class="text-sm font-medium">No hay conductores para la búsqueda aplicada.</span>
+                                        <span class="text-xs">Ajusta los filtros o registra un nuevo conductor.</span>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+                    <div x-text="filteredConductores().length + ' conductor(es) registrado(s)'"></div>
+                    <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
+                </div>
             </section>
 
-            <div class="mup-management-row">
-                {{-- FORMULARIO: Nuevo Conductor --}}
-                <section class="mup-card shadow-xl border-t-4 border-[#0d3b5a]">
-                    <div class="mup-card-header-soft pb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="p-3 bg-[#0d3b5a]/10 rounded-xl">
-                                <iconify-icon icon="lucide:user-plus" class="text-2xl text-[#0d3b5a]"></iconify-icon>
-                            </div>
-                            <div>
-                                <div class="mup-card-title text-xl tracking-tight">Registro de Conductor</div>
-                                <div class="mup-card-subtitle">Ingresa la información básica y datos de licencia.</div>
-                            </div>
-                        </div>
+            <div>
+                <section class="mup-card">
+                    <div class="mup-card-header-soft">
+                        <div class="mup-card-title">Registro de Conductor</div>
+                        <div class="mup-card-subtitle">Ingresa la información básica, contacto y datos de licencia.</div>
                     </div>
                     <div class="mup-card-body">
                         <form action="{{ route('admin.mup.conductores.store') }}" method="POST" id="createForm">
@@ -214,56 +206,12 @@
 
                             <div class="mt-10 flex justify-end gap-3 pt-6 border-t border-gray-100">
                                 <button type="reset" class="mup-btn mup-btn-outline">Limpiar todo</button>
-                                <button type="submit" class="mup-btn mup-btn-primary shadow-lg shadow-[#0d3b5a]/20">
+                                <button type="submit" class="mup-btn mup-btn-primary">
                                     <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
                                     Registrar Conductor
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </section>
-
-                {{-- CARD: Resumen / Info --}}
-                <section class="mup-card bg-[#0d3b5a] text-white overflow-hidden relative">
-                    <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-                        <iconify-icon icon="lucide:user-check" style="font-size: 240px;"></iconify-icon>
-                    </div>
-                    <div class="mup-card-body relative z-10 h-full flex flex-col justify-between py-10">
-                        <div>
-                            <div class="text-3xl font-black mb-4 tracking-tighter">Perfiles Operativos</div>
-                            <p class="text-[#89b3d0] text-sm leading-relaxed mb-8">
-                                Los conductores registrados aquí son asignados a vehículos para la generación de diagnósticos preventivos y revisiones técnicas según las normas del CDA.
-                            </p>
-                            
-                            <div class="space-y-4">
-                                <div class="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
-                                            <iconify-icon icon="lucide:file-warnings" class="text-xl text-yellow-400"></iconify-icon>
-                                        </div>
-                                        <div>
-                                            <div class="text-sm font-bold">Alertas de Vencimiento</div>
-                                            <div class="text-[11px] text-[#89b3d0]">El sistema notificará 30 días antes del vencimiento de la licencia.</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
-                                            <iconify-icon icon="lucide:shield-check" class="text-xl text-green-400"></iconify-icon>
-                                        </div>
-                                        <div>
-                                            <div class="text-sm font-bold">Integridad de Datos</div>
-                                            <div class="text-[11px] text-[#89b3d0]">Se recomienda que el correo electrónico sea real para notificaciones legales.</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-8 pt-8 border-t border-white/10 text-center">
-                            <span class="text-xs font-semibold text-white/40 uppercase tracking-widest">CDA RASTRILLANTAS LTDA</span>
-                        </div>
                     </div>
                 </section>
             </div>
@@ -280,7 +228,7 @@
          x-transition:leave-end="opacity-0 scale-95"
          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
         
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-zoom-in" @click.away="closeModal()">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden" @click.away="closeModal()">
             <div class="p-8 bg-[#0d3b5a] text-white flex justify-between items-center bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/10 rounded-2xl">
@@ -351,7 +299,7 @@
 
     {{-- MODAL ELIMINAR --}}
     <div x-show="deleting" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-zoom-in" @click.away="deleting = false">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center" @click.away="deleting = false">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <iconify-icon icon="lucide:alert-triangle" style="font-size: 40px;"></iconify-icon>
             </div>
@@ -381,6 +329,7 @@ function conductorManager() {
         deleting: false,
         currentCon: {},
         conductores: @json($conductores),
+        tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         
         init() {
             // Pre-procesamiento de datos si es necesario
@@ -416,33 +365,23 @@ function conductorManager() {
         },
 
         getDocType(id) {
-            const types = @json($tiposDoc->pluck('nomval', 'idval'));
-            return types[id] || 'N/A';
+            return this.tiposDoc[id] || 'N/A';
         },
 
         formatDate(dateStr) {
             if (!dateStr) return 'N/A';
             const date = new Date(dateStr);
             return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+
+        numberFormat(num) {
+            return new Intl.NumberFormat('es-CO').format(num);
+        },
+
+        activeCount() {
+            return this.conductores.filter(c => Number(c.actper) === 1).length;
         }
     }
 }
 </script>
-
-<style>
-    .animate-zoom-in {
-        animation: zoomIn 0.3s ease-out;
-    }
-    @keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-    }
-    .animate-fade-in {
-        animation: fadeIn 0.6s ease-out forwards;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
 @endsection

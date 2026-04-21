@@ -4,67 +4,66 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="propietarioManager()">
+<div class="mup-container" x-data="propietarioManager()" x-cloak>
     <header class="mup-topbar">
         <div class="mup-page-title">
-            <h1 class="flex items-center gap-3">
-                <div class="p-2 bg-[#0d3b5a] rounded-lg shadow-lg shadow-[#0d3b5a]/20">
-                    <iconify-icon icon="lucide:user-cog" class="text-white text-xl"></iconify-icon>
-                </div>
-                <span class="text-[#0d3b5a] font-black tracking-tight">Gestión de Propietarios</span>
-            </h1>
-            <p>Control maestro de propietarios de vehículos, licencias y perfiles operativos vinculados al CDA.</p>
+            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
+            <p>Gestión de propietarios de vehículos y control operativo vinculado al CDA.</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:contact"></iconify-icon>
-                Conductor
-            </a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">
-                <iconify-icon icon="lucide:user-cog"></iconify-icon>
-                Propietario
-            </a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:building"></iconify-icon>
-                Empresas
-            </a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:users-round"></iconify-icon>
-                Usuario
-            </a>
+            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
+            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">Propietario</a>
+            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
         </div>
     </header>
 
     <div class="mup-content-scroll">
         <div class="space-y-6 pb-12">
-            
-            {{-- SECCIÓN: Listado Maestro --}}
-            <section class="mup-card animate-fade-in shadow-xl">
-                <div class="mup-card-header-plain flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <section class="mup-card">
+                <div class="mup-card-header-plain" style="flex-wrap: wrap;">
                     <div>
                         <div class="mup-card-title text-gray-800">Directorio de Propietarios</div>
-                        <div class="mup-card-subtitle">Consulta avanzada de identificación y estados operativos.</div>
+                        <div class="mup-card-subtitle">Administración de datos personales, licencias y estado operativo.</div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                        <div class="flex border rounded-xl p-1 bg-gray-50/50 shadow-sm overflow-hidden border-gray-200">
-                            <button class="px-4 py-1.5 text-[10px] font-black text-blue-600 hover:bg-white hover:text-blue-800 transition rounded-lg">CSV</button>
-                            <button class="px-4 py-1.5 text-[10px] font-black text-green-600 hover:bg-white hover:text-green-800 transition rounded-lg mx-1">EXCEL</button>
-                            <button class="px-4 py-1.5 text-[10px] font-black text-red-600 hover:bg-white hover:text-red-800 transition rounded-lg">PDF</button>
+                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                        <div class="export-group">
+                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
+                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
+                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
                         </div>
-                        <div class="relative flex-1 md:flex-none">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." 
-                                   class="pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm w-full md:w-80 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#0d3b5a]/10 transition-all">
-                            <div class="absolute left-4 top-3 text-gray-400">
-                                <iconify-icon icon="lucide:search" class="text-lg"></iconify-icon>
+                        <div class="relative">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
                         </div>
+                    <button @click="openCreateDrawer()" class="mup-btn mup-btn-primary h-10">
+                        <iconify-icon icon="lucide:plus" class="text-lg"></iconify-icon>
+                        Nuevo Propietario
+                    </button>
+                </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-6 pb-4">
+                    <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
+                        <div class="text-xl font-bold text-gray-800" x-text="propietarios.length"></div>
+                    </div>
+                    <div class="bg-green-50 border border-green-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-green-700 uppercase tracking-wider">Activos</div>
+                        <div class="text-xl font-bold text-green-700" x-text="activeCount()"></div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-blue-700 uppercase tracking-wider">Resultados filtro</div>
+                        <div class="text-xl font-bold text-blue-700" x-text="filteredPropietarios().length"></div>
                     </div>
                 </div>
-                
+
                 <div class="mup-table-wrap overflow-x-auto">
-                    <table class="mup-data-table min-w-[900px]">
+                    <table class="mup-data-table">
                         <thead>
-                            <tr class="bg-gray-50/80">
+                            <tr>
                                 <th class="w-16">ID</th>
                                 <th>Propietario</th>
                                 <th>Identificación</th>
@@ -75,322 +74,385 @@
                         </thead>
                         <tbody>
                             <template x-for="p in filteredPropietarios()" :key="p.idper">
-                                <tr class="hover:bg-[#0d3b5a]/[0.02] transition-colors border-b border-gray-50 last:border-0 group">
-                                    <td class="text-xs font-bold text-gray-400" x-text="'P-'+p.idper"></td>
+                                <tr class="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0 group">
+                                    <td class="text-[10px] font-bold text-gray-400" x-text="'P-'+p.idper"></td>
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-[#0d3b5a]/10 flex items-center justify-center text-[#0d3b5a] font-black text-xs" 
+                                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] text-white flex items-center justify-center font-black text-[10px] shadow-sm uppercase" 
                                                  x-text="p.nomper[0] + (p.apeper ? p.apeper[0] : '')"></div>
                                             <div>
-                                                <div class="font-bold text-gray-800" x-text="p.nomper + ' ' + (p.apeper || '')"></div>
-                                                <div class="text-[11px] text-gray-400" x-text="p.emaper"></div>
+                                                <div class="font-bold text-gray-800 text-sm leading-tight" x-text="p.nomper + ' ' + (p.apeper || '')"></div>
+                                                <div class="text-[10px] text-gray-400" x-text="p.emaper"></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="text-sm text-gray-700 font-medium" x-text="numberFormat(p.ndocper)"></div>
-                                        <div class="text-[10px] text-gray-400 uppercase tracking-tighter" x-text="'Tipo: ' + getDocType(p.tdocper)"></div>
+                                        <div class="text-xs text-gray-700 font-bold" x-text="numberFormat(p.ndocper)"></div>
+                                        <div class="text-[9px] text-gray-400 uppercase font-black" x-text="getDocType(p.tdocper)"></div>
                                     </td>
                                     <td>
                                         <div class="flex flex-col">
-                                            <span class="text-xs font-bold text-[#0d3b5a]" x-text="p.ciuper || 'Sin ciudad'"></span>
-                                            <span class="text-[10px] text-gray-500 flex items-center gap-1">
-                                                <iconify-icon icon="lucide:map-pin" class="text-gray-400 text-[8px]"></iconify-icon>
-                                                <span x-text="p.dirper || 'Sin dirección'"></span>
-                                            </span>
+                                            <span class="text-[11px] font-bold text-[#0d3b5a]" x-text="p.ciuper || 'N/A'"></span>
+                                            <span class="text-[10px] text-gray-400 truncate max-w-[150px]" x-text="p.dirper || 'Sin dirección'"></span>
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span :class="p.actper ? 'mup-state-active' : 'mup-state-inactive'" class="inline-flex items-center shadow-sm">
-                                            <div class="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></div>
+                                        <span :class="p.actper ? 'mup-badge-active' : 'mup-badge-inactive'">
+                                            <div class="w-1 h-1 rounded-full bg-current"></div>
                                             <span x-text="p.actper ? 'Activo' : 'Inactivo'"></span>
                                         </span>
                                     </td>
                                     <td class="text-right px-6">
-                                        <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button @click="editPropietario(p)" class="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Editar">
+                                        <div class="flex justify-end gap-1">
+                                            <button @click="viewDetail(p)" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Ver Detalle">
+                                                <iconify-icon icon="lucide:eye"></iconify-icon>
+                                            </button>
+                                            <button @click="editPropietario(p)" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Editar">
                                                 <iconify-icon icon="lucide:pencil"></iconify-icon>
                                             </button>
-                                            <button @click="deletePropietario(p)" class="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Eliminar">
+                                            <button @click="confirmDelete(p)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Eliminar">
                                                 <iconify-icon icon="lucide:trash-2"></iconify-icon>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             </template>
+                            <tr x-show="filteredPropietarios().length === 0">
+                                <td colspan="6" class="text-center py-10">
+                                    <div class="flex flex-col items-center gap-2 text-gray-500">
+                                        <iconify-icon icon="lucide:search-x" class="text-2xl"></iconify-icon>
+                                        <span class="text-sm font-medium">No hay propietarios para la búsqueda aplicada.</span>
+                                        <span class="text-xs">Ajusta los filtros o registra un nuevo propietario.</span>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
+                
+                <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+                    <div x-text="filteredPropietarios().length + ' propietario(s) registrado(s)'"></div>
+                    <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
+                </div>
             </section>
-
-            <div class="mup-management-row">
-                {{-- FORMULARIO: Registro Propietario --}}
-                <section class="mup-card shadow-xl border-t-4 border-[#0d3b5a]">
-                    <div class="mup-card-header-soft pb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="p-3 bg-[#0d3b5a]/10 rounded-xl">
-                                <iconify-icon icon="lucide:user-plus" class="text-2xl text-[#0d3b5a]"></iconify-icon>
-                            </div>
-                            <div>
-                                <div class="mup-card-title text-xl tracking-tight">Registro de Propietario</div>
-                                <div class="mup-card-subtitle">Alta de ficha personal y datos de localización.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mup-card-body">
-                        <form action="{{ route('admin.mup.propietarios.store') }}" method="POST">
-                            @csrf
-                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span>Información Identitaria</span>
-                                <div class="flex-1 h-px bg-gray-100"></div>
-                            </div>
-
-                            <div class="mup-form-grid">
-                                <div class="mup-form-group span-2">
-                                    <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
-                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
-                                    <select name="tdocper" class="mup-input" required>
-                                        @foreach($tiposDoc as $tipo)
-                                            <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
-                                    <input type="number" name="ndocper" class="mup-input" placeholder="Sin puntos ni comas" required>
-                                </div>
-                            </div>
-
-                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mt-10 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span>Localización y Contacto</span>
-                                <div class="flex-1 h-px bg-gray-100"></div>
-                            </div>
-
-                            <div class="mup-form-grid">
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Ciudad</label>
-                                    <input type="text" name="ciuper" class="mup-input" placeholder="Ej. Bogotá">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Dirección</label>
-                                    <input type="text" name="dirper" class="mup-input" placeholder="Ej. Carrera 7 # 12-34">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">E-mail <span class="mup-required">*</span></label>
-                                    <input type="email" name="emaper" class="mup-input" placeholder="propietario@email.com" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Teléfono</label>
-                                    <input type="text" name="telper" class="mup-input" placeholder="300 123 4567">
-                                </div>
-                                
-                                {{-- Campos adicionales operativos que requiere Persona para Propietarios --}}
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
-                                    <select name="catcon" class="mup-input" required>
-                                        @foreach($categorias as $cat)
-                                            <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
-                                    <input type="text" name="nliccon" class="mup-input" placeholder="Nro de pase" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
-                                    <input type="date" name="fvencon" class="mup-input" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Estado Inicial</label>
-                                    <select name="actper" class="mup-input" required>
-                                        <option value="1">Activo</option>
-                                        <option value="0">Inactivo</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mt-10 flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                <button type="reset" class="mup-btn mup-btn-outline">Reiniciar</button>
-                                <button type="submit" class="mup-btn mup-btn-primary shadow-lg shadow-[#0d3b5a]/20">
-                                    <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
-                                    Guardar Propietario
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                {{-- CARD: Permisos de Perfil (FUNCIONAL) --}}
-                <section class="mup-card bg-[#f8fafc] border border-gray-200">
-                    <form :action="'{{ url('admin/entidades/mup/perfil') }}/' + perfil.idpef" method="POST">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="nompef" :value="perfil.nompef">
-
-                        <div class="mup-card-header-soft pb-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="p-3 bg-white shadow-sm border border-gray-100 rounded-xl">
-                                        <iconify-icon icon="lucide:shield-check" class="text-2xl text-[#0d3b5a]"></iconify-icon>
-                                    </div>
-                                    <div>
-                                        <div class="mup-card-title text-xl tracking-tight">Acceso de Propietario</div>
-                                        <div class="mup-card-subtitle">Permisos globales para el rol Propietario.</div>
-                                    </div>
-                                </div>
-                                <button type="button" @click="toggleAllPermissions()" class="text-[10px] bg-[#0d3b5a] text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-[#1a4f73] transition-colors">Marcar Todos</button>
-                            </div>
-                        </div>
-                        
-                        <div class="mup-card-body">
-                            <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                                <div class="grid grid-cols-6 text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                    <div class="col-span-2">Módulo</div>
-                                    <div class="text-center">Ver</div>
-                                    <div class="text-center">Crear</div>
-                                    <div class="text-center">Edit</div>
-                                    <div class="text-center">Elim</div>
-                                </div>
-                                <template x-for="mod in modulos" :key="mod.idpag">
-                                    <div class="grid grid-cols-6 py-3 px-4 bg-white border border-gray-100 rounded-2xl items-center shadow-sm hover:border-[#0d3b5a]/30 transition-colors">
-                                        <div class="col-span-2 flex items-center gap-2">
-                                            <iconify-icon :icon="mod.icopag || 'lucide:layers'" class="text-gray-400 text-sm"></iconify-icon>
-                                            <span class="text-xs font-bold text-gray-700" x-text="mod.nompag"></span>
-                                        </div>
-                                        <div class="flex justify-center">
-                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][ver]'" 
-                                                :checked="hasPermission(mod.nompag, 'ver')"
-                                                @change="togglePermission(mod.nompag, 'ver')"
-                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
-                                        </div>
-                                        <div class="flex justify-center" x-show="!['Dashboard', 'Rechazados'].includes(mod.nompag)">
-                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][crear]'" 
-                                                :checked="hasPermission(mod.nompag, 'crear')"
-                                                @change="togglePermission(mod.nompag, 'crear')"
-                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
-                                        </div>
-                                        <div class="flex justify-center" x-show="!['Dashboard', 'Alertas'].includes(mod.nompag)">
-                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][editar]'" 
-                                                :checked="hasPermission(mod.nompag, 'editar')"
-                                                @change="togglePermission(mod.nompag, 'editar')"
-                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
-                                        </div>
-                                        <div class="flex justify-center" x-show="['Vehículos', 'Historial'].includes(mod.nompag)">
-                                            <input type="checkbox" :name="'permisos[' + mod.nompag + '][eliminar]'" 
-                                                :checked="hasPermission(mod.nompag, 'eliminar')"
-                                                @change="togglePermission(mod.nompag, 'eliminar')"
-                                                class="w-4 h-4 rounded border-gray-300 text-[#0d3b5a] focus:ring-[#0d3b5a] cursor-pointer">
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <div class="mt-8 pt-6 border-t flex flex-col gap-4">
-                                <p class="text-[10px] text-gray-400 italic">Los cambios de acceso se aplican en el siguiente inicio de sesión de los propietarios.</p>
-                                <button type="submit" class="mup-btn mup-btn-primary w-full shadow-lg shadow-[#0d3b5a]/20">
-                                    <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
-                                    Actualizar Permisos Globales
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </section>
-            </div>
         </div>
     </div>
 
-    {{-- MODAL DE EDICIÓN --}}
-    <div x-show="editing" 
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95"
-         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-zoom-in" @click.away="closeModal()">
-            <div class="p-8 bg-[#0d3b5a] text-white flex justify-between items-center bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/10 rounded-2xl">
-                        <iconify-icon icon="lucide:user-round-cog" class="text-2xl"></iconify-icon>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-black tracking-tight" x-text="'Editando: ' + currentProp.nomper"></h2>
-                        <p class="text-[#89b3d0] text-[11px] uppercase tracking-widest font-bold">Actualización de ficha de propiedad</p>
-                    </div>
-                </div>
-                <button @click="closeModal()" class="p-2 hover:bg-white/10 rounded-xl transition-all">
-                    <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
-                </button>
-            </div>
-
-            <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8">
+    {{-- DRAWER: Crear Propietario --}}
+    <div x-show="createDrawer" class="mup-drawer-overlay" x-cloak
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="mup-drawer" @click.away="createDrawer = false">
+            <form action="{{ route('admin.mup.propietarios.store') }}" method="POST" class="flex flex-col h-full">
                 @csrf
-                @method('PUT')
-                
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="col-span-2">
-                        <label class="mup-label">Nombre Completo</label>
-                        <input type="text" name="nombre_completo" x-model="currentProp.nombre_completo" class="mup-input" required>
+                <div class="mup-drawer-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#0d3b5a] text-white flex items-center justify-center">
+                            <iconify-icon icon="lucide:user-plus" class="text-xl"></iconify-icon>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-[15px]">Nuevo Propietario</h3>
+                            <p class="text-xs text-gray-400">Registra un nuevo propietario en el sistema.</p>
+                        </div>
                     </div>
-                    <div>
-                        <label class="mup-label">No. Documento</label>
-                        <input type="number" name="ndocper" x-model="currentProp.ndocper" class="mup-input" required>
-                    </div>
-                    <div>
-                        <label class="mup-label">Email</label>
-                        <input type="email" name="emaper" x-model="currentProp.emaper" class="mup-input" required>
-                    </div>
-                    <div>
-                        <label class="mup-label">Ciudad</label>
-                        <input type="text" name="ciuper" x-model="currentProp.ciuper" class="mup-input">
-                    </div>
-                    <div>
-                        <label class="mup-label">Dirección</label>
-                        <input type="text" name="dirper" x-model="currentProp.dirper" class="mup-input">
-                    </div>
-                    <div>
-                        <label class="mup-label">Estado</label>
-                        <select name="actper" x-model="currentProp.actper" class="mup-input" required>
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
-                    </div>
-                    {{-- Hidden defaults --}}
-                    <input type="hidden" name="tdocper" x-model="currentProp.tdocper">
-                    <input type="hidden" name="catcon" x-model="currentProp.catcon">
-                    <input type="hidden" name="nliccon" x-model="currentProp.nliccon">
-                    <input type="hidden" name="fvencon" x-model="currentProp.fvencon">
+                    <button type="button" @click="createDrawer = false" class="text-gray-400 hover:text-red-500 transition">
+                        <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                    </button>
                 </div>
 
-                <div class="mt-10 flex gap-4">
-                    <button type="button" @click="closeModal()" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                    <button type="submit" class="flex-1 py-4 bg-[#0d3b5a] text-white font-bold rounded-2xl shadow-xl shadow-[#0d3b5a]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        Actualizar Propietario
+                <div class="mup-drawer-body">
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:id-card" class="text-sm"></iconify-icon>
+                        Información Identitaria
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="mup-form-group">
+                            <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
+                            <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
+                                <select name="tdocper" class="mup-input" required>
+                                    @foreach($tiposDoc as $tipo)
+                                        <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
+                                <input type="number" name="ndocper" class="mup-input" placeholder="12345678" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:map-pin" class="text-sm"></iconify-icon>
+                        Localización y Contacto
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Ciudad</label>
+                                <input type="text" name="ciuper" class="mup-input" placeholder="Cali">
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Teléfono</label>
+                                <input type="text" name="telper" class="mup-input" placeholder="3001234567">
+                            </div>
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Dirección</label>
+                            <input type="text" name="dirper" class="mup-input" placeholder="Calle 10 # 5-20">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">E-mail <span class="mup-required">*</span></label>
+                            <input type="email" name="emaper" class="mup-input" placeholder="propietario@email.com" required>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:award" class="text-sm"></iconify-icon>
+                        Datos de Licencia y Estado
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
+                                <select name="catcon" class="mup-input" required>
+                                    @foreach($categorias as $cat)
+                                        <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
+                                <input type="text" name="nliccon" class="mup-input" placeholder="NRO-123" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
+                                <input type="date" name="fvencon" class="mup-input" required>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Estado Inicial</label>
+                                <select name="actper" class="mup-input" required>
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mup-drawer-footer">
+                    <button type="button" @click="createDrawer = false" class="mup-btn mup-btn-outline">Cancelar</button>
+                    <button type="submit" class="mup-btn mup-btn-primary">
+                        <iconify-icon icon="lucide:save"></iconify-icon>
+                        Guardar Propietario
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- MODAL ELIMINAR --}}
-    <div x-show="deleting" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-zoom-in" @click.away="deleting = false">
+    {{-- DRAWER: Editar Propietario --}}
+    <div x-show="editDrawer" class="mup-drawer-overlay" x-cloak
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="mup-drawer" @click.away="editDrawer = false">
+            <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex flex-col h-full">
+                @csrf
+                @method('PUT')
+                <div class="mup-drawer-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center">
+                            <iconify-icon icon="lucide:pencil" class="text-xl"></iconify-icon>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-[15px]" x-text="'Editar: ' + currentProp.nomper"></h3>
+                            <p class="text-xs text-gray-400">Actualiza los datos del propietario.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="editDrawer = false" class="text-gray-400 hover:text-red-500 transition">
+                        <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                    </button>
+                </div>
+
+                <div class="mup-drawer-body">
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:id-card" class="text-sm"></iconify-icon>
+                        Información Identitaria
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="mup-form-group">
+                            <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
+                            <input type="text" name="nombre_completo" x-model="currentProp.nombre_completo" class="mup-input" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
+                                <select name="tdocper" x-model="currentProp.tdocper" class="mup-input" required>
+                                    @foreach($tiposDoc as $tipo)
+                                        <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
+                                <input type="number" name="ndocper" x-model="currentProp.ndocper" class="mup-input" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:map-pin" class="text-sm"></iconify-icon>
+                        Localización y Contacto
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Ciudad</label>
+                                <input type="text" name="ciuper" x-model="currentProp.ciuper" class="mup-input">
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Teléfono</label>
+                                <input type="text" name="telper" x-model="currentProp.telper" class="mup-input">
+                            </div>
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Dirección</label>
+                            <input type="text" name="dirper" x-model="currentProp.dirper" class="mup-input">
+                        </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">E-mail <span class="mup-required">*</span></label>
+                            <input type="email" name="emaper" x-model="currentProp.emaper" class="mup-input" required>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:award" class="text-sm"></iconify-icon>
+                        Datos de Licencia y Estado
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
+                                <select name="catcon" x-model="currentProp.catcon" class="mup-input" required>
+                                    @foreach($categorias as $cat)
+                                        <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
+                                <input type="text" name="nliccon" x-model="currentProp.nliccon" class="mup-input" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
+                                <input type="date" name="fvencon" x-model="currentProp.fvencon" class="mup-input" required>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Estado</label>
+                                <select name="actper" x-model="currentProp.actper" class="mup-input" required>
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mup-drawer-footer">
+                    <button type="button" @click="editDrawer = false" class="mup-btn mup-btn-outline">Cancelar</button>
+                    <button type="submit" class="mup-btn mup-btn-primary">
+                        <iconify-icon icon="lucide:save"></iconify-icon>
+                        Actualizar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- MODAL: Ver Detalle --}}
+    <div x-show="detailModal" class="mup-modal-overlay" x-cloak>
+        <div class="mup-modal" @click.away="detailModal = false">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-[#0d3b5a] text-white flex items-center justify-center text-xl font-black shadow-lg"
+                             x-text="currentProp.nomper ? currentProp.nomper[0] + (currentProp.apeper ? currentProp.apeper[0] : '') : ''"></div>
+                        <div>
+                            <h2 class="text-xl font-black text-gray-800" x-text="currentProp.nomper + ' ' + (currentProp.apeper || '')"></h2>
+                            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest" x-text="'ID: P-' + currentProp.idper"></p>
+                        </div>
+                    </div>
+                    <button @click="detailModal = false" class="text-gray-400 hover:text-red-500 transition">
+                        <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Identificación</div>
+                        <div class="text-sm font-bold text-gray-800" x-text="getDocType(currentProp.tdocper) + ': ' + numberFormat(currentProp.ndocper)"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">E-mail</div>
+                        <div class="text-sm font-bold text-gray-800" x-text="currentProp.emaper"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Teléfono</div>
+                        <div class="text-sm font-bold text-gray-800" x-text="currentProp.telper || 'N/A'"></div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Ciudad</div>
+                        <div class="text-sm font-bold text-gray-800" x-text="currentProp.ciuper || 'N/A'"></div>
+                    </div>
+                    <div class="col-span-2">
+                        <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Dirección</div>
+                        <div class="text-sm font-bold text-gray-800" x-text="currentProp.dirper || 'No registrada'"></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 p-4 border border-blue-100 bg-blue-50/30 rounded-2xl flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-sm">
+                        <iconify-icon icon="lucide:award" class="text-xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-[10px] text-blue-600 font-black uppercase tracking-widest">Licencia de Conducción</div>
+                        <div class="text-sm font-bold text-[#0d3b5a]" x-text="'Cat. ' + getCatName(currentProp.catcon) + ' - #' + currentProp.nliccon"></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[9px] text-gray-400 font-bold">Vencimiento</div>
+                        <div class="text-[11px] font-black text-gray-700" x-text="currentProp.fvencon"></div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button @click="detailModal = false" class="mup-btn mup-btn-primary px-8">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAL: Eliminar --}}
+    <div x-show="deleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center" @click.away="deleteModal = false">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <iconify-icon icon="lucide:alert-circle" style="font-size: 40px;"></iconify-icon>
+                <iconify-icon icon="lucide:trash-2" style="font-size: 40px;"></iconify-icon>
             </div>
             <h3 class="text-xl font-black text-gray-800 mb-2">¿Eliminar Propietario?</h3>
             <p class="text-sm text-gray-400 mb-8 leading-relaxed">
-                Esta acción es definitiva. Se borrará la ficha de <span class="text-gray-900 font-bold" x-text="currentProp.nomper"></span>.
+                Esta acción borrará la ficha de <span class="text-gray-900 font-bold" x-text="currentProp.nomper"></span> permanentemente.
             </p>
-            
             <div class="flex gap-3">
-                <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
+                <button @click="deleteModal = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">Cancelar</button>
                 <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
@@ -399,76 +461,20 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <script>
 function propietarioManager() {
     return {
         search: '',
-        editing: false,
-        deleting: false,
+        createDrawer: false,
+        editDrawer: false,
+        detailModal: false,
+        deleteModal: false,
         currentProp: {},
         propietarios: @json($propietarios),
-        perfil: @json($perfil),
-        modulos: @json($modulos),
-
-        hasPermission(moduloNom, action) {
-            if (!this.perfil || !this.perfil.permission_names) return false;
-            const baseRoute = this.mapModuloToRoute(moduloNom);
-            if (!baseRoute) return false;
-
-            let representativePermission = '';
-            switch(action) {
-                case 'ver': 
-                    representativePermission = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
-                        ? baseRoute : baseRoute + '.index'; break;
-                case 'crear': representativePermission = baseRoute + '.create'; break;
-                case 'editar': representativePermission = baseRoute + '.edit'; break;
-                case 'eliminar': representativePermission = baseRoute + '.destroy'; break;
-            }
-            return this.perfil.permission_names.includes(representativePermission);
-        },
-
-        togglePermission(moduloNom, action) {
-            const baseRoute = this.mapModuloToRoute(moduloNom);
-            if (!baseRoute) return;
-
-            let routesToAdd = [];
-            switch(action) {
-                case 'ver': 
-                    routesToAdd = (['admin.dashboard', 'admin.alertas', 'admin.rechazados'].includes(baseRoute)) 
-                        ? [baseRoute] : [baseRoute + '.index', baseRoute + '.show']; break;
-                case 'crear': routesToAdd = [baseRoute + '.create', baseRoute + '.store']; break;
-                case 'editar': routesToAdd = [baseRoute + '.edit', baseRoute + '.update']; break;
-                case 'eliminar': routesToAdd = [baseRoute + '.destroy']; break;
-            }
-
-            const exists = this.perfil.permission_names.includes(routesToAdd[0]);
-            if (exists) {
-                this.perfil.permission_names = this.perfil.permission_names.filter(p => !routesToAdd.includes(p));
-            } else {
-                routesToAdd.forEach(r => {
-                    if (!this.perfil.permission_names.includes(r)) this.perfil.permission_names.push(r);
-                });
-            }
-        },
-
-        mapModuloToRoute(nom) {
-            const map = {
-                'Dashboard': 'admin.dashboard',
-                'Diagnóstico': 'admin.diagnosticos',
-                'Vehículos': 'admin.vehiculos',
-                'Alertas': 'admin.alertas',
-                'Mantenimiento': 'admin.dashboard',
-                'Empresas': 'admin.mup.empresas',
-                'Usuarios': 'admin.mup.usuarios',
-                'Conductores': 'admin.mup.conductores',
-                'Propietarios': 'admin.mup.propietarios',
-                'Rechazados': 'admin.rechazados'
-            };
-            return map[nom] || null;
-        },
+        tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
+        categorias: @json($categorias->pluck('nomval', 'idval')),
 
         filteredPropietarios() {
             if (!this.search) return this.propietarios;
@@ -481,23 +487,13 @@ function propietarioManager() {
             );
         },
 
-        toggleAllPermissions() {
-            const allModNames = this.modulos.map(m => m.nompag);
-            const allAllowed = allModNames.every(m => this.hasPermission(m, 'ver'));
-            
-            allModNames.forEach(m => {
-                if (allAllowed) {
-                    this.togglePermission(m, 'ver');
-                    this.togglePermission(m, 'crear');
-                    this.togglePermission(m, 'editar');
-                    this.togglePermission(m, 'eliminar');
-                } else {
-                    if (!this.hasPermission(m, 'ver')) this.togglePermission(m, 'ver');
-                    if (!this.hasPermission(m, 'crear')) this.togglePermission(m, 'crear');
-                    if (!this.hasPermission(m, 'editar')) this.togglePermission(m, 'editar');
-                    if (!this.hasPermission(m, 'eliminar')) this.togglePermission(m, 'eliminar');
-                }
-            });
+        openCreateDrawer() {
+            this.createDrawer = true;
+        },
+
+        viewDetail(p) {
+            this.currentProp = p;
+            this.detailModal = true;
         },
 
         editPropietario(p) {
@@ -505,35 +501,30 @@ function propietarioManager() {
                 ...p, 
                 nombre_completo: p.nomper + ' ' + (p.apeper || '') 
             };
-            this.editing = true;
+            this.editDrawer = true;
         },
 
-        deletePropietario(p) {
+        confirmDelete(p) {
             this.currentProp = p;
-            this.deleting = true;
-        },
-
-        closeModal() {
-            this.editing = false;
-            this.currentProp = {};
+            this.deleteModal = true;
         },
 
         getDocType(id) {
-            const types = @json($tiposDoc->pluck('nomval', 'idval'));
-            return types[id] || 'N/A';
+            return this.tiposDoc[id] || 'N/A';
+        },
+
+        getCatName(id) {
+            return this.categorias[id] || 'N/A';
         },
 
         numberFormat(num) {
             return new Intl.NumberFormat('es-CO').format(num);
+        },
+
+        activeCount() {
+            return this.propietarios.filter(p => Number(p.actper) === 1).length;
         }
     }
 }
 </script>
-
-<style>
-    .animate-zoom-in { animation: zoomIn 0.3s ease-out; }
-    @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-    .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-</style>
 @endsection

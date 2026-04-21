@@ -152,7 +152,7 @@
                     </thead>
                     <tbody>
                         @forelse($usuarios as $user)
-                        <tr x-show="(searchQuery === '' || '{{ strtolower($user->name . ' ' . ($user->persona->ndocper ?? '') . ' ' . ($user->persona->perfil->nompef ?? '')) }}'.includes(searchQuery.toLowerCase()))"
+                        <tr x-show="searchQuery === '' || @js(strtolower($user->name . ' ' . ($user->persona->ndocper ?? '') . ' ' . ($user->persona->perfil->nompef ?? ''))).includes(searchQuery.toLowerCase())"
                             class="hover:bg-blue-50/30 transition-colors">
                             <td>
                                 <div class="mup-user-identity">
@@ -182,43 +182,48 @@
                                 </span>
                             </td>
                             <td class="text-right">
+                                @php
+                                    $userViewPayload = [
+                                        'id' => $user->id,
+                                        'name' => $user->name,
+                                        'username' => $user->username,
+                                        'email' => $user->email,
+                                        'ndocper' => $user->persona->ndocper ?? 0,
+                                        'tdocper' => $user->persona->tdocper ?? '',
+                                        'telper' => $user->persona->telper ?? '',
+                                        'actper' => $user->persona->actper ?? 1,
+                                        'nompef' => $user->persona->perfil->nompef ?? 'Sin Rol',
+                                        'idpef' => $user->persona->idpef ?? '',
+                                        'idemp' => $user->idemp ?? '',
+                                        'empresa' => $user->empresa->razsoem ?? 'Particular',
+                                    ];
+                                    $userEditPayload = [
+                                        'id' => $user->id,
+                                        'name' => $user->name,
+                                        'username' => $user->username,
+                                        'email' => $user->email,
+                                        'ndocper' => $user->persona->ndocper ?? 0,
+                                        'tdocper' => $user->persona->tdocper ?? '',
+                                        'telper' => $user->persona->telper ?? '',
+                                        'actper' => $user->persona->actper ?? 1,
+                                        'idpef' => $user->persona->idpef ?? '',
+                                        'idemp' => $user->idemp ?? '',
+                                    ];
+                                    $userDeletePayload = [
+                                        'id' => $user->id,
+                                        'name' => $user->name,
+                                    ];
+                                @endphp
                                 <div class="flex justify-end gap-2">
-                                    <button @click="openView({
-                                        id: '{{ $user->id }}',
-                                        name: '{{ $user->name }}',
-                                        username: '{{ $user->username }}',
-                                        email: '{{ $user->email }}',
-                                        ndocper: '{{ $user->persona->ndocper ?? 0 }}',
-                                        tdocper: '{{ $user->persona->tdocper ?? "" }}',
-                                        telper: '{{ $user->persona->telper ?? "" }}',
-                                        actper: '{{ $user->persona->actper ?? 1 }}',
-                                        nompef: '{{ $user->persona->perfil->nompef ?? "Sin Rol" }}',
-                                        idpef: '{{ $user->persona->idpef ?? "" }}',
-                                        idemp: '{{ $user->idemp ?? "" }}',
-                                        empresa: '{{ $user->empresa->razsoem ?? "Particular" }}'
-                                    })" class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
+                                    <button @click='openView(@js($userViewPayload))' class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
                                         <iconify-icon icon="lucide:eye"></iconify-icon>
                                     </button>
                                     
-                                    <button @click="openEdit({
-                                        id: '{{ $user->id }}',
-                                        name: '{{ $user->name }}',
-                                        username: '{{ $user->username }}',
-                                        email: '{{ $user->email }}',
-                                        ndocper: '{{ $user->persona->ndocper ?? 0 }}',
-                                        tdocper: '{{ $user->persona->tdocper ?? "" }}',
-                                        telper: '{{ $user->persona->telper ?? "" }}',
-                                        actper: '{{ $user->persona->actper ?? 1 }}',
-                                        idpef: '{{ $user->persona->idpef ?? "" }}',
-                                        idemp: '{{ $user->idemp ?? "" }}'
-                                    })" class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
+                                    <button @click='openEdit(@js($userEditPayload))' class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
                                         <iconify-icon icon="lucide:pencil"></iconify-icon>
                                     </button>
                                     
-                                    <button @click="openDelete({
-                                        id: '{{ $user->id }}',
-                                        name: '{{ $user->name }}'
-                                    })" class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition" title="Eliminar">
+                                    <button @click='openDelete(@js($userDeletePayload))' class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition" title="Eliminar">
                                         <iconify-icon icon="lucide:trash-2"></iconify-icon>
                                     </button>
                                 </div>
@@ -396,7 +401,7 @@
     {{-- ═══════════════════════════════════════════════════ --}}
     <div x-show="editDrawer" class="mup-drawer-overlay" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="editDrawer = false">
-            <form :action="'{{ route('admin.mup.usuarios.store') }}/' + selectedUser?.id" method="POST" class="flex flex-col h-full">
+            <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex flex-col h-full">
                 @csrf
                 @method('PUT')
                 {{-- HEADER --}}
@@ -606,7 +611,7 @@
                     Estás a punto de eliminar permanentemente a <strong x-text="selectedUser?.name"></strong>. Esta acción no se puede deshacer y eliminará todos sus accesos vinculados.
                 </p>
                 <div class="flex flex-col gap-2">
-                    <form :action="'{{ route('admin.mup.usuarios.store') }}/' + selectedUser?.id" method="POST">
+                    <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Eliminar permanentemente</button>

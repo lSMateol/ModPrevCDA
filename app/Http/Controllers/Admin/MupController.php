@@ -92,7 +92,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Ocurrió un error al registrar el conductor: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el conductor'))->withInput();
         }
     }
 
@@ -140,7 +140,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al actualizar conductor: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el conductor'));
         }
     }
 
@@ -163,7 +163,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', 'No se pudo eliminar el conductor: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'eliminar el conductor'));
         }
     }
 
@@ -334,13 +334,11 @@ class MupController extends Controller
             return $p;
         });
 
-        $modulos = Pagina::orderBy('ordpag')->get();
-
         // 3. Combos para el formulario
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $empresas = Empresa::orderBy('razsoem')->get();
 
-        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'modulos', 'tiposDoc', 'empresas'));
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
     }
 
     /**
@@ -401,7 +399,10 @@ class MupController extends Controller
 
             // 4. Assign Spatie Role
             $perfil = Perfil::find($request->idpef);
-            $user->assignRole($perfil->nompef);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->assignRole($perfil->nompef);
+            }
 
             DB::commit();
 
@@ -409,7 +410,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al registrar usuario: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el usuario'))->withInput();
         }
     }
 
@@ -424,10 +425,6 @@ class MupController extends Controller
             ['idpef' => 7, 'pagpri' => null] 
         );
 
-        // Inyectamos permisos de Spatie para la matriz
-        $role = \Spatie\Permission\Models\Role::where('name', $perfil->nompef)->first();
-        $perfil->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
-
         // 2. Obtener listado de propietarios
         $propietarios = Persona::where('idpef', $perfil->idpef)
             ->orderBy('idper', 'desc')
@@ -436,9 +433,8 @@ class MupController extends Controller
         // 3. Obtener datos para combos y módulos
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
-        $modulos = Pagina::orderBy('ordpag')->get();
 
-        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias', 'perfil', 'modulos'));
+        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
     }
 
     /**
@@ -494,7 +490,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al registrar propietario: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el propietario'))->withInput();
         }
     }
 
@@ -546,7 +542,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al actualizar propietario: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el propietario'));
         }
     }
 
@@ -568,7 +564,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'No se pudo eliminar el propietario: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'eliminar el propietario'));
         }
     }
 
@@ -604,14 +600,18 @@ class MupController extends Controller
             'nonitem' => 'required|string|unique:empresa,nonitem',
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
+            'ciudeem' => 'nullable|string|max:50',
             'nomger' => 'required|string|max:100',
-            'telem' => 'required|string|max:15',
+            'telem' => 'required|string|max:20',
             'emaem' => 'required|email|max:60',
             'username' => 'required|string|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
         ], [
             'nonitem.unique' => 'El NIT de esta empresa ya se encuentra registrado.',
             'username.unique' => 'El nombre de usuario ya está asignado a otra entidad o usuario.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'telem.max' => 'El teléfono no puede superar los 20 caracteres.',
         ]);
 
         try {
@@ -651,7 +651,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando empresa: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al registrar empresa: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar la empresa'))->withInput();
         }
     }
 
@@ -693,7 +693,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando empresa: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al actualizar empresa: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar la empresa'));
         }
     }
 
@@ -716,7 +716,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando empresa: " . $e->getMessage());
-            return redirect()->back()->with('error', 'No se pudo eliminar la empresa: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'eliminar la empresa'));
         }
     }
 
@@ -747,6 +747,10 @@ class MupController extends Controller
             $apeper = $parts[1] ?? '';
 
             // Update Persona
+            if (!$user->persona) {
+                throw new \RuntimeException('El usuario no tiene un registro de persona vinculado.');
+            }
+
             $user->persona->update([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
@@ -773,14 +777,17 @@ class MupController extends Controller
 
             // Sync Role
             $perfil = Perfil::find($request->idpef);
-            $user->syncRoles([$perfil->nompef]);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->syncRoles([$perfil->nompef]);
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'Usuario actualizado exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al actualizar usuario: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el usuario'));
         }
     }
 
@@ -807,7 +814,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Error al eliminar usuario: ' . $e->getMessage());
+            return redirect()->back()->with('error', $this->friendlyError($e, 'eliminar el usuario'));
         }
     }
 
@@ -856,5 +863,51 @@ class MupController extends Controller
             default:
                 return [];
         }
+    }
+
+    /**
+     * Traduce excepciones de base de datos a mensajes amigables para el usuario.
+     */
+    private function friendlyError(\Exception $e, string $accion): string
+    {
+        $msg = $e->getMessage();
+
+        // Duplicación de registro (email, NIT, documento, username)
+        if (str_contains($msg, 'Duplicate entry')) {
+            if (str_contains($msg, 'email_unique') || str_contains($msg, 'emaper')) {
+                return 'No se pudo ' . $accion . ': el correo electrónico ya está registrado en el sistema.';
+            }
+            if (str_contains($msg, 'username')) {
+                return 'No se pudo ' . $accion . ': el nombre de usuario ya está en uso.';
+            }
+            if (str_contains($msg, 'ndocper') || str_contains($msg, 'documento')) {
+                return 'No se pudo ' . $accion . ': el número de documento ya está registrado.';
+            }
+            if (str_contains($msg, 'nonitem') || str_contains($msg, 'nit')) {
+                return 'No se pudo ' . $accion . ': el NIT ya se encuentra registrado.';
+            }
+            return 'No se pudo ' . $accion . ': ya existe un registro con datos duplicados. Verifica correo, documento o usuario.';
+        }
+
+        // Dato demasiado largo para la columna
+        if (str_contains($msg, 'Data too long')) {
+            if (str_contains($msg, 'telem')) {
+                return 'No se pudo ' . $accion . ': el número de teléfono es demasiado largo. Máximo 20 caracteres.';
+            }
+            return 'No se pudo ' . $accion . ': uno de los campos ingresados excede la longitud máxima permitida. Revisa los datos e intenta nuevamente.';
+        }
+
+        // Restricción de clave foránea
+        if (str_contains($msg, 'foreign key constraint')) {
+            return 'No se pudo ' . $accion . ': este registro tiene datos vinculados en otras secciones del sistema.';
+        }
+
+        // Error de conexión
+        if (str_contains($msg, 'Connection refused') || str_contains($msg, 'SQLSTATE[HY000]')) {
+            return 'Error de conexión con la base de datos. Por favor, intenta nuevamente en unos minutos.';
+        }
+
+        // Error genérico
+        return 'Ocurrió un error inesperado al ' . $accion . '. Por favor, contacta al administrador del sistema.';
     }
 }
