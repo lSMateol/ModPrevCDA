@@ -11,16 +11,25 @@ class MarcaSeeder extends Seeder
     {
         // Leer y ejecutar directamente el archivo SQL nativo proporcionado
         $sqlFilePath = database_path('data/marca.sql');
-        $sqlFilePath = database_path('data/marca.sql');
         if (file_exists($sqlFilePath)) {
             $content = file_get_contents($sqlFilePath);
-            // Filtramos todo el DDL (CREATE TABLE, ALTER) usando regex para asegurar que solo se ejecute la data pura
-            if (preg_match('/INSERT INTO `marca` \(`idmar`, `nommarlin`, `depmar`\) VALUES[\s\S]*?;/', $content, $matches)) {
-                $insertStatements = $matches[0];
-                \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-                DB::table('marca')->truncate();
-                \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
-                DB::unprepared($insertStatements);
+            // Extraemos solo el bloque de VALUES
+            if (preg_match('/INSERT INTO `marca` \(`idmar`, `nommarlin`, `depmar`\) VALUES\s*([\s\S]*?);/', $content, $matches)) {
+                $valuesBlock = $matches[1];
+                
+                // Regex para capturar cada fila (id, 'nombre', dep)
+                // Nota: maneja escapes simples de comillas si los hay, aunque en este SQL parecen ser directos
+                preg_match_all('/\(\s*(\d+)\s*,\s*\'(.*?)\'\s*,\s*(\d+)\s*\)/', $valuesBlock, $rows, PREG_SET_ORDER);
+
+                foreach ($rows as $row) {
+                    DB::table('marca')->updateOrInsert(
+                        ['idmar' => $row[1]],
+                        [
+                            'nommarlin' => $row[2],
+                            'depmar'    => $row[3]
+                        ]
+                    );
+                }
             }
         }
     }

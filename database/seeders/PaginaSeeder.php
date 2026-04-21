@@ -9,7 +9,7 @@ class PaginaSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('pagina')->insert([
+        $paginas = [
             ['idpag' => 1, 'nompag' => 'Dashboard',          'rutpag' => '/dashboard',       'mospag' => 1, 'ordpag' => 1, 'icopag' => 'dashboard',    'despag' => 'Panel principal'],
             ['idpag' => 2, 'nompag' => 'Diagnóstico',        'rutpag' => '/diagnostico',     'mospag' => 1, 'ordpag' => 2, 'icopag' => 'diagnostico',  'despag' => 'Gestión de diagnósticos'],
             ['idpag' => 3, 'nompag' => 'Vehículos',          'rutpag' => '/vehiculos',       'mospag' => 1, 'ordpag' => 3, 'icopag' => 'vehiculo',     'despag' => 'Gestión vehicular'],
@@ -17,10 +17,17 @@ class PaginaSeeder extends Seeder
             ['idpag' => 5, 'nompag' => 'Mantenimiento',      'rutpag' => '/mantenimiento',   'mospag' => 1, 'ordpag' => 5, 'icopag' => 'mant',         'despag' => 'Historial de mantenimientos'],
             ['idpag' => 6, 'nompag' => 'Empresas',           'rutpag' => '/empresas',        'mospag' => 1, 'ordpag' => 6, 'icopag' => 'empresa',      'despag' => 'Gestión de empresas'],
             ['idpag' => 7, 'nompag' => 'Usuarios',           'rutpag' => '/usuarios',        'mospag' => 1, 'ordpag' => 7, 'icopag' => 'usuario',      'despag' => 'Gestión de usuarios'],
-        ]);
+        ];
+
+        foreach ($paginas as $pag) {
+            DB::table('pagina')->updateOrInsert(
+                ['idpag' => $pag['idpag']],
+                $pag
+            );
+        }
 
         // Asignar páginas por perfil
-        DB::table('pagper')->insert([
+        $pagpers = [
             // Administrador: acceso total
             ['idpag' => 1, 'idpef' => 1], ['idpag' => 2, 'idpef' => 1],
             ['idpag' => 3, 'idpef' => 1], ['idpag' => 4, 'idpef' => 1],
@@ -32,6 +39,13 @@ class PaginaSeeder extends Seeder
             // Empresa Cliente: alertas y vehículos
             ['idpag' => 1, 'idpef' => 3], ['idpag' => 3, 'idpef' => 3],
             ['idpag' => 4, 'idpef' => 3],
-        ]);
+        ];
+
+        foreach ($pagpers as $pp) {
+            DB::table('pagper')->updateOrInsert(
+                ['idpag' => $pp['idpag'], 'idpef' => $pp['idpef']],
+                $pp
+            );
+        }
     }
 }
