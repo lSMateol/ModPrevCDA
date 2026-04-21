@@ -7,12 +7,12 @@
     <style>
         @page {
             size: letter;
-            margin: 1cm;
+            margin: 0.5cm;
         }
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 8.5pt;
-            line-height: 1.15;
+            font-size: 7.5pt;
+            line-height: 1.1;
             color: #000;
             margin: 0;
             padding: 0;
@@ -20,12 +20,10 @@
         }
         .container {
             width: 100%;
-            max-width: 850px; /* Tamaño tipo carta un poco más ancho para visualización */
-            margin: 40px auto; /* Centrado con margen superior */
+            max-width: 850px; /* Tamaño tipo carta */
+            margin: 0 auto;
             background-color: #fff;
-            padding: 2cm;
-            box-shadow: 0 0 20px rgba(0,0,0,0.15);
-            border-radius: 4px;
+            padding: 0.3cm;
             box-sizing: border-box;
         }
         header {
@@ -52,7 +50,7 @@
             line-height: 1.2;
         }
         .logo {
-            width: 90px;
+            width: 65px;
             height: auto;
         }
         .order-info {
@@ -63,12 +61,12 @@
             font-size: 10pt;
         }
         .section-title {
-            background-color: #f0f0f0;
-            padding: 2px 5px;
+            background-color: #f2f2f2;
+            padding: 1px 5px;
             font-weight: bold;
             border: 1px solid #000;
-            margin-top: 8px;
-            font-size: 8.5pt;
+            margin-top: 4px;
+            font-size: 7.5pt;
         }
         table {
             width: 100%;
@@ -79,7 +77,7 @@
             border: 1px solid #000;
         }
         th, td {
-            padding: 2px 4px;
+            padding: 1px 2px;
             text-align: left;
         }
         th {
@@ -98,7 +96,7 @@
         .text-right { text-align: right; }
         
         .mechanized-section {
-            font-size: 7.5pt;
+            font-size: 6.8pt;
         }
         .mechanized-section th {
             text-align: center;
@@ -106,7 +104,7 @@
         }
         
         .footer-signatures {
-            margin-top: 25px;
+            margin-top: 10px;
             display: flex;
             justify-content: space-around;
         }
@@ -126,8 +124,8 @@
             flex-wrap: wrap;
         }
         .photo-item {
-            width: 250px;
-            height: 180px;
+            width: 170px;
+            height: 120px;
             border: 1px solid #000;
             overflow: hidden;
             background: #f0f0f0;
@@ -511,6 +509,27 @@
             @endforeach
         </div>
         @endif
+
+        <!-- Bloque Informativo Automatizado -->
+        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+            <p style="margin: 0; font-weight: 900; color: #cc0000; font-size: 9.5pt; text-transform: uppercase;">
+                REVISIÓN PREVENTIVA DE {{ $diagnostico->dpiddia ? 'REINSPECCIÓN' : 'INSPECCIÓN' }}
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 8.5pt; line-height: 1.4; text-align: justify; font-weight: 500;">
+                El presente reporte confirma que hoy {{ \Carbon\Carbon::parse($diagnostico->fecdia)->format('Y-m-d') }} 
+                el automotor de placas <strong>{{ $diagnostico->vehiculo->placaveh }}</strong> realiza 
+                {{ $diagnostico->dpiddia ? 'reinspección de la' : 'la' }} revisión preventiva. 
+                De acuerdo a los resultados el CDA Rastrillantas certifica que el vehículo 
+                <strong>{{ $diagnostico->aprobado ? 'aprobó' : 'no aprobó' }}</strong> a la revisión preventiva.
+            </p>
+        </div>
+    </div>
+
+    <!-- Marca de Agua (Añadida al final para superposición suave) -->
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; pointer-events: none; overflow: hidden; opacity: 0.04; display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around; transform: rotate(-30deg) scale(1.5);">
+        @for($i=0; $i<20; $i++)
+            <div style="font-size: 40pt; font-weight: 900; margin: 40px; white-space: nowrap;">REVISIÓN PREVENTIVA</div>
+        @endfor
     </div>
 </body>
 </html>

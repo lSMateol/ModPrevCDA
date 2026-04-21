@@ -46,12 +46,13 @@ class DiagnosticoController extends Controller
         $diagnosticos = $query->orderBy('fecdia', 'desc')->paginate(15);
 
         // Métricas del día
-        $hoy = now()->toDateString();
+        $hoy = \Carbon\Carbon::today();
         $completados = Diag::whereDate('fecdia', $hoy)->where('aprobado', 1)->count();
         $rechazados  = Diag::whereDate('fecdia', $hoy)->where('aprobado', 0)->count();
         $pendientes  = Diag::whereDate('fecdia', $hoy)->whereNull('aprobado')->count();
-        $totalHoy = $completados + $rechazados + $pendientes;
-        $efectividad = $totalHoy > 0 ? round(($completados / $totalHoy) * 100) : 0;
+        
+        $totalTerminados = $completados + $rechazados;
+        $efectividad = $totalTerminados > 0 ? round(($completados / $totalTerminados) * 100) : 0;
 
         $empresas = Empresa::all();
 
@@ -149,16 +150,30 @@ class DiagnosticoController extends Controller
 
             // Calcular aprobación automática al guardar
             $allCumple = true;
-            $diagnosticoFresh = $diagnostico->fresh('parametros.parametro');
+            $diagnosticoFresh = $diagnostico->fresh('parametros.parametro.tippar');
             
             foreach($diagnosticoFresh->parametros as $p) {
                 $pMeta = $p->parametro;
                 $v = $p->valor;
                 
+                // Lógica especial para la sección de DEFECTOS
+                $esSeccionDefectos = str_contains(strtoupper($pMeta->tippar->nomtip), 'DEFECTOS');
+
                 if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
                     if ($v < $pMeta->rini || $v > $pMeta->rfin) $allCumple = false;
                 } elseif ($pMeta->control == 'radio') {
-                    if (in_array($v, ['no', 'no_funciona'])) $allCumple = false;
+                    if ($esSeccionDefectos) {
+                        // En defectos (ej: Dilución): SI = Existe el defecto (Malo), NO = Bueno
+                        // Excepción: "Criterios de validación" debe ser SI para cumplir
+                        if (str_contains(strtolower($pMeta->nompar), 'criterios')) {
+                            if ($v == 'no') $allCumple = false;
+                        } else {
+                            if ($v == 'si') $allCumple = false;
+                        }
+                    } else {
+                        // En otros (ej: Luces): SI = Bueno (Funciona), NO = Malo
+                        if (in_array($v, ['no', 'no_funciona'])) $allCumple = false;
+                    }
                 } elseif (in_array($pMeta->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
                     if (!empty($v)) $allCumple = false;
                 }
@@ -304,6 +319,12 @@ class DiagnosticoController extends Controller
             });
         }
 
+        if ($request->filled('empresa_id')) {
+            $query->whereHas('vehiculo', function ($q) use ($request) {
+                $q->where('idemp', $request->empresa_id);
+            });
+        }
+
         if ($request->filled('inspector')) {
             $query->where('idinsp', $request->inspector);
         }
@@ -314,8 +335,9 @@ class DiagnosticoController extends Controller
 
         $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15);
         $inspectores = Persona::where('idpef', 4)->get();
+        $empresas = \App\Models\Empresa::all();
 
-        return view('diagnosticos.rechazados.index', compact('rechazados', 'inspectores'));
+        return view('diagnosticos.rechazados.index', compact('rechazados', 'inspectores', 'empresas'));
     }
 
     public function editRechazo($id)
@@ -335,6 +357,9 @@ class DiagnosticoController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $diagnostico) {
+            // Mantenemos el inspector original como el "anterior" para el registro de rechazo
+            $inspectorAnteriorId = $diagnostico->idinsp;
+
             $diagnostico->update([
                 'idinsp' => $request->idinsp,
             ]);
@@ -344,7 +369,8 @@ class DiagnosticoController extends Controller
                 [
                     'motivo' => $request->motivo,
                     'notas' => $request->observaciones,
-                    'estadorec' => 'Rechazado'
+                    'estadorec' => 'Rechazado',
+                    'idper_ant' => $inspectorAnteriorId
                 ]
             );
         });
