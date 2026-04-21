@@ -334,13 +334,11 @@ class MupController extends Controller
             return $p;
         });
 
-        $modulos = Pagina::orderBy('ordpag')->get();
-
         // 3. Combos para el formulario
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $empresas = Empresa::orderBy('razsoem')->get();
 
-        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'modulos', 'tiposDoc', 'empresas'));
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
     }
 
     /**
@@ -401,7 +399,10 @@ class MupController extends Controller
 
             // 4. Assign Spatie Role
             $perfil = Perfil::find($request->idpef);
-            $user->assignRole($perfil->nompef);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->assignRole($perfil->nompef);
+            }
 
             DB::commit();
 
@@ -746,6 +747,10 @@ class MupController extends Controller
             $apeper = $parts[1] ?? '';
 
             // Update Persona
+            if (!$user->persona) {
+                throw new \RuntimeException('El usuario no tiene un registro de persona vinculado.');
+            }
+
             $user->persona->update([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
@@ -772,7 +777,10 @@ class MupController extends Controller
 
             // Sync Role
             $perfil = Perfil::find($request->idpef);
-            $user->syncRoles([$perfil->nompef]);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->syncRoles([$perfil->nompef]);
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'Usuario actualizado exitosamente.');
