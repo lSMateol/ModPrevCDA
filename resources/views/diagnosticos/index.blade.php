@@ -3,13 +3,14 @@
 @section('content')
 <div class="px-10 pb-20 max-w-7xl mx-auto">
     <!-- Top Bar Interno (Título y Acción) -->
-    <div class="flex justify-between items-center mb-10">
+    <!-- Top Bar Interno (Título y Acción) -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
         <div>
-            <h2 class="font-headline font-black text-[#002D54] text-3xl tracking-tight">Lista de Diagnósticos</h2>
+            <h2 class="font-headline font-black text-[#002D54] text-2xl md:text-3xl tracking-tight">Lista de Diagnósticos</h2>
             <p class="text-on-surface-variant font-body text-sm mt-1">Control de flota y reportes técnicos preventivos</p>
         </div>
-        <div class="flex items-center gap-4">
-            <button id="btn-agendar" class="bg-gradient-to-r from-primary-fixed-dim to-[#ffc84d] text-on-primary-fixed px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-fixed-dim/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-3">
+        <div class="flex items-center w-full sm:w-auto">
+            <button id="btn-agendar" class="w-full sm:w-auto bg-gradient-to-r from-primary-fixed-dim to-[#ffc84d] text-on-primary-fixed px-8 py-4 sm:py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-fixed-dim/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
                 <span class="material-symbols-outlined text-lg">add</span>
                 <span>Nuevo Diagnóstico</span>
             </button>
@@ -32,27 +33,27 @@
 
     <!-- Sección de Métricas (Bento Grid Style) -->
     <section class="grid grid-cols-12 gap-6 mt-4">
-        <div class="col-span-12 md:col-span-8 bg-surface-container-lowest p-8 rounded-2xl shadow-sm border-b-4 border-primary-fixed-dim flex justify-between items-center group hover:shadow-md transition-all">
+        <div class="col-span-12 lg:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border-b-4 border-primary-fixed-dim flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 group hover:shadow-md transition-all">
             <div>
-                <h3 class="font-body uppercase tracking-[0.2em] text-[0.6rem] text-on-surface-variant font-black mb-2 opacity-60">Métricas de Hoy</h3>
-                <p class="font-headline font-extrabold text-4xl text-[#001834]">Rendimiento Diario</p>
+                <h3 class="font-body uppercase tracking-[0.2em] text-[0.6rem] text-on-surface-variant font-black mb-1 md:mb-2 opacity-60">Métricas de Hoy</h3>
+                <p class="font-headline font-extrabold text-2xl md:text-3xl lg:text-4xl text-[#001834]">Rendimiento Diario</p>
             </div>
-            <div class="flex gap-12">
+            <div class="flex gap-8 md:gap-12 w-full sm:w-auto justify-around sm:justify-end">
                 <div class="text-center group-hover:scale-110 transition-transform">
-                    <p class="text-4xl font-black text-[#001834]">{{ $completados }}</p>
+                    <p class="text-3xl md:text-4xl font-black text-[#001834]">{{ $completados }}</p>
                     <p class="text-[0.6rem] uppercase font-black tracking-tighter text-on-surface-variant">Completados</p>
                 </div>
                 <div class="text-center group-hover:scale-110 transition-transform">
-                    <p class="text-4xl font-black text-primary-fixed-dim">{{ $pendientes }}</p>
+                    <p class="text-3xl md:text-4xl font-black text-primary-fixed-dim">{{ $pendientes }}</p>
                     <p class="text-[0.6rem] uppercase font-black tracking-tighter text-on-surface-variant">Pendientes</p>
                 </div>
             </div>
         </div>
-        <div class="col-span-12 md:col-span-4 bg-[#001834] p-8 rounded-2xl flex flex-col justify-center shadow-lg shadow-[#001834]/20">
+        <div class="col-span-12 lg:col-span-4 bg-[#001834] p-6 md:p-8 rounded-2xl flex flex-col justify-center shadow-lg shadow-[#001834]/20">
             <p class="text-white/60 text-[0.65rem] font-black uppercase tracking-[0.2em]">Estado General</p>
             <div class="mt-2 flex items-end gap-2">
-                <span class="text-primary-fixed-dim text-5xl font-black">{{ $efectividad }}%</span>
-                <span class="text-[#f7fafc] text-sm mb-2 opacity-80 font-medium">Efectividad</span>
+                <span class="text-primary-fixed-dim text-4xl md:text-5xl font-black">{{ $efectividad }}%</span>
+                <span class="text-[#f7fafc] text-sm mb-1.5 md:mb-2 opacity-80 font-medium tracking-tight">Efectividad</span>
             </div>
         </div>
     </section>
@@ -68,15 +69,15 @@
             $prefix = Auth::user()->hasRole('Administrador') ? 'admin' : 'digitador';
         @endphp
 
-        <form method="GET" action="{{ route($prefix . '.diagnosticos.index') }}">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <form id="filter-form" method="GET" action="{{ route($prefix . '.diagnosticos.index') }}" class="w-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Fecha</label>
-                    <input type="date" name="fecha" value="{{ request('fecha') }}" class="bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
+                    <input type="date" name="fecha" onchange="this.form.submit()" value="{{ request('fecha') ?? now()->toDateString() }}" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
                 </div>
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Empresa</label>
-                    <select name="empresa_id" class="bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all appearance-none cursor-pointer">
+                    <select name="empresa_id" onchange="this.form.submit()" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all appearance-none cursor-pointer">
                         <option value="">Todas las Empresas</option>
                         @foreach($empresas as $emp)
                             <option value="{{ $emp->idemp }}" {{ request('empresa_id') == $emp->idemp ? 'selected' : '' }}>{{ $emp->razsoem }}</option>
@@ -85,20 +86,20 @@
                 </div>
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Placa de Vehículo</label>
-                    <input type="text" name="placa" value="{{ request('placa') }}" placeholder="Ej. KVM-091" class="bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
+                    <input type="text" name="placa" oninput="debounceSubmit()" value="{{ request('placa') }}" placeholder="Ej. KVM-091" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
                 </div>
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Estado</label>
-                    <select name="aprobado" class="bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all cursor-pointer">
+                    <select name="aprobado" onchange="this.form.submit()" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all cursor-pointer">
                         <option value="">Todos los Estados</option>
                         <option value="1" {{ request('aprobado') == '1' ? 'selected' : '' }}>Aprobado</option>
                         <option value="0" {{ request('aprobado') == '0' ? 'selected' : '' }}>No Aprobado</option>
                     </select>
                 </div>
-                <div class="flex flex-col gap-2 justify-end">
-                    <button type="submit" class="w-full bg-[#001834] text-white font-black text-xs h-[46px] uppercase tracking-widest rounded-xl hover:bg-tertiary-container hover:shadow-lg transition-all active:scale-[0.98]">
-                        Aplicar Filtros
-                    </button>
+                <div class="flex flex-col gap-3 sm:col-span-2 lg:col-span-1">
+                    <div class="w-full flex items-center justify-center bg-[#001834]/5 text-[#001834]/40 font-black text-[10px] h-[46px] uppercase tracking-widest rounded-xl border border-dashed border-[#001834]/10">
+                        Auto-Filtro Activo
+                    </div>
                     <a href="{{ route($prefix . '.diagnosticos.index') }}" class="text-[9px] font-black text-[#001834] uppercase tracking-widest text-center hover:underline opacity-60 hover:opacity-100 transition-opacity">
                         Limpiar Filtros
                     </a>
@@ -118,80 +119,90 @@
 
         <div class="space-y-4">
             @forelse($diagnosticos as $diag)
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-transparent hover:border-primary-fixed-dim/20 flex flex-col md:flex-row items-center gap-8 hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300">
-                <!-- Fecha -->
-                <div class="flex-shrink-0 text-center md:text-left min-w-[100px]">
-                    <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-50 mb-1">Fecha</p>
-                    <p class="font-black text-sm text-[#001834]">{{ \Carbon\Carbon::parse($diag->fecdia)->format('d M, Y') }}</p>
-                </div>
-                
-                <!-- Placa -->
-                <div class="flex-shrink-0 bg-surface-container-low px-5 py-3 rounded-xl border border-outline-variant/10 shadow-inner">
-                    <p class="text-[0.55rem] font-black text-on-surface-variant uppercase tracking-widest opacity-50 mb-0.5">Placa</p>
-                    <p class="font-black text-xl tracking-tighter text-[#001834]">{{ $diag->vehiculo->placaveh ?? 'N/A' }}</p>
-                </div>
-                
-                <!-- Info -->
-                <div class="flex-grow">
-                    <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-50 mb-1">Empresa / Mantenimiento</p>
-                    <div class="flex items-center gap-3">
-                        <span class="font-extrabold text-[0.95rem] text-[#001834]">{{ $diag->vehiculo->empresa->razsoem ?? 'Sin empresa' }}</span>
-                        <span class="w-1 h-1 rounded-full bg-outline-variant/50"></span>
-                        <span class="text-xs font-black text-secondary tracking-widest uppercase opacity-70">ID-#{{ $diag->iddia }}</span>
+            <div class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 shadow-sm border border-transparent hover:border-primary-fixed-dim/20 hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden group">
+                <!-- Desktop Grid Layout / Mobile Flex Layout -->
+                <div class="flex flex-col lg:grid lg:grid-cols-12 items-center gap-4 lg:gap-0">
+                    
+                    <!-- 1. Fecha (Col 1) -->
+                    <div class="lg:col-span-1 w-full lg:w-auto border-b lg:border-b-0 pb-3 lg:pb-0 border-gray-100 flex lg:flex-col justify-between lg:justify-center items-center lg:items-start lg:pr-4">
+                        <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40">Fecha</p>
+                        <p class="font-black text-[0.8rem] text-[#001834]">{{ \Carbon\Carbon::parse($diag->fecdia)->format('d M, Y') }}</p>
                     </div>
-                </div>
-                
-                <!-- Estado Status -->
-                <div class="flex-shrink-0 flex items-center gap-3">
-                    @if($diag->dpiddia)
-                        <span class="bg-[#002D54] text-white px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[12px]">history</span>
-                            Re-Inspección
-                        </span>
-                    @endif
 
-                    @if(is_null($diag->aprobado))
-                        <span class="bg-gray-50 text-gray-500 px-5 py-2 rounded-full text-[0.65rem] font-black border border-gray-100 uppercase tracking-widest">Pendiente</span>
-                    @elseif($diag->aprobado)
-                        <span class="bg-emerald-50 text-emerald-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
-                    @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
-                        <span class="bg-amber-50 text-amber-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
-                    @else
-                        <span class="bg-red-50 text-red-700 px-5 py-2 rounded-full text-[0.65rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
-                    @endif
-                </div>
-                
-                <!-- Acciones -->
-                <div class="flex gap-2">
-                    <a href="{{ route($prefix . '.diagnosticos.show', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Ver Detalle">
-                        <span class="material-symbols-outlined text-lg">visibility</span>
-                    </a>
-                    
-                    @php
-                        $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
-                    @endphp
-                    
-                    <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
-                       target="{{ $canExport ? '_blank' : '_self' }}" 
-                       class="p-3 {{ $canExport ? 'text-[#002D54] bg-surface-container-low hover:bg-[#002D54] hover:text-white' : 'text-gray-300 bg-gray-50 cursor-not-allowed opacity-50' }} rounded-xl transition-all duration-300" 
-                       onclick="{{ !$canExport ? "alert('Debe terminar el proceso para exportar (Estado: ". (is_null($diag->aprobado) ? 'Pendiente' : 'Reasignado') .")')" : '' }}"
-                       title="{{ $canExport ? 'Exportar Formato' : 'No disponible (Proceso incompleto)' }}">
-                        <span class="material-symbols-outlined text-lg">description</span>
-                    </a>
+                    <!-- 2. Placa (Col 2) -->
+                    <div class="lg:col-span-2 w-full lg:w-auto flex justify-center lg:justify-start">
+                        <div class="bg-surface-container-low px-4 py-2.5 rounded-xl border border-outline-variant/10 shadow-inner min-w-[120px] text-center">
+                            <p class="text-[0.55rem] font-black text-on-surface-variant uppercase tracking-widest opacity-40 mb-0.5">Placa</p>
+                            <p class="font-black text-lg tracking-tighter text-[#001834]">{{ $diag->vehiculo->placaveh ?? 'N/A' }}</p>
+                        </div>
+                    </div>
 
-                    <a href="{{ route($prefix . '.diagnosticos.edit', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Modificar">
-                        <span class="material-symbols-outlined text-lg">edit_note</span>
-                    </a>
-                    <button class="p-3 text-primary-fixed-dim bg-primary-fixed-dim/10 hover:bg-primary-fixed-dim hover:text-on-primary-fixed rounded-xl transition-all duration-300 btn-foto" data-id="{{ $diag->iddia }}" title="Tomar Foto">
-                        <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
-                    </button>
-                    <form action="{{ route($prefix . '.diagnosticos.destroy', $diag->iddia) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este diagnóstico?')" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="p-3 text-error bg-error/10 hover:bg-error hover:text-white rounded-xl transition-all duration-300" title="Eliminar">
-                            <span class="material-symbols-outlined text-lg">delete</span>
+                    <!-- 3. Empresa (Col 4) -->
+                    <div class="lg:col-span-4 w-full lg:w-auto text-center lg:text-left lg:px-6">
+                        <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40 mb-1">Empresa / Flota</p>
+                        <div class="flex flex-col sm:flex-row items-center lg:items-start gap-1 justify-center lg:justify-start">
+                            <span class="font-extrabold text-sm text-[#001834] leading-tight line-clamp-1 break-all">{{ $diag->vehiculo->empresa->razsoem ?? 'Sin empresa' }}</span>
+                            <span class="text-[9px] font-black text-secondary tracking-widest uppercase opacity-60">ID-#{{ $diag->iddia }}</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Estado (Col 2) -->
+                    <div class="lg:col-span-2 w-full lg:w-auto flex flex-col items-center justify-center gap-1.5 py-2 lg:py-0 border-y lg:border-y-0 border-gray-50">
+                        @if($diag->dpiddia)
+                            <span class="bg-[#002D54] text-white px-2.5 py-1 rounded-lg text-[0.5rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1 mb-1">
+                                <span class="material-symbols-outlined text-[10px]">history</span>
+                                RE-INSP
+                            </span>
+                        @endif
+
+                        @if(is_null($diag->aprobado))
+                            <span class="bg-gray-100 text-gray-500 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-gray-200 uppercase tracking-widest">Pendiente</span>
+                        @elseif($diag->aprobado)
+                            <span class="bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
+                        @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
+                            <span class="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
+                        @else
+                            <span class="bg-red-50 text-red-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
+                        @endif
+                    </div>
+
+                    <!-- 5. Acciones (Col 3) -->
+                    <div class="lg:col-span-3 w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-2">
+                        <a href="{{ route($prefix . '.diagnosticos.show', $diag->iddia) }}" 
+                           class="p-2.5 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Ver Detalle">
+                            <span class="material-symbols-outlined text-lg">visibility</span>
+                        </a>
+                        
+                        @php
+                            $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
+                        @endphp
+                        
+                        <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
+                           target="{{ $canExport ? '_blank' : '_self' }}" 
+                           class="p-2.5 {{ $canExport ? 'text-[#002D54] bg-surface-container-low hover:bg-[#002D54] hover:text-white' : 'text-gray-300 bg-gray-50 cursor-not-allowed opacity-50' }} rounded-xl transition-all duration-300" 
+                           onclick="{{ !$canExport ? "alert('Terminar proceso para exportar')" : '' }}"
+                           title="Exportar">
+                            <span class="material-symbols-outlined text-lg">description</span>
+                        </a>
+
+                        <a href="{{ route($prefix . '.diagnosticos.edit', $diag->iddia) }}" 
+                           class="p-2.5 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Modificar">
+                            <span class="material-symbols-outlined text-lg">edit_note</span>
+                        </a>
+
+                        <button class="p-2.5 text-primary-fixed-dim bg-primary-fixed-dim/10 hover:bg-primary-fixed-dim hover:text-on-primary-fixed rounded-xl transition-all duration-300 btn-foto" 
+                                data-id="{{ $diag->iddia }}" title="Tomar Foto">
+                            <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
                         </button>
-                    </form>
+
+                        <form action="{{ route($prefix . '.diagnosticos.destroy', $diag->iddia) }}" method="POST" onsubmit="return confirm('¿Eliminar diagnóstico?')" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="p-2.5 text-error bg-error/10 hover:bg-error hover:text-white rounded-xl transition-all duration-300" title="Eliminar">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
             @empty
@@ -487,5 +498,13 @@
         closeFotos.onclick = () => { modalFotos.classList.add('hidden'); stopCamera(); };
         modalFotos.onclick = (e) => { if (e.target === modalFotos) { modalFotos.classList.add('hidden'); stopCamera(); } };
     });
+
+    let filterTimeout = null;
+    function debounceSubmit() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => {
+            document.getElementById('filter-form').submit();
+        }, 600);
+    }
 </script>
 @endpush
