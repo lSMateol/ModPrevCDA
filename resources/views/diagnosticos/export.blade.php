@@ -145,27 +145,13 @@
             font-size: 10pt;
         }
 
-        @media print {
-            .no-print { display: none; }
-            body { 
-                margin: 0; 
-                padding: 0; 
-                background-color: #fff; 
-            }
-            .container { 
-                max-width: 100%; 
-                margin: 0; 
-                padding: 0; 
-                box-shadow: none; 
-                border-radius: 0;
-            }
-        }
+
         
         .print-btn {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #002D54;
+            background-color: #002D54;
             color: white;
             border: none;
             padding: 12px 24px;
@@ -178,14 +164,46 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .print-btn:hover {
+            transform: scale(1.05);
+            background-color: #003a6d;
+        }
+
+        @media print {
+            .no-print { 
+                display: none !important; 
+            }
+            body { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                background-color: #fff !important; 
+            }
+            .container { 
+                max-width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-shadow: none !important; 
+                border-radius: 0 !important;
+            }
         }
     </style>
 </head>
 <body>
-    <button class="no-print print-btn" onclick="window.print()">
+    <button class="no-print print-btn" onclick="window.print()" style="display: none;">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         Imprimir Reporte
     </button>
+    
+    <script>
+        // Mostrar el botón solo si estamos en un navegador con JS habilitado
+        // Esto evita que aparezca en exportaciones estáticas de PDF
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.print-btn').style.display = 'flex';
+        });
+    </script>
     
     <div class="container">
         <header>
