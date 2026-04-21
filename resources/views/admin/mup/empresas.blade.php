@@ -323,9 +323,15 @@
                                 <input type="text" name="abremp" x-model="currentEmp.abremp" class="mup-input">
                             </div>
                         </div>
-                        <div class="mup-form-group">
-                            <label class="mup-label">Dirección</label>
-                            <input type="text" name="direm" x-model="currentEmp.direm" class="mup-input">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Dirección</label>
+                                <input type="text" name="direm" x-model="currentEmp.direm" class="mup-input">
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Ciudad</label>
+                                <input type="text" name="ciudeem" x-model="currentEmp.ciudeem" class="mup-input">
+                            </div>
                         </div>
                     </div>
 
@@ -334,7 +340,7 @@
                         <iconify-icon icon="lucide:contact" class="text-sm"></iconify-icon>
                         Contacto corporativo
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4 mb-8">
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nombre del Gerente <span class="mup-required">*</span></label>
@@ -348,6 +354,42 @@
                         <div class="mup-form-group">
                             <label class="mup-label">Email Corporativo <span class="mup-required">*</span></label>
                             <input type="email" name="emaem" x-model="currentEmp.emaem" class="mup-input" required>
+                        </div>
+                    </div>
+
+                    {{-- Bloque 3: Acceso al Sistema --}}
+                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
+                        <iconify-icon icon="lucide:lock" class="text-sm"></iconify-icon>
+                        Acceso al sistema
+                    </div>
+                    <div class="space-y-4">
+                        <div class="mup-form-group">
+                            <label class="mup-label">Nombre de Usuario</label>
+                            <input type="text" name="username" class="mup-input" placeholder="Dejar vacío si no cambia">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="mup-form-group">
+                                <label class="mup-label">Nueva Contraseña</label>
+                                <div class="relative">
+                                    <input :type="showPass ? 'text' : 'password'" name="password" class="mup-input pr-10" placeholder="Dejar vacío si no cambia">
+                                    <button type="button" @click="showPass = !showPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
+                                        <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mup-form-group">
+                                <label class="mup-label">Confirmar</label>
+                                <div class="relative">
+                                    <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" class="mup-input pr-10" placeholder="********">
+                                    <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
+                                        <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-lg flex items-center gap-3 text-blue-700 text-xs">
+                            <iconify-icon icon="lucide:info" class="text-blue-500"></iconify-icon>
+                            <span>Los campos de acceso son opcionales. Solo se actualizarán si se completan.</span>
                         </div>
                     </div>
                 </div>
