@@ -17,9 +17,11 @@ class EmpresaSeeder extends Seeder
         ];
 
         foreach ($empresas as $e) {
+            $data = $e;
+            unset($data['idemp']);
             DB::table('empresa')->updateOrInsert(
                 ['nonitem' => $e['nonitem']],
-                $e
+                $data
             );
         }
     }

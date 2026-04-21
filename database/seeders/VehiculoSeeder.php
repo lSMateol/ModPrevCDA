@@ -31,15 +31,50 @@ class VehiculoSeeder extends Seeder
             ['idveh'=>11, 'nordveh'=>'V-011', 'tipoveh'=>1, 'tipo_servicio'=>1, 'placaveh'=>'BCP112', 'linveh'=>6, 'modveh'=>2017, 'idemp'=>null, 'clveh'=>2,  'combuveh'=>37, 'prop'=>9,  'cond'=>9,  'soat'=>'SOAT-011', 'fecvens'=>'2025-06-15', 'tecmecveh'=>'TEC-011', 'fecvent'=>'2025-01-30', 'extcontveh'=>'EXT-011', 'fecvene'=>'2025-05-20', 'lictraveh'=>'LIC-011', 'polaveh'=>1, 'blinveh'=>2, 'paiveh'=>'COLOMBIA', 'crgveh'=>91, 'tmotveh'=>101],
         ];
 
+        // Mapas para resolver llaves foráneas dinámicamente según las llaves naturales
+        $mapaEmpresas = [
+            1 => '900123456-7',
+            2 => '800987654-3',
+            3 => '900555666-4',
+            4 => '800111222-5',
+        ];
+
+        // Obtener los IDs reales de la base de datos
+        $realEmpresas = [];
+        foreach ($mapaEmpresas as $idviejo => $nit) {
+            $realEmpresas[$idviejo] = DB::table('empresa')->where('nonitem', $nit)->value('idemp');
+        }
+
         foreach ($vehiculos as $v) {
-            DB::table('vehiculo')->updateOrInsert(['placaveh' => $v['placaveh']], $v);
+            $data = $v;
+            unset($data['idveh']); // No forzar Primary Key
+
+            // Resolver llaves foráneas dinámicamente
+            if ($data['idemp'] !== null && isset($realEmpresas[$data['idemp']])) {
+                $data['idemp'] = $realEmpresas[$data['idemp']];
+            }
+            
+            // Para 'prop' y 'cond', el id viejo mapea a ndocper agregando 10000000
+            $ndocProp = 10000000 + $data['prop'];
+            $data['prop'] = DB::table('persona')->where('ndocper', $ndocProp)->value('idper');
+            
+            $ndocCond = 10000000 + $data['cond'];
+            $data['cond'] = DB::table('persona')->where('ndocper', $ndocCond)->value('idper');
+
+            DB::table('vehiculo')->updateOrInsert(['placaveh' => $v['placaveh']], $data);
         }
 
         // Vincular propietarios
         foreach ($vehiculos as $v) {
-             DB::table('proveh')->updateOrInsert(
-                ['idveh' => $v['idveh'], 'idper' => $v['prop']]
-             );
+             $idvehReal = DB::table('vehiculo')->where('placaveh', $v['placaveh'])->value('idveh');
+             $ndocProp = 10000000 + $v['prop'];
+             $idperReal = DB::table('persona')->where('ndocper', $ndocProp)->value('idper');
+
+             if ($idvehReal && $idperReal) {
+                 DB::table('proveh')->updateOrInsert(
+                    ['idveh' => $idvehReal, 'idper' => $idperReal]
+                 );
+             }
         }
     }
 }

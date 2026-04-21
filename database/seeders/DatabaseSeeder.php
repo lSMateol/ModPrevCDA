@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
             DiagSeeder::class,
         ]);
 
+        $idperAdmin = \Illuminate\Support\Facades\DB::table('persona')->where('ndocper', 10000001)->value('idper');
+        $idperDigitador = \Illuminate\Support\Facades\DB::table('persona')->where('ndocper', 10000002)->value('idper');
+        $idempEmpresa = \Illuminate\Support\Facades\DB::table('empresa')->where('nonitem', '900555666-4')->value('idemp');
+
         // 3. Crear usuario administrador en la tabla 'users' (para autenticación Laravel)
         //    Usamos el mismo email que en PersonaSeeder para mantener coherencia.
         $adminUser = User::firstOrCreate(
@@ -35,7 +39,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name'     => 'Administrador',
                 'password' => Hash::make('admin123'), // Misma contraseña que en persona (pero hasheada con bcrypt)
-                'idper'    => 1, // Vinculado a 'Diego Agustin'
+                'idper'    => $idperAdmin, // Vinculado a 'Diego Agustin'
                 'idemp'    => null,
             ]
         );
@@ -51,7 +55,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Digitador',
                 'password' => Hash::make('12345678'),
-                'idper'    => 2, // Vinculado a 'Carlos Ruiz'
+                'idper'    => $idperDigitador, // Vinculado a 'Carlos Ruiz'
                 'idemp'    => null,
             ]
         );
@@ -69,7 +73,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Empresa',
                 'password' => Hash::make('12345678'),
                 'idper'    => null, 
-                'idemp'    => 3, // Transportes del Norte
+                'idemp'    => $idempEmpresa, // Transportes del Norte
             ]
         );
 

@@ -30,9 +30,11 @@ class PersonaSeeder extends Seeder
         ];
 
         foreach ($personas as $p) {
+            $data = $p;
+            unset($data['idper']);
             DB::table('persona')->updateOrInsert(
                 ['ndocper' => $p['ndocper']],
-                $p
+                $data
             );
         }
     }
