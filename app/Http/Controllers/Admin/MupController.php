@@ -419,10 +419,10 @@ class MupController extends Controller
      */
     public function propietarios()
     {
-        // 1. Asegurar que el perfil 'Propietario' existe
+        // 1. Asegurar que el perfil 'Propietario' existe respetando IDs reales de BD
         $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Propietario'],
-            ['idpef' => 7, 'pagpri' => null] 
+            ['pagpri' => null] 
         );
 
         // 2. Obtener listado de propietarios
@@ -430,9 +430,11 @@ class MupController extends Controller
             ->orderBy('idper', 'desc')
             ->get();
 
-        // 3. Obtener datos para combos y módulos
+        // 3. Obtener datos para combos respetando estructura real
+        // Tipos de documento activos para nuevos registros
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
-        $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
+        // Categorías: incluir todas para poder renderizar correctamente históricos existentes
+        $categorias = Valor::where('iddom', 5)->orderBy('nomval')->get();
 
         return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
     }
@@ -466,7 +468,7 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 7]);
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['pagpri' => null]);
 
             Persona::create([
                 'nomper' => $nomper,
