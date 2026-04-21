@@ -61,6 +61,13 @@
                     @endswitch
                 </span>
                 <h2 class="font-headline font-black text-sm uppercase tracking-[0.2em] text-on-surface-variant">{{ $tipo }}</h2>
+                
+                @if(str_contains(strtoupper($tipo), 'DIESEL'))
+                    <button type="button" onclick="fillDieselPass()" class="ml-auto flex items-center gap-2 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#ffba20]/20">
+                        <span class="material-symbols-outlined text-xs">auto_fix_high</span>
+                        Simular Aprobado
+                    </button>
+                @endif
             </div>
 
             @if(str_contains(strtoupper($tipo), 'VISUAL'))
@@ -272,5 +279,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function fillDieselPass() {
+    // Generar valores aleatorios coherentes para Diesel cumpliendo RETRICCIONES ESTRÍCTAS
+    const temp = (Math.random() * (80 - 71) + 71).toFixed(2);       // Rango: 71.00 - 80.00
+    const rpm = (Math.random() * (4200 - 3500) + 3500).toFixed(0);  // Rango: 3500 - 4200
+    
+    // Ciclos con rangos obligatorios según restricciones de validación:
+    const c1 = (Math.random() * (4.00 - 3.00) + 3.00).toFixed(2);   // Rango: 3.00 - 4.00
+    const c2 = (Math.random() * (2.99 - 2.80) + 2.80).toFixed(2);   // Rango: 2.80 - 2.99
+    const c3 = (Math.random() * (2.79 - 2.50) + 2.50).toFixed(2);   // Rango: 2.50 - 2.79
+    const c4 = (Math.random() * (2.49 - 2.30) + 2.30).toFixed(2);   // Rango: 2.30 - 2.49
+    
+    const promedio = ((parseFloat(c1) + parseFloat(c2) + parseFloat(c3) + parseFloat(c4)) / 4).toFixed(2);
+
+    // Asignar a los inputs por nombre
+    const setVal = (name, val) => {
+        const el = document.querySelector(`input[name="${name}"]`);
+        if(el) {
+            el.value = val;
+            el.setAttribute('value', val);
+            // Disparar evento change por si hay listeners
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    };
+
+    setVal('temp_c', temp);
+    setVal('rpm', rpm);
+    setVal('ciclo1', c1);
+    setVal('ciclo2', c2);
+    setVal('ciclo3', c3);
+    setVal('ciclo4', c4);
+    setVal('resultado_diesel', promedio);
+    
+    // Criterios de validación (debe ser SI para aprobar)
+    const radioSi = document.querySelector('input[name="Criterios_de_validacion"][value="si"]');
+    if(radioSi) radioSi.checked = true;
+
+    console.log("Valores Diesel generados cumpliendo restricciones estrictas.");
+}
 </script>
 @endsection
