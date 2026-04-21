@@ -51,6 +51,15 @@ class DiagSeeder extends Seeder
                 ]
             );
             $this->seedParams($iddia, true, $creatorId);
+            
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Creación de diagnóstico'],
+                ['descripcion' => 'Diagnóstico inicializado.', 'idper' => $creatorId, 'es_sistema' => true, 'created_at' => Carbon::now()->subHours(2)]
+            );
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Aprobación'],
+                ['descripcion' => 'Diagnóstico aprobado tras revisión.', 'idper' => $inspectorId, 'es_sistema' => false, 'created_at' => Carbon::now()]
+            );
         }
 
         // ==========================================
@@ -89,6 +98,15 @@ class DiagSeeder extends Seeder
                     'idper_ant'  => $inspectorId,
                     'updated_at' => now(),
                 ]
+            );
+
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Creación de diagnóstico'],
+                ['descripcion' => 'Diagnóstico inicializado.', 'idper' => $creatorId, 'es_sistema' => true, 'created_at' => Carbon::now()->subDays($i)->subHours(1)]
+            );
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Rechazo'],
+                ['descripcion' => 'Diagnóstico rechazado por defectos críticos.', 'idper' => $inspectorId, 'es_sistema' => false, 'created_at' => Carbon::now()->subDays($i)]
             );
         }
 
@@ -151,21 +169,25 @@ class DiagSeeder extends Seeder
                     'dpiddia'  => $iddia,
                 ]
             );
-        }
 
-        // Historial básico
-        $historiales = [
-            ['tabla_ref'=>'diag','id_ref'=>1,'accion'=>'Aprobación','descripcion'=>'Diagnóstico aprobado automáticamente.','idper'=>2,'es_sistema'=>true],
-            ['tabla_ref'=>'diag','id_ref'=>6,'accion'=>'Rechazo','descripcion'=>'Vehículo no cumple con estándares de seguridad.','idper'=>11,'es_sistema'=>false],
-            ['tabla_ref'=>'diag','id_ref'=>11,'accion'=>'Reasignación','descripcion'=>'Se solicita revisión por parte de otro inspector.','idper'=>2,'es_sistema'=>false],
-        ];
-
-        foreach ($historiales as $hist) {
+            // Historial para el diagnóstico original reasignado
             DB::table('historial')->updateOrInsert(
-                ['tabla_ref' => $hist['tabla_ref'], 'id_ref' => $hist['id_ref'], 'accion' => $hist['accion']],
-                array_merge($hist, ['updated_at' => now()])
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Creación de diagnóstico'],
+                ['descripcion' => 'Diagnóstico inicializado.', 'idper' => $creatorId, 'es_sistema' => true, 'created_at' => Carbon::now()->subDays($i)->subHours(2)]
+            );
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $iddia, 'accion' => 'Reasignación'],
+                ['descripcion' => 'Se solicita segunda revisión técnica.', 'idper' => $inspectorId, 'es_sistema' => false, 'created_at' => Carbon::now()->subDays($i)]
+            );
+
+            // Historial para el nuevo diagnóstico pendiente
+            DB::table('historial')->updateOrInsert(
+                ['tabla_ref' => 'diag', 'id_ref' => $newPendingId, 'accion' => 'Creación de diagnóstico'],
+                ['descripcion' => 'Diagnóstico pendiente asignado.', 'idper' => $creatorId, 'es_sistema' => true, 'created_at' => Carbon::now()->subMinutes(30 * $i)]
             );
         }
+
+        // Se eliminó el historial hardcodeado al final. Ahora se genera en cada iteración.
     }
 
     private function seedParams($iddia, $isApproved, $creatorId)

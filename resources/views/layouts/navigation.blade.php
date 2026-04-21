@@ -31,6 +31,12 @@
                     <x-nav-link :href="route($rolePrefix . 'marcas.index')" :active="request()->routeIs($rolePrefix . 'marcas.index')">
                         {{ __('Marcas') }}
                     </x-nav-link>
+
+                    @if(auth()->user()->hasRole('Empresa'))
+                    <x-nav-link :href="route($rolePrefix . 'vehiculos-empresa.index') . '?view=perfil'" :active="request()->routeIs($rolePrefix . 'vehiculos-empresa.index') && request('view') == 'perfil'">
+                        {{ __('Mi Perfil') }}
+                    </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -108,6 +114,12 @@
             <x-responsive-nav-link :href="route($rolePrefix . 'marcas.index')" :active="request()->routeIs($rolePrefix . 'marcas.index')">
                 {{ __('Marcas') }}
             </x-responsive-nav-link>
+
+            @if(auth()->user()->hasRole('Empresa'))
+            <x-responsive-nav-link :href="route($rolePrefix . 'vehiculos-empresa.index') . '?view=perfil'" :active="request()->routeIs($rolePrefix . 'vehiculos-empresa.index') && request('view') == 'perfil'">
+                {{ __('Mi Perfil') }}
+            </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

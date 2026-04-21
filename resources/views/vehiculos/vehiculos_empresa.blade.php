@@ -28,6 +28,16 @@
             return Array.from(map.values());
         },
 
+        get pePropietarios() {
+            if (!this.selectedVehiculo || !this.selectedVehiculo.empresa) return [];
+            let vehs = this.vehiculos.filter(v => v.idemp === this.selectedVehiculo.empresa.idemp && v.propietario);
+            let map = new Map();
+            vehs.forEach(v => {
+                if (!map.has(v.propietario.idper)) map.set(v.propietario.idper, v.propietario);
+            });
+            return Array.from(map.values());
+        },
+
         /* ──── Filtros Perfil Empresa ──── */
         peSearchTerm: '',
         peFilterEstado: '',
@@ -324,6 +334,10 @@
 
         /* ──── Init ──── */
         init() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'perfil') {
+                this.activeView = 'perfil';
+            }
             if (this.vehiculos.length > 0) {
                 this.selectVehiculo(this.vehiculos[0]);
             }
@@ -1264,6 +1278,9 @@
                                 <button class="tab" :class="{ 'active': peSubTab === 'vehiculos' }" @click="peSubTab = 'vehiculos'">
                                     Vehículos Asignados (<span x-text="vehiculos.filter(v => v.idemp === selectedVehiculo.empresa.idemp).length"></span>)
                                 </button>
+                                <button class="tab" :class="{ 'active': peSubTab === 'propietarios' }" @click="peSubTab = 'propietarios'">
+                                    Propietarios (<span x-text="pePropietarios.length"></span>)
+                                </button>
                                 <button class="tab" :class="{ 'active': peSubTab === 'conductores' }" @click="peSubTab = 'conductores'">
                                     Conductores (<span x-text="peConductores.length"></span>)
                                 </button>
@@ -1350,7 +1367,7 @@
                                             <th>Identificación</th>
                                             <th>Nombre Conductor</th>
                                             <th>Teléfono</th>
-                                            <th>E-mail</th>
+                                            <th>Vehículos Asignados</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1371,7 +1388,57 @@
                                                     </div>
                                                 </td>
                                                 <td x-text="c.telper || 'N/A'"></td>
-                                                <td x-text="c.emaper || 'N/A'"></td>
+                                                <td>
+                                                    <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 250px;">
+                                                        <template x-for="v in vehiculos.filter(vh => vh.idemp === selectedVehiculo.empresa.idemp && vh.cond === c.idper)">
+                                                            <span class="plate-badge" style="font-size: 11px; padding: 2px 6px;" x-text="v.placaveh"></span>
+                                                        </template>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- VISTA: PROPIETARIOS -->
+                        <div x-show="peSubTab === 'propietarios'" style="display: none;">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Identificación</th>
+                                            <th>Nombre Propietario</th>
+                                            <th>Teléfono</th>
+                                            <th>Vehículos Asociados</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-if="pePropietarios.length === 0">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; padding: 32px; color: #6b7280;">No hay propietarios registrados para los vehículos de esta empresa.</td>
+                                            </tr>
+                                        </template>
+                                        <template x-for="p in pePropietarios" :key="p.idper">
+                                            <tr>
+                                                <td>
+                                                    <span style="font-family: monospace; color: var(--primary);" x-text="p.ndocper"></span>
+                                                </td>
+                                                <td>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <iconify-icon icon="lucide:user-check" style="color: #6b7280;"></iconify-icon>
+                                                        <span style="font-weight: 500; color: #111827;" x-text="p.nomper + ' ' + (p.apeper || '')"></span>
+                                                    </div>
+                                                </td>
+                                                <td x-text="p.telper || 'N/A'"></td>
+                                                <td>
+                                                    <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 250px;">
+                                                        <template x-for="v in vehiculos.filter(vh => vh.idemp === selectedVehiculo.empresa.idemp && vh.prop === p.idper)">
+                                                            <span class="plate-badge" style="font-size: 11px; padding: 2px 6px;" x-text="v.placaveh"></span>
+                                                        </template>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         </template>
                                     </tbody>

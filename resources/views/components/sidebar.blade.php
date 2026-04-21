@@ -55,6 +55,18 @@
             @endhasanyrole
 
             {{-- 2. GESTIÓN VEHICULAR --}}
+            @if(auth()->user()->hasRole('Empresa'))
+            <div class="space-y-1 mb-2">
+                <a href="{{ url($prefix . '/vehiculos-empresa?view=perfil') }}" 
+                   class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left {{ Request::query('view') == 'perfil' ? 'bg-white/10 text-white' : 'text-gray-400' }}">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-building-user text-xs group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }}"></i>
+                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }}">Mi Perfil</span>
+                    </div>
+                </a>
+            </div>
+            @endif
+
             @hasanyrole('Administrador|Digitador|Empresa')
             <div class="space-y-1">
                 <button @click="openMenu = (openMenu === 'gestion' ? null : 'gestion')" 
@@ -66,7 +78,7 @@
                     <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'gestion' ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="openMenu === 'gestion'" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative">
-                    <a href="{{ url($prefix . '/vehiculos') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/vehiculos') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
+                    <a href="{{ url($prefix . '/vehiculos') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-car-side text-[8px] mr-2"></i>
                         Vehículos

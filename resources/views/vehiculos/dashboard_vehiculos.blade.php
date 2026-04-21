@@ -324,7 +324,9 @@
                         <th>Servicio</th>
                         <th>Empresa</th>
                         <th>Combustible</th>
+                        @if(!auth()->user()->hasRole('Empresa'))
                         <th style="text-align: right;">Acciones</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -337,12 +339,14 @@
                             <td><span class="status-badge" :class="vehiculo.tipo_servicio === 1 ? 'success' : 'info'" x-text="servicioLabel(vehiculo.tipo_servicio)"></span></td>
                             <td x-text="empresaDisplay(vehiculo)"></td>
                             <td x-text="vehiculo.combustible?.nomval || 'N/A'"></td>
+                            @if(!auth()->user()->hasRole('Empresa'))
                             <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
                                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <a class="icon-btn" title="Editar en formulario" :href="'/' + '{{ $prefix }}' + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
                                 <button class="icon-btn" title="Eliminar" style="color: #ef4444;"><i class="fa-solid fa-trash-can"></i></button>
                                 @endif
                             </td>
+                            @endif
                         </tr>
                     </template>
                     <tr x-show="filteredVehiculos.length === 0">
