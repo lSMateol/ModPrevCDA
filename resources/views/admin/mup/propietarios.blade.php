@@ -5,64 +5,61 @@
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
 <div class="mup-container" x-data="propietarioManager()" x-cloak>
-    {{-- HEADER & TABS --}}
     <header class="mup-topbar">
         <div class="mup-page-title">
-            <h1 class="flex items-center gap-3">
-                <div class="p-2 bg-[#0d3b5a] rounded-lg shadow-lg shadow-[#0d3b5a]/20">
-                    <iconify-icon icon="lucide:user-cog" class="text-white text-xl"></iconify-icon>
-                </div>
-                <span class="text-[#0d3b5a] font-black tracking-tight">Gestión de Propietarios</span>
-            </h1>
-            <p>Control maestro de propietarios de vehículos, licencias y perfiles operativos vinculados al CDA.</p>
+            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
+            <p>Gestión de propietarios de vehículos y control operativo vinculado al CDA.</p>
         </div>
         <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:contact"></iconify-icon>
-                Conductor
-            </a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">
-                <iconify-icon icon="lucide:user-cog"></iconify-icon>
-                Propietario
-            </a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:building"></iconify-icon>
-                Empresas
-            </a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">
-                <iconify-icon icon="lucide:users-round"></iconify-icon>
-                Usuario
-            </a>
+            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
+            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">Propietario</a>
+            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
+            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
         </div>
     </header>
 
     <div class="mup-content-scroll">
         <div class="space-y-6 pb-12">
-            {{-- TOOLBAR CONSOLIDADA --}}
-            <section class="mup-card animate-fade-in shadow-xl overflow-visible">
-                <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="flex items-center gap-4 w-full md:w-auto">
-                        <div class="relative flex-1 md:flex-none">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." 
-                                   class="pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm w-full md:w-80 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#0d3b5a]/10 transition-all outline-none">
-                            <div class="absolute left-4 top-3 text-gray-400">
-                                <iconify-icon icon="lucide:search" class="text-lg"></iconify-icon>
+            <section class="mup-card">
+                <div class="mup-card-header-plain" style="flex-wrap: wrap;">
+                    <div>
+                        <div class="mup-card-title text-gray-800">Directorio de Propietarios</div>
+                        <div class="mup-card-subtitle">Administración de datos personales, licencias y estado operativo.</div>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                        <div class="export-group">
+                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
+                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
+                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                        </div>
+                        <div class="relative">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
                         </div>
-                        <div class="flex border rounded-xl p-1 bg-gray-50/50 shadow-sm overflow-hidden border-gray-200">
-                            <button class="px-3 py-1.5 text-[10px] font-black text-blue-600 hover:bg-white hover:text-blue-800 transition rounded-lg">CSV</button>
-                            <button class="px-3 py-1.5 text-[10px] font-black text-green-600 hover:bg-white hover:text-green-800 transition rounded-lg mx-1">EXCEL</button>
-                            <button class="px-3 py-1.5 text-[10px] font-black text-red-600 hover:bg-white hover:text-red-800 transition rounded-lg">PDF</button>
-                        </div>
-                    </div>
-                    
-                    <button @click="openCreateDrawer()" class="mup-btn mup-btn-primary w-full md:w-auto shadow-lg shadow-[#0d3b5a]/20">
+                    <button @click="openCreateDrawer()" class="mup-btn mup-btn-primary h-10">
                         <iconify-icon icon="lucide:plus" class="text-lg"></iconify-icon>
                         Nuevo Propietario
                     </button>
                 </div>
+                </div>
 
-                {{-- TABLA PREMIUM --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-6 pb-4">
+                    <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
+                        <div class="text-xl font-bold text-gray-800" x-text="propietarios.length"></div>
+                    </div>
+                    <div class="bg-green-50 border border-green-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-green-700 uppercase tracking-wider">Activos</div>
+                        <div class="text-xl font-bold text-green-700" x-text="activeCount()"></div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+                        <div class="text-[11px] text-blue-700 uppercase tracking-wider">Resultados filtro</div>
+                        <div class="text-xl font-bold text-blue-700" x-text="filteredPropietarios().length"></div>
+                    </div>
+                </div>
+
                 <div class="mup-table-wrap overflow-x-auto">
                     <table class="mup-data-table">
                         <thead>
@@ -77,7 +74,7 @@
                         </thead>
                         <tbody>
                             <template x-for="p in filteredPropietarios()" :key="p.idper">
-                                <tr class="hover:bg-[#0d3b5a]/[0.02] transition-colors border-b border-gray-50 last:border-0 group">
+                                <tr class="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0 group">
                                     <td class="text-[10px] font-bold text-gray-400" x-text="'P-'+p.idper"></td>
                                     <td>
                                         <div class="flex items-center gap-3">
@@ -120,13 +117,21 @@
                                     </td>
                                 </tr>
                             </template>
+                            <tr x-show="filteredPropietarios().length === 0">
+                                <td colspan="6" class="text-center py-10">
+                                    <div class="flex flex-col items-center gap-2 text-gray-500">
+                                        <iconify-icon icon="lucide:search-x" class="text-2xl"></iconify-icon>
+                                        <span class="text-sm font-medium">No hay propietarios para la búsqueda aplicada.</span>
+                                        <span class="text-xs">Ajusta los filtros o registra un nuevo propietario.</span>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 
-                {{-- FOOTER DE TABLA --}}
-                <div class="p-4 border-t border-gray-50 flex justify-between items-center text-[11px] text-gray-400">
-                    <div x-text="filteredPropietarios().length + ' propietarios registrados'"></div>
+                <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+                    <div x-text="filteredPropietarios().length + ' propietario(s) registrado(s)'"></div>
                     <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
                 </div>
             </section>
@@ -514,6 +519,10 @@ function propietarioManager() {
 
         numberFormat(num) {
             return new Intl.NumberFormat('es-CO').format(num);
+        },
+
+        activeCount() {
+            return this.propietarios.filter(p => Number(p.actper) === 1).length;
         }
     }
 }

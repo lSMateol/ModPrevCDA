@@ -424,10 +424,6 @@ class MupController extends Controller
             ['idpef' => 7, 'pagpri' => null] 
         );
 
-        // Inyectamos permisos de Spatie para la matriz
-        $role = \Spatie\Permission\Models\Role::where('name', $perfil->nompef)->first();
-        $perfil->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
-
         // 2. Obtener listado de propietarios
         $propietarios = Persona::where('idpef', $perfil->idpef)
             ->orderBy('idper', 'desc')
@@ -436,9 +432,8 @@ class MupController extends Controller
         // 3. Obtener datos para combos y módulos
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
-        $modulos = Pagina::orderBy('ordpag')->get();
 
-        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias', 'perfil', 'modulos'));
+        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
     }
 
     /**
