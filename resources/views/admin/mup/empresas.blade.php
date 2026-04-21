@@ -120,6 +120,9 @@
                                 </td>
                                 <td class="text-right">
                                     <div class="flex justify-end gap-2">
+                                        <button @click="openView(e)" class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
+                                            <iconify-icon icon="lucide:eye"></iconify-icon>
+                                        </button>
                                         <button @click="openEdit(e)" class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
                                             <iconify-icon icon="lucide:pencil"></iconify-icon>
                                         </button>
@@ -391,6 +394,59 @@
         </div>
     </div>
 
+    {{-- ═══════════════════════════════════════════════════ --}}
+    {{-- MODAL: Ver Detalle Empresa                         --}}
+    {{-- ═══════════════════════════════════════════════════ --}}
+    <div x-show="viewModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" @click.away="viewModal = false">
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="mup-avatar" style="width:44px;height:44px;font-size:16px;background:#0d3b5a;color:white;" x-text="currentEmp.abremp ? currentEmp.abremp.substring(0,2) : (currentEmp.razsoem || '').substring(0,2).toUpperCase()"></div>
+                    <div>
+                        <h3 class="font-bold text-gray-800" x-text="currentEmp.razsoem"></h3>
+                        <p class="text-xs text-gray-500" x-text="'EMP-' + currentEmp.idemp + ' · NIT: ' + currentEmp.nonitem"></p>
+                    </div>
+                </div>
+                <button @click="viewModal = false" class="text-gray-400 hover:text-red-500 transition">
+                    <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Razón Social</span>
+                        <p class="font-medium text-gray-800" x-text="currentEmp.razsoem"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">NIT Fiscal</span>
+                        <p class="font-medium text-gray-800 font-mono" x-text="currentEmp.nonitem"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gerente</span>
+                        <p class="font-medium text-gray-800" x-text="currentEmp.nomger"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email Corporativo</span>
+                        <p class="font-medium text-gray-800" x-text="currentEmp.emaem"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Teléfono</span>
+                        <p class="font-medium text-gray-800" x-text="currentEmp.telem"></p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Dirección</span>
+                        <p class="font-medium text-gray-800" x-text="currentEmp.direm || 'Sin dirección'"></p>
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end">
+                    <button @click="viewModal = false" class="mup-btn mup-btn-primary w-full sm:w-auto">Cerrar detalle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -399,6 +455,7 @@ function empresaManager() {
         search: '',
         createDrawer: false,
         editDrawer: false,
+        viewModal: false,
         deleteModal: false,
         currentEmp: {},
         showPass: false,
@@ -420,6 +477,11 @@ function empresaManager() {
             this.showPass = false;
             this.showConfirmPass = false;
             this.createDrawer = true;
+        },
+
+        openView(e) {
+            this.currentEmp = { ...e };
+            this.viewModal = true;
         },
 
         openEdit(e) {
