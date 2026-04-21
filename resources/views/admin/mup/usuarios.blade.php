@@ -182,48 +182,43 @@
                                 </span>
                             </td>
                             <td class="text-right">
-                                @php
-                                    $userViewPayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                        'username' => $user->username,
-                                        'email' => $user->email,
-                                        'ndocper' => $user->persona->ndocper ?? 0,
-                                        'tdocper' => $user->persona->tdocper ?? '',
-                                        'telper' => $user->persona->telper ?? '',
-                                        'actper' => $user->persona->actper ?? 1,
-                                        'nompef' => $user->persona->perfil->nompef ?? 'Sin Rol',
-                                        'idpef' => $user->persona->idpef ?? '',
-                                        'idemp' => $user->idemp ?? '',
-                                        'empresa' => $user->empresa->razsoem ?? 'Particular',
-                                    ];
-                                    $userEditPayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                        'username' => $user->username,
-                                        'email' => $user->email,
-                                        'ndocper' => $user->persona->ndocper ?? 0,
-                                        'tdocper' => $user->persona->tdocper ?? '',
-                                        'telper' => $user->persona->telper ?? '',
-                                        'actper' => $user->persona->actper ?? 1,
-                                        'idpef' => $user->persona->idpef ?? '',
-                                        'idemp' => $user->idemp ?? '',
-                                    ];
-                                    $userDeletePayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                    ];
-                                @endphp
                                 <div class="flex justify-end gap-2">
-                                    <button @click='openView(@js($userViewPayload))' class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
+                                    <button @click='openView({
+                                        id: {{ $user->id }},
+                                        name: @js($user->name),
+                                        username: @js($user->username),
+                                        email: @js($user->email),
+                                        ndocper: @js($user->persona->ndocper ?? 0),
+                                        tdocper: @js($user->persona->tdocper ?? ""),
+                                        telper: @js($user->persona->telper ?? ""),
+                                        actper: @js($user->persona->actper ?? 1),
+                                        nompef: @js($user->persona->perfil->nompef ?? "Sin Rol"),
+                                        idpef: @js($user->persona->idpef ?? ""),
+                                        idemp: @js($user->idemp ?? ""),
+                                        empresa: @js($user->empresa->razsoem ?? "Particular")
+                                    })' class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
                                         <iconify-icon icon="lucide:eye"></iconify-icon>
                                     </button>
                                     
-                                    <button @click='openEdit(@js($userEditPayload))' class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
+                                    <button @click='openEdit({
+                                        id: {{ $user->id }},
+                                        name: @js($user->name),
+                                        username: @js($user->username),
+                                        email: @js($user->email),
+                                        ndocper: @js($user->persona->ndocper ?? 0),
+                                        tdocper: @js($user->persona->tdocper ?? ""),
+                                        telper: @js($user->persona->telper ?? ""),
+                                        actper: @js($user->persona->actper ?? 1),
+                                        idpef: @js($user->persona->idpef ?? ""),
+                                        idemp: @js($user->idemp ?? "")
+                                    })' class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
                                         <iconify-icon icon="lucide:pencil"></iconify-icon>
                                     </button>
                                     
-                                    <button @click='openDelete(@js($userDeletePayload))' class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition" title="Eliminar">
+                                    <button @click='openDelete({
+                                        id: {{ $user->id }},
+                                        name: @js($user->name)
+                                    })' class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition" title="Eliminar">
                                         <iconify-icon icon="lucide:trash-2"></iconify-icon>
                                     </button>
                                 </div>
