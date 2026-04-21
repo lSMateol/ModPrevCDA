@@ -273,6 +273,10 @@
             this.selectedTab = 'vinculo';
             this.editandoEmpresa = false;
             this.detailLoading = true;
+            setTimeout(() => {
+                const el = document.getElementById('vehiculo-detalles');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
                 const res = await fetch('/' + prefix + '/vehiculos-empresa/' + v.idveh, {
@@ -545,7 +549,6 @@
                         <th>Línea / Modelo</th>
                         <th>Clase</th>
                         <th>Propietario</th>
-                        <th style="text-align: right;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -566,13 +569,10 @@
                             <td x-text="vehiculoModelo(v)"></td>
                             <td x-text="v.clase?.nomval || 'N/A'"></td>
                             <td x-text="v.propietario ? (v.propietario.nomper + ' ' + (v.propietario.apeper || '')) : 'N/A'"></td>
-                            <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
-                                <button class="icon-btn" title="Ver detalle" @click.stop="selectVehiculo(v)"><i class="fa-solid fa-eye"></i></button>
-                            </td>
                         </tr>
                     </template>
                     <tr x-show="filteredVehiculos.length === 0">
-                        <td colspan="6" style="text-align: center; padding: 32px; color: #6b7280;">
+                        <td colspan="5" style="text-align: center; padding: 32px; color: #6b7280;">
                             <i class="fa-solid fa-building-circle-xmark" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.3;"></i>
                             Ningún vehículo con empresa encontrado.
                         </td>
@@ -590,7 +590,7 @@
         {{-- ═══════════════════════════════════════ --}}
         {{-- DETAIL SECTION                          --}}
         {{-- ═══════════════════════════════════════ --}}
-        <div class="details-section" x-show="selectedVehiculo" x-cloak>
+        <div class="details-section" x-show="selectedVehiculo" x-cloak id="vehiculo-detalles">
 
             {{-- ── LEFT: Detail Card ── --}}
             <div class="vcard" style="display: flex; flex-direction: column;">
@@ -671,10 +671,6 @@
                                     <div class="form-group">
                                         <label>Clase</label>
                                         <div class="field-shell" x-text="selectedVehiculo.clase?.nomval || 'N/A'"></div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Combustible</label>
-                                        <div class="field-shell" x-text="selectedVehiculo.combustible?.nomval || 'N/A'"></div>
                                     </div>
                                     <div class="form-group">
                                         <label>Propietario</label>

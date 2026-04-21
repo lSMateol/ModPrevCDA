@@ -329,7 +329,7 @@
                 </thead>
                 <tbody>
                     <template x-for="vehiculo in displayedVehiculos" :key="vehiculo.idveh">
-                        <tr @click="selectedVehiculo = vehiculo; editMode = false; tab = 'todos';" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
+                        <tr @click="selectedVehiculo = vehiculo; editMode = false; tab = 'todos'; setTimeout(() => { const el = document.getElementById('vehiculo-detalles'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
                             <td><span style="font-weight: 500; color: #111827;" x-text="vehiculo.nordveh || 'N/A'"></span></td>
                             <td><div class="plate-badge" x-text="vehiculo.placaveh"></div></td>
                             <td x-text="vehiculo.marca?.nommarlin || 'N/A'"></td>
@@ -338,7 +338,6 @@
                             <td x-text="empresaDisplay(vehiculo)"></td>
                             <td x-text="vehiculo.combustible?.nomval || 'N/A'"></td>
                             <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
-                                <button class="icon-btn" title="Ver detalle" @click.stop="selectedVehiculo = vehiculo; editMode = false;"><i class="fa-solid fa-eye"></i></button>
                                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <a class="icon-btn" title="Editar en formulario" :href="'/' + '{{ $prefix }}' + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
                                 <button class="icon-btn" title="Eliminar" style="color: #ef4444;"><i class="fa-solid fa-trash-can"></i></button>
@@ -364,7 +363,7 @@
         </div>
 
         <!-- Master/Detail Bottom Section -->
-        <div class="details-section" x-show="selectedVehiculo" x-cloak>
+        <div class="details-section" x-show="selectedVehiculo" x-cloak id="vehiculo-detalles">
             <!-- Form Panel -->
             <div class="vcard" style="display: flex; flex-direction: column;">
                 <div style="padding-top: 24px;">
@@ -712,19 +711,6 @@
                         <div class="relation-info">
                             <span class="relation-label">Empresa</span>
                             <span class="relation-value" x-text="empresaDisplay(selectedVehiculo)" :style="!selectedVehiculo.empresa && 'color: #9ca3af; font-style: italic;'"></span>
-                        </div>
-                    </div>
-
-                    <div class="relation-connector"></div>
-
-                    <!-- Combustible / Motor -->
-                    <div class="relation-item">
-                        <div class="relation-icon">
-                            <i class="fa-solid fa-gas-pump"></i>
-                        </div>
-                        <div class="relation-info">
-                            <span class="relation-label">Combustible / Motor</span>
-                            <span class="relation-value" x-text="(selectedVehiculo.combustible?.nomval || 'N/A') + ' — Motor ' + (selectedVehiculo.tipo_motor?.nomval || 'N/A')"></span>
                         </div>
                     </div>
 
