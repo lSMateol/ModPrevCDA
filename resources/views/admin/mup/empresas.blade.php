@@ -192,15 +192,9 @@
                                 <input type="text" name="abremp" class="mup-input" placeholder="Ej. TUSA">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Dirección</label>
-                                <input type="text" name="direm" class="mup-input" placeholder="Dirección principal">
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Ciudad</label>
-                                <input type="text" name="ciudeem" class="mup-input" placeholder="Ej. Medellín">
-                            </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Dirección</label>
+                            <input type="text" name="direm" class="mup-input" placeholder="Dirección principal">
                         </div>
                     </div>
 
@@ -323,15 +317,9 @@
                                 <input type="text" name="abremp" x-model="currentEmp.abremp" class="mup-input">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Dirección</label>
-                                <input type="text" name="direm" x-model="currentEmp.direm" class="mup-input">
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Ciudad</label>
-                                <input type="text" name="ciudeem" x-model="currentEmp.ciudeem" class="mup-input">
-                            </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Dirección</label>
+                            <input type="text" name="direm" x-model="currentEmp.direm" class="mup-input">
                         </div>
                     </div>
 
@@ -507,11 +495,12 @@ function empresaManager() {
         filteredEmpresas() {
             if (!this.search) return this.empresas;
             const q = this.search.toLowerCase();
+            const safe = (v) => (v ?? '').toString().toLowerCase();
             return this.empresas.filter(e => 
-                e.razsoem.toLowerCase().includes(q) || 
-                e.nonitem.toLowerCase().includes(q) ||
-                e.nomger.toLowerCase().includes(q) ||
-                e.emaem.toLowerCase().includes(q)
+                safe(e.razsoem).includes(q) || 
+                safe(e.nonitem).includes(q) ||
+                safe(e.nomger).includes(q) ||
+                safe(e.emaem).includes(q)
             );
         },
 

@@ -419,10 +419,10 @@ class MupController extends Controller
      */
     public function propietarios()
     {
-        // 1. Asegurar que el perfil 'Propietario' existe
+        // 1. Asegurar que el perfil 'Propietario' existe respetando IDs reales de BD
         $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Propietario'],
-            ['idpef' => 7, 'pagpri' => null] 
+            ['pagpri' => null] 
         );
 
         // 2. Obtener listado de propietarios
@@ -430,9 +430,11 @@ class MupController extends Controller
             ->orderBy('idper', 'desc')
             ->get();
 
-        // 3. Obtener datos para combos y módulos
+        // 3. Obtener datos para combos respetando estructura real
+        // Tipos de documento activos para nuevos registros
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
-        $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
+        // Categorías: incluir todas para poder renderizar correctamente históricos existentes
+        $categorias = Valor::where('iddom', 5)->orderBy('nomval')->get();
 
         return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
     }
@@ -466,7 +468,7 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 7]);
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['pagpri' => null]);
 
             Persona::create([
                 'nomper' => $nomper,
@@ -573,21 +575,16 @@ class MupController extends Controller
      */
     public function empresas()
     {
-        // 1. Asegurar perfil 'Empresa' (ID 8)
+        // 1. Asegurar perfil 'Empresa' respetando estructura actual
         $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Empresa'],
-            ['idpef' => 8, 'pagpri' => null]
+            ['pagpri' => null]
         );
-
-        // Inyectamos permisos de Spatie
-        $role = \Spatie\Permission\Models\Role::where('name', $perfil->nompef)->first();
-        $perfil->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
-
-        // 2. Obtener listado y módulos
+        
+        // 2. Obtener listado real desde BD
         $empresas = Empresa::with('perfil')->orderBy('idemp', 'desc')->get();
-        $modulos = Pagina::orderBy('ordpag')->get();
 
-        return view('admin.mup.empresas', compact('empresas', 'perfil', 'modulos'));
+        return view('admin.mup.empresas', compact('empresas'));
     }
 
     /**
@@ -617,7 +614,7 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
 
-            $perfilEmpresa = Perfil::firstOrCreate(['nompef' => 'Empresa'], ['idpef' => 8]);
+            $perfilEmpresa = Perfil::firstOrCreate(['nompef' => 'Empresa'], ['pagpri' => null]);
 
             // 1. Crear Empresa
             $empresa = Empresa::create([
@@ -644,6 +641,7 @@ class MupController extends Controller
             ]);
 
             // 3. Asignar rol
+            Role::firstOrCreate(['name' => $perfilEmpresa->nompef]);
             $user->assignRole($perfilEmpresa->nompef);
 
             DB::commit();
@@ -668,8 +666,10 @@ class MupController extends Controller
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
             'nomger' => 'required|string|max:100',
-            'telem' => 'required|string|max:15',
+            'telem' => 'required|string|max:20',
             'emaem' => 'required|email|max:60',
+            'username' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
         try {
@@ -685,8 +685,53 @@ class MupController extends Controller
                 'nomger' => $request->nomger,
             ]);
 
-            // Sync email with the system user if exists
-            User::where('idemp', $id)->update(['email' => $request->emaem, 'name' => $request->razsoem]);
+            // Sync empresa + usuario de acceso asociado
+            $linkedUser = User::where('idemp', $id)->first();
+            if ($linkedUser) {
+                if ($request->filled('username')) {
+                    $request->validate([
+                        'username' => 'unique:users,username,' . $linkedUser->id,
+                    ]);
+                }
+
+                $userData = [
+                    'name' => $request->razsoem,
+                    'email' => $request->emaem,
+                ];
+
+                if ($request->filled('username')) {
+                    $userData['username'] = $request->username;
+                    $empresa->usuaemp = $request->username;
+                }
+
+                if ($request->filled('password')) {
+                    $userData['password'] = Hash::make($request->password);
+                    $empresa->passemp = Hash::make($request->password);
+                }
+
+                $linkedUser->update($userData);
+                $empresa->save();
+            } elseif ($request->filled('username') && $request->filled('password')) {
+                $request->validate([
+                    'username' => 'unique:users,username',
+                ]);
+
+                $newUser = User::create([
+                    'name' => $request->razsoem,
+                    'username' => $request->username,
+                    'email' => $request->emaem,
+                    'password' => Hash::make($request->password),
+                    'idemp' => $empresa->idemp,
+                ]);
+
+                $perfilNombre = optional($empresa->perfil)->nompef ?? 'Empresa';
+                Role::firstOrCreate(['name' => $perfilNombre]);
+                $newUser->assignRole($perfilNombre);
+
+                $empresa->usuaemp = $request->username;
+                $empresa->passemp = Hash::make($request->password);
+                $empresa->save();
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'Empresa actualizada correctamente.');

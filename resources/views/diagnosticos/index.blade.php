@@ -119,89 +119,84 @@
 
         <div class="space-y-4">
             @forelse($diagnosticos as $diag)
-            <div class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 shadow-sm border border-transparent hover:border-primary-fixed-dim/20 hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden group">
-                <!-- Desktop Grid Layout / Mobile Flex Layout -->
-                <div class="flex flex-col lg:grid lg:grid-cols-12 items-center gap-4 lg:gap-0">
+            <div class="bg-surface-container-lowest rounded-2xl p-5 md:p-6 shadow-sm border border-transparent hover:border-primary-fixed-dim/20 hover:shadow-xl hover:translate-y-[-1px] transition-all duration-300 relative overflow-hidden group">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
                     
-                    <!-- 1. Fecha (Col 1) -->
-                    <div class="lg:col-span-1 w-full lg:w-auto border-b lg:border-b-0 pb-3 lg:pb-0 border-gray-100 flex lg:flex-col justify-between lg:justify-center items-center lg:items-start lg:pr-4">
-                        <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40">Fecha</p>
-                        <p class="font-black text-[0.8rem] text-[#001834]">{{ \Carbon\Carbon::parse($diag->fecdia)->format('d M, Y') }}</p>
-                    </div>
+                    <!-- Lado Izquierdo: Fecha y Placa -->
+                    <div class="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto">
+                        <div class="flex-shrink-0 text-center sm:text-left min-w-[100px]">
+                            <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40">Fecha</p>
+                            <p class="font-black text-sm text-[#001834]">{{ \Carbon\Carbon::parse($diag->fecdia)->format('d M, Y') }}</p>
+                        </div>
 
-                    <!-- 2. Placa (Col 2) -->
-                    <div class="lg:col-span-2 w-full lg:w-auto flex justify-center lg:justify-start">
-                        <div class="bg-surface-container-low px-4 py-2.5 rounded-xl border border-outline-variant/10 shadow-inner min-w-[120px] text-center">
-                            <p class="text-[0.55rem] font-black text-on-surface-variant uppercase tracking-widest opacity-40 mb-0.5">Placa</p>
+                        <div class="flex-shrink-0 bg-surface-container-low px-5 py-3 rounded-xl border border-outline-variant/10 shadow-inner min-w-[140px] text-center">
+                            <p class="text-[0.55rem] font-black text-on-surface-variant uppercase tracking-widest opacity-40 mb-0.5">Vehículo</p>
                             <p class="font-black text-lg tracking-tighter text-[#001834]">{{ $diag->vehiculo->placaveh ?? 'N/A' }}</p>
                         </div>
                     </div>
 
-                    <!-- 3. Empresa (Col 4) -->
-                    <div class="lg:col-span-4 w-full lg:w-auto text-center lg:text-left lg:px-6">
-                        <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40 mb-1">Empresa / Flota</p>
-                        <div class="flex flex-col sm:flex-row items-center lg:items-start gap-1 justify-center lg:justify-start">
-                            <span class="font-extrabold text-sm text-[#001834] leading-tight line-clamp-1 break-all">{{ $diag->vehiculo->empresa->razsoem ?? 'Sin empresa' }}</span>
-                            <span class="text-[9px] font-black text-secondary tracking-widest uppercase opacity-60">ID-#{{ $diag->iddia }}</span>
+                    <!-- Centro: Empresa (Con más presencia) -->
+                    <div class="flex-grow text-center lg:text-left lg:px-10 border-t lg:border-t-0 lg:border-x border-gray-100 py-4 lg:py-0 w-full lg:w-auto">
+                        <p class="text-[0.6rem] font-black text-on-surface-variant uppercase tracking-[0.15em] opacity-40 mb-1">Empresa / Propietario</p>
+                        <div class="flex flex-col gap-1">
+                            <span class="font-extrabold text-[0.95rem] text-[#001834] leading-tight truncate">{{ $diag->vehiculo->empresa->razsoem ?? 'Sin empresa vinculada' }}</span>
+                            <span class="text-[10px] font-black text-secondary tracking-widest uppercase opacity-60">Expediente ID-#{{ $diag->iddia }}</span>
                         </div>
                     </div>
 
-                    <!-- 4. Estado (Col 2) -->
-                    <div class="lg:col-span-2 w-full lg:w-auto flex flex-col items-center justify-center gap-1.5 py-2 lg:py-0 border-y lg:border-y-0 border-gray-50">
-                        @if($diag->dpiddia)
-                            <span class="bg-[#002D54] text-white px-2.5 py-1 rounded-lg text-[0.5rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1 mb-1">
-                                <span class="material-symbols-outlined text-[10px]">history</span>
-                                RE-INSP
-                            </span>
-                        @endif
+                    <!-- Lado Derecho: Estado y Acciones -->
+                    <div class="flex flex-col sm:flex-row items-center gap-4 md:gap-8 w-full lg:w-auto">
+                        <!-- Badge de Estado -->
+                        <div class="flex flex-row items-center gap-3">
+                            @if($diag->dpiddia)
+                                <span class="bg-[#002D54] text-white px-3 py-2 rounded-lg text-[0.55rem] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[12px]">history</span> RE-INSP
+                                </span>
+                            @endif
 
-                        @if(is_null($diag->aprobado))
-                            <span class="bg-gray-100 text-gray-500 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-gray-200 uppercase tracking-widest">Pendiente</span>
-                        @elseif($diag->aprobado)
-                            <span class="bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
-                        @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
-                            <span class="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
-                        @else
-                            <span class="bg-red-50 text-red-700 px-4 py-1.5 rounded-full text-[0.6rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
-                        @endif
-                    </div>
+                            @if(is_null($diag->aprobado))
+                                <span class="bg-gray-50 text-gray-400 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-gray-100 uppercase tracking-widest">Pendiente</span>
+                            @elseif($diag->aprobado)
+                                <span class="bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
+                            @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
+                                <span class="bg-amber-50 text-amber-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
+                            @else
+                                <span class="bg-red-50 text-red-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
+                            @endif
+                        </div>
 
-                    <!-- 5. Acciones (Col 3) -->
-                    <div class="lg:col-span-3 w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-2">
-                        <a href="{{ route($prefix . '.diagnosticos.show', $diag->iddia) }}" 
-                           class="p-2.5 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Ver Detalle">
-                            <span class="material-symbols-outlined text-lg">visibility</span>
-                        </a>
-                        
-                        @php
-                            $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
-                        @endphp
-                        
-                        <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
-                           target="{{ $canExport ? '_blank' : '_self' }}" 
-                           class="p-2.5 {{ $canExport ? 'text-[#002D54] bg-surface-container-low hover:bg-[#002D54] hover:text-white' : 'text-gray-300 bg-gray-50 cursor-not-allowed opacity-50' }} rounded-xl transition-all duration-300" 
-                           onclick="{{ !$canExport ? "alert('Terminar proceso para exportar')" : '' }}"
-                           title="Exportar">
-                            <span class="material-symbols-outlined text-lg">description</span>
-                        </a>
+                        <!-- Botones de Acción -->
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="{{ route($prefix . '.diagnosticos.show', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Ver Detalle">
+                                <span class="material-symbols-outlined text-lg">visibility</span>
+                            </a>
+                            
+                            @php
+                                $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
+                            @endphp
+                            
+                            <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
+                               target="{{ $canExport ? '_blank' : '_self' }}" 
+                               class="p-3 {{ $canExport ? 'text-[#002D54] bg-surface-container-low hover:bg-[#002D54] hover:text-white' : 'text-gray-300 bg-gray-50 cursor-not-allowed opacity-50' }} rounded-xl transition-all duration-300" 
+                               onclick="{{ !$canExport ? "alert('Terminar proceso para exportar')" : '' }}"
+                               title="Exportar">
+                                <span class="material-symbols-outlined text-lg">description</span>
+                            </a>
 
-                        <a href="{{ route($prefix . '.diagnosticos.edit', $diag->iddia) }}" 
-                           class="p-2.5 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Modificar">
-                            <span class="material-symbols-outlined text-lg">edit_note</span>
-                        </a>
-
-                        <button class="p-2.5 text-primary-fixed-dim bg-primary-fixed-dim/10 hover:bg-primary-fixed-dim hover:text-on-primary-fixed rounded-xl transition-all duration-300 btn-foto" 
-                                data-id="{{ $diag->iddia }}" title="Tomar Foto">
-                            <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
-                        </button>
-
-                        <form action="{{ route($prefix . '.diagnosticos.destroy', $diag->iddia) }}" method="POST" onsubmit="return confirm('¿Eliminar diagnóstico?')" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-2.5 text-error bg-error/10 hover:bg-error hover:text-white rounded-xl transition-all duration-300" title="Eliminar">
-                                <span class="material-symbols-outlined text-lg">delete</span>
+                            <a href="{{ route($prefix . '.diagnosticos.edit', $diag->iddia) }}" class="p-3 text-[#001834] bg-surface-container-low hover:bg-[#001834] hover:text-white rounded-xl transition-all duration-300" title="Modificar">
+                                <span class="material-symbols-outlined text-lg">edit_note</span>
+                            </a>
+                            <button class="p-3 text-primary-fixed-dim bg-primary-fixed-dim/10 hover:bg-primary-fixed-dim hover:text-on-primary-fixed rounded-xl transition-all duration-300 btn-foto" data-id="{{ $diag->iddia }}" title="Tomar Foto">
+                                <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
                             </button>
-                        </form>
+                            <form action="{{ route($prefix . '.diagnosticos.destroy', $diag->iddia) }}" method="POST" onsubmit="return confirm('¿Eliminar registro?')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-3 text-error bg-error/10 hover:bg-error hover:text-white rounded-xl transition-all duration-300" title="Eliminar">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

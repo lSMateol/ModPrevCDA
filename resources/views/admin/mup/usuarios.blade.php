@@ -19,8 +19,8 @@
     </header>
 
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('mupEditor', () => ({
+        function mupEditor() {
+            return {
                 searchQuery: '',
                 viewModal: false,
                 deleteModal: false,
@@ -74,8 +74,8 @@
                     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
                     return name.substring(0, 2).toUpperCase();
                 }
-            }));
-        });
+            };
+        }
     </script>
 
     <div class="mup-content-scroll">
