@@ -103,6 +103,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
     Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 
     // Aquí irán tus rutas de usuarios, roles y configuración global
@@ -152,6 +153,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
     Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 });
 
@@ -175,6 +177,7 @@ Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->
     Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+    Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
     Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
 
     // Aquí irán las rutas para que la empresa vea sus certificados
