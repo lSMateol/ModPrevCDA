@@ -604,14 +604,18 @@ class MupController extends Controller
             'nonitem' => 'required|string|unique:empresa,nonitem',
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
+            'ciudeem' => 'nullable|string|max:50',
             'nomger' => 'required|string|max:100',
-            'telem' => 'required|string|max:15',
+            'telem' => 'required|string|max:20',
             'emaem' => 'required|email|max:60',
             'username' => 'required|string|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
         ], [
             'nonitem.unique' => 'El NIT de esta empresa ya se encuentra registrado.',
             'username.unique' => 'El nombre de usuario ya está asignado a otra entidad o usuario.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'telem.max' => 'El teléfono no puede superar los 20 caracteres.',
         ]);
 
         try {
@@ -880,6 +884,14 @@ class MupController extends Controller
                 return 'No se pudo ' . $accion . ': el NIT ya se encuentra registrado.';
             }
             return 'No se pudo ' . $accion . ': ya existe un registro con datos duplicados. Verifica correo, documento o usuario.';
+        }
+
+        // Dato demasiado largo para la columna
+        if (str_contains($msg, 'Data too long')) {
+            if (str_contains($msg, 'telem')) {
+                return 'No se pudo ' . $accion . ': el número de teléfono es demasiado largo. Máximo 20 caracteres.';
+            }
+            return 'No se pudo ' . $accion . ': uno de los campos ingresados excede la longitud máxima permitida. Revisa los datos e intenta nuevamente.';
         }
 
         // Restricción de clave foránea

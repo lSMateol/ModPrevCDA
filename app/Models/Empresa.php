@@ -11,7 +11,7 @@ class Empresa extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nonitem', 'razsoem', 'abremp', 'direm', 'telem', 'idpef',
+        'nonitem', 'razsoem', 'abremp', 'direm', 'ciudeem', 'telem', 'idpef',
         'emaem', 'nomger', 'usuaemp', 'passemp', 'codcons', 'codubi'
     ];
 
