@@ -104,7 +104,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
-    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
+    Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
 
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
@@ -154,7 +154,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
-    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
+    Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
 });
 
 // RUTAS EMPRESA (Restringido + Control de Rutas)
@@ -178,7 +178,7 @@ Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
-    Route::get('/marcas', [MarcaController::class, 'index'])->name('marcas.index');
+    Route::resource('marcas', MarcaController::class)->only(['index']);
 
     // Aquí irán las rutas para que la empresa vea sus certificados
 });

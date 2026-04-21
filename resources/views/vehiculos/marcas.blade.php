@@ -3,6 +3,7 @@
 @section('content')
     <div id="marcas-wrapper" x-data="marcasUI()">
         <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <style>
             #marcas-wrapper {
@@ -140,6 +141,9 @@
                                                     <button class="btn-icon" title="Editar" @click.stop="selectMarca(marca, 'edit')">
                                                         <iconify-icon icon="lucide:edit-2"></iconify-icon>
                                                     </button>
+                                                    <button class="btn-icon" style="color: #ef4444;" title="Eliminar" @click.stop="deleteMarca(marca.idmar, marca.vehiculos_count)">
+                                                        <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                                                    </button>
                                                 @endif
                                             </div>
                                         </td>
@@ -215,7 +219,7 @@
                     <div class="footer-actions">
                         <button class="btn btn-secondary" @click="closePanel()">Cerrar</button>
                         @if(!auth()->user()->hasRole('Empresa'))
-                            <button class="btn btn-primary" x-text="isNew ? 'Registrar Marca' : 'Guardar Cambios'" x-show="isEdit || isNew"></button>
+                            <button class="btn btn-primary" x-text="isNew ? 'Registrar Marca' : 'Guardar Cambios'" x-show="isEdit || isNew" @click="saveMarca()" :disabled="isSaving" :style="isSaving ? 'opacity:0.7;cursor:wait;' : ''"></button>
                         @endif
                     </div>
                 </aside>
@@ -234,6 +238,7 @@
                 selectedMarca: null,
                 isNew: false,
                 isEdit: false,
+                isSaving: false,
                 form: {
                     idmar: '',
                     nommarlin: '',
@@ -290,6 +295,105 @@
                     this.selectedMarca = null;
                     this.isNew = false;
                     this.isEdit = false;
+                },
+
+                async saveMarca() {
+                    if (!this.form.nommarlin || this.form.nommarlin.trim() === '') {
+                        Swal.fire('Error', 'El nombre de la marca es obligatorio.', 'warning');
+                        return;
+                    }
+
+                    this.isSaving = true;
+                    let url = window.location.pathname;
+                    let method = 'POST';
+
+                    if (!this.isNew) {
+                        url += '/' + this.form.idmar;
+                        method = 'PUT';
+                    }
+
+                    try {
+                        let response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                nommarlin: this.form.nommarlin,
+                                depmar: this.form.depmar == '0' ? null : this.form.depmar
+                            })
+                        });
+
+                        let data = await response.json();
+
+                        if (response.ok) {
+                            if (this.isNew) {
+                                this.marcas.push(data.marca);
+                            } else {
+                                let index = this.marcas.findIndex(m => m.idmar === this.form.idmar);
+                                if (index !== -1) {
+                                    this.marcas[index] = data.marca;
+                                }
+                            }
+                            Swal.fire('Éxito', data.message, 'success');
+                            this.closePanel();
+                        } else {
+                            Swal.fire('Error', data.message || 'Ocurrió un error al guardar.', 'error');
+                        }
+                    } catch (error) {
+                        Swal.fire('Error', 'Error de conexión con el servidor.', 'error');
+                    } finally {
+                        this.isSaving = false;
+                    }
+                },
+
+                async deleteMarca(id, vehiculosCount) {
+                    if (vehiculosCount > 0) {
+                        Swal.fire('Operación no permitida', 'Esta marca no se puede eliminar porque tiene vehículos asociados.', 'warning');
+                        return;
+                    }
+
+                    let childrenCount = this.marcas.filter(m => m.depmar == id).length;
+                    if (childrenCount > 0) {
+                        Swal.fire('Operación no permitida', 'Esta marca tiene ' + childrenCount + ' líneas que dependen de ella.', 'warning');
+                        return;
+                    }
+
+                    let result = await Swal.fire({
+                        title: '¿Eliminar Marca?',
+                        text: 'Esta acción no se puede deshacer.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    });
+
+                    if (result.isConfirmed) {
+                        try {
+                            let response = await fetch(window.location.pathname + '/' + id, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                }
+                            });
+                            
+                            let data = await response.json();
+                            if (response.ok) {
+                                this.marcas = this.marcas.filter(m => m.idmar !== id);
+                                if (this.selectedMarca && this.selectedMarca.idmar === id) {
+                                    this.closePanel();
+                                }
+                                Swal.fire('Eliminada', data.message, 'success');
+                            } else {
+                                Swal.fire('Error', data.message || 'No se pudo eliminar la marca.', 'error');
+                            }
+                        } catch (error) {
+                            Swal.fire('Error', 'Error de conexión con el servidor.', 'error');
+                        }
+                    }
                 }
             }));
         });
