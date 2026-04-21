@@ -9,12 +9,19 @@ class PerfilSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('perfil')->insert([
+        $perfiles = [
             ['idpef' => 1, 'nompef' => 'Administrador',     'pagpri' => null],
             ['idpef' => 2, 'nompef' => 'Digitador',         'pagpri' => null],
             ['idpef' => 3, 'nompef' => 'Empresa',           'pagpri' => null],
             ['idpef' => 4, 'nompef' => 'Inspector',         'pagpri' => null],
             ['idpef' => 5, 'nompef' => 'Ingeniero',         'pagpri' => null],
-        ]);
+        ];
+
+        foreach ($perfiles as $p) {
+            DB::table('perfil')->updateOrInsert(
+                ['idpef' => $p['idpef']],
+                $p
+            );
+        }
     }
 }

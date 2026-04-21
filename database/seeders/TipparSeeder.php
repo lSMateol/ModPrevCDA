@@ -9,15 +9,18 @@ class TipparSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('tippar')->insert([
-            // Grupos existentes (si ya los tienes, ajusta los IDs o usa upsert)
+        $grupos = [
             ['idtip' => 1, 'nomtip' => 'Luces',               'tittip' => 'Revisión de Luces',                   'idpef' => 2, 'acttip' => 1, 'icotip' => 'luces'],
             ['idtip' => 2, 'nomtip' => 'Motor Diesel',        'tittip' => 'Parámetros de Motor Diesel',          'idpef' => 2, 'acttip' => 1, 'icotip' => 'motor_diesel'],
             ['idtip' => 3, 'nomtip' => 'Defectos',            'tittip' => 'Defectos Generales (SI/NO/N/A)',      'idpef' => 2, 'acttip' => 1, 'icotip' => 'defectos'],
             ['idtip' => 4, 'nomtip' => 'Defectos Inspeccion visual y sensorial',   'tittip' => 'Defectos Inspección Visual y Sensorial', 'idpef' => 2, 'acttip' => 1, 'icotip' => 'visual'],
-        ]);
+        ];
 
-        DB::table('param')->insert([
+        foreach ($grupos as $grupo) {
+            DB::table('tippar')->updateOrInsert(['idtip' => $grupo['idtip']], $grupo);
+        }
+
+        $parametros = [
             // Luces (idtip=1)
             ['idpar' => 1, 'nompar' => 'luz_izquierda', 'idtip' => 1, 'rini' => null, 'rfin' => null, 'control' => 'radio', 'nomcampo' => 'luz_izquierda', 'unipar' => null, 'colum' => 1, 'actpar' => 1, 'can' => 1],
             ['idpar' => 2, 'nompar' => 'luz_derecha',   'idtip' => 1, 'rini' => null, 'rfin' => null, 'control' => 'radio', 'nomcampo' => 'luz_derecha',   'unipar' => null, 'colum' => 1, 'actpar' => 1, 'can' => 1],
@@ -39,6 +42,10 @@ class TipparSeeder extends Seeder
             ['idpar' => 12, 'nompar' => 'grupo_inspeccion',   'idtip' => 4, 'rini' => null, 'rfin' => null, 'control' => 'text',     'nomcampo' => 'grupo_inspeccion',   'unipar' => null, 'colum' => 1, 'actpar' => 1, 'can' => 1],
             ['idpar' => 13, 'nompar' => 'tipo_defecto',       'idtip' => 4, 'rini' => null, 'rfin' => null, 'control' => 'text',     'nomcampo' => 'tipo_defecto',       'unipar' => null, 'colum' => 1, 'actpar' => 1, 'can' => 1],
             ['idpar' => 14, 'nompar' => 'desc_inspeccion',    'idtip' => 4, 'rini' => null, 'rfin' => null, 'control' => 'textarea', 'nomcampo' => 'desc_inspeccion',    'unipar' => null, 'colum' => 1, 'actpar' => 1, 'can' => 1],
-        ]);
+        ];
+
+        foreach ($parametros as $param) {
+            DB::table('param')->updateOrInsert(['idpar' => $param['idpar']], $param);
+        }
     }
 }

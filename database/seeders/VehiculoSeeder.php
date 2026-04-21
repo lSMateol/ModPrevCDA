@@ -32,7 +32,7 @@ class VehiculoSeeder extends Seeder
         ];
 
         foreach ($vehiculos as $v) {
-            DB::table('vehiculo')->updateOrInsert(['idveh' => $v['idveh']], $v);
+            DB::table('vehiculo')->updateOrInsert(['placaveh' => $v['placaveh']], $v);
         }
 
         // Vincular propietarios
