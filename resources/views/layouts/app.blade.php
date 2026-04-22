@@ -12,9 +12,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="font-sans antialiased bg-gray-100" x-data="{ sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', mobileMenuOpen: false }" x-init="$watch('sidebarCollapsed', value => localStorage.setItem('sidebarCollapsed', value))">
@@ -25,15 +26,19 @@
         <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300">
             
             {{-- Mobile header if needed --}}
-            <div class="lg:hidden flex items-center justify-between p-4 bg-[#0a1d37] text-white shrink-0">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-orange-500 w-8 h-8 rounded-lg flex items-center justify-center">
-                        <i class="fa-solid fa-car-side text-white text-xs"></i>
+            {{-- Mobile header --}}
+            <div class="lg:hidden flex items-center justify-between p-5 bg-[#001834] text-white shrink-0 border-b border-white/5 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <iconify-icon icon="lucide:car-front" class="text-white text-xl"></iconify-icon>
                     </div>
-                    <span class="text-xs font-bold uppercase tracking-wider">RASTRILLANTAS</span>
+                    <div>
+                        <h1 class="text-white font-black text-xs tracking-tighter uppercase leading-none">Rastrillantas</h1>
+                        <p class="text-[9px] text-blue-400 font-bold tracking-[2px] uppercase mt-1">Diagnostic</p>
+                    </div>
                 </div>
-                <button @click="mobileMenuOpen = true" class="p-2 hover:bg-white/10 rounded-md">
-                    <i class="fa-solid fa-bars"></i>
+                <button @click="mobileMenuOpen = true" class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95">
+                    <iconify-icon icon="lucide:menu" class="text-2xl text-blue-400"></iconify-icon>
                 </button>
             </div>
 

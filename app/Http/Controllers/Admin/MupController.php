@@ -101,7 +101,10 @@ class MupController extends Controller
         $ids = $this->personaIdsConductorGlobal($perfilConductor);
         $conductores = $ids === []
             ? collect()
-            : Persona::whereIn('idper', $ids)->orderBy('idper', 'desc')->get();
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios'])
+                ->whereIn('idper', $ids)
+                ->orderBy('idper', 'desc')
+                ->get();
 
         // 3. Tipos de documento y categorías fijas de licencia (texto)
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
@@ -514,7 +517,10 @@ class MupController extends Controller
         $ids = $this->personaIdsPropietarioGlobal($perfil);
         $propietarios = $ids === []
             ? collect()
-            : Persona::whereIn('idper', $ids)->orderBy('idper', 'desc')->get();
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios'])
+                ->whereIn('idper', $ids)
+                ->orderBy('idper', 'desc')
+                ->get();
 
         // 3. Obtener datos para combos respetando estructura real
         // Tipos de documento activos para nuevos registros
@@ -676,7 +682,7 @@ class MupController extends Controller
         );
         
         // 2. Obtener listado real desde BD
-        $empresas = Empresa::with('perfil')->orderBy('idemp', 'desc')->get();
+        $empresas = Empresa::with(['perfil', 'vehiculos'])->orderBy('idemp', 'desc')->get();
 
         return view('admin.mup.empresas', compact('empresas'));
     }

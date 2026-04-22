@@ -43,6 +43,16 @@ class Persona extends Model
         return $this->hasMany(Diag::class, 'idper', 'idper');
     }
 
+    public function vehiculosConducidos()
+    {
+        return $this->hasMany(Vehiculo::class, 'cond', 'idper');
+    }
+
+    public function vehiculosPropios()
+    {
+        return $this->hasMany(Vehiculo::class, 'prop', 'idper');
+    }
+
     public function diapar()
     {
         return $this->hasMany(Diapar::class, 'idper', 'idper');
