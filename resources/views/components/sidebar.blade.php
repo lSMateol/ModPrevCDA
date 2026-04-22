@@ -26,7 +26,7 @@
     x-data="{ openMenu: null }">
     
     {{-- HEADER --}}
-    <div class="p-4 sm:p-6 border-b border-gray-700/50 flex items-center justify-between relative overflow-hidden h-[88px] shrink-0">
+    <div class="p-4 sm:p-6 border-b border-gray-700/50 flex items-center justify-between relative h-[88px] shrink-0">
         <div class="flex items-center space-x-3 min-w-0" x-show="!sidebarCollapsed || mobileMenuOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             <div class="bg-orange-500 w-9 h-9 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20 shrink-0">
                 <i class="fa-solid fa-car-side text-white text-sm"></i>
@@ -44,11 +44,11 @@
             </div>
         </div>
 
-        {{-- Botón Toggle Desktop --}}
+        {{-- Botón Toggle Desktop (Flotante) --}}
         <button @click="sidebarCollapsed = !sidebarCollapsed" 
-                class="hidden lg:flex absolute -right-0 top-1/2 -translate-y-1/2 p-1.5 bg-white/5 hover:bg-white/10 rounded-l-md text-gray-500 hover:text-white transition-all duration-300"
-                :class="sidebarCollapsed ? 'px-3' : ''">
-            <i class="fa-solid" :class="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+                class="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#0a1d37] border border-gray-700/50 rounded-full items-center justify-center text-gray-400 hover:text-white shadow-md hover:shadow-orange-500/10 transition-all duration-300 z-[60]"
+                title="Alternar menú">
+            <i class="fa-solid text-[9px]" :class="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
         </button>
 
         {{-- Botón Cerrar Móvil --}}
