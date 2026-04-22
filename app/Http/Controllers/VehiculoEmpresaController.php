@@ -67,7 +67,6 @@ class VehiculoEmpresaController extends Controller
             'propietario',
             'conductor',
             'combustible',
-            'documentos',
         ])->findOrFail($id);
 
         // ─── Último diagnóstico del vehículo seleccionado ───
@@ -289,6 +288,6 @@ class VehiculoEmpresaController extends Controller
                 ->with('error', 'No hay informes exportables en el rango seleccionado.');
         }
 
-        return view('diagnosticos.export_flota', compact('diagnosticos', 'empresa'));
+        return view('diagnosticos.export_consolidado', compact('diagnosticos', 'empresa'));
     }
 }
