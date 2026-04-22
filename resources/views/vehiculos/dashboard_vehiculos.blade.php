@@ -118,6 +118,36 @@
             }
         },
 
+        async deleteVehiculo(v) {
+            if (!confirm(`¿Está seguro de que desea eliminar el vehículo con placa ${v.placaveh}? Esta acción no se puede deshacer.`)) return;
+            
+            try {
+                const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+                const url = '/' + prefix + '/vehiculos/' + v.idveh;
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.vehiculos = this.vehiculos.filter(veh => veh.idveh !== v.idveh);
+                    if (this.selectedVehiculo && this.selectedVehiculo.idveh === v.idveh) {
+                        this.selectedVehiculo = null;
+                    }
+                    alert(data.message);
+                } else {
+                    alert('Atención: ' + data.message);
+                }
+            } catch(e) {
+                console.error(e);
+                alert('Ocurrió un error de red o no tiene permisos.');
+            }
+        },
+
         openVinculoEdit() {
             this.vinculoForm.prop = this.selectedVehiculo.prop || '';
             this.vinculoForm.cond = this.selectedVehiculo.cond || '';
@@ -343,7 +373,7 @@
                             <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
                                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <a class="icon-btn" title="Editar en formulario" :href="'/' + '{{ $prefix }}' + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
-                                <button class="icon-btn" title="Eliminar" style="color: #ef4444;"><i class="fa-solid fa-trash-can"></i></button>
+                                <button class="icon-btn" title="Eliminar" style="color: #ef4444;" @click.stop="deleteVehiculo(vehiculo)"><i class="fa-solid fa-trash-can"></i></button>
                                 @endif
                             </td>
                             @endif

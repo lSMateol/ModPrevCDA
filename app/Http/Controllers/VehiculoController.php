@@ -65,6 +65,16 @@ class VehiculoController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateVehiculo($request);
+
+        if (empty($validated['nordveh']) || $validated['nordveh'] === 'Autogenerado') {
+            $maxId = Vehiculo::max('idveh') ?? 0;
+            $validated['nordveh'] = 'V-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
+        }
+
+        // Asignar tipoveh automáticamente (1: Liviano/Pasajeros, 2: Carga/Pesado)
+        // Según el seeder: Camión (clveh 7) es tipoveh 2. El resto suele ser 1.
+        $validated['tipoveh'] = ($validated['clveh'] == 7) ? 2 : 1;
+
         Vehiculo::create($validated);
 
         $user = auth()->user();
@@ -97,7 +107,11 @@ class VehiculoController extends Controller
     public function update(Request $request, $id)
     {
         $vehiculo = Vehiculo::findOrFail($id);
-        $validated = $this->validateVehiculo($request);
+        $validated = $this->validateVehiculo($request, $id);
+        
+        // Mantener la integridad de tipoveh
+        $validated['tipoveh'] = ($validated['clveh'] == 7) ? 2 : 1;
+
         $vehiculo->update($validated);
 
         $user = auth()->user();
@@ -129,6 +143,28 @@ class VehiculoController extends Controller
                          'clase', 'combustible', 'tipoMotor', 'categoriaCarga']);
 
         return response()->json(['success' => true, 'vehiculo' => $vehiculo]);
+    }
+
+    /**
+     * Eliminar vehículo validando relaciones
+     */
+    public function destroy($id)
+    {
+        $vehiculo = Vehiculo::withCount(['diagnosticos', 'documentos'])->findOrFail($id);
+
+        if ($vehiculo->diagnosticos_count > 0 || $vehiculo->documentos_count > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos o documentos de respaldo asociados, lo cual afectaría la trazabilidad del sistema.'
+            ], 422);
+        }
+
+        $vehiculo->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Vehículo eliminado correctamente.'
+        ]);
     }
 
     /**
@@ -185,7 +221,7 @@ class VehiculoController extends Controller
             'combustibles' => Valor::where('iddom', 2)->where('actval', 1)->orderBy('nomval')->get(),
             'tiposMotor'   => Valor::where('iddom', 9)->where('actval', 1)->orderBy('nomval')->get(),
             'cargas'       => Valor::where('iddom', 10)->where('actval', 1)->orderBy('nomval')->get(),
-            'personas'     => Persona::where('actper', 1)->orderBy('nomper')->get(['idper', 'nomper', 'apeper', 'ndocper']),
+            'personas'     => Persona::where('actper', 1)->orderBy('nomper')->get(['idper', 'nomper', 'apeper', 'ndocper', 'nliccon', 'fvencon', 'catcon']),
             'empresas'     => ($user->hasRole('Empresa') && $user->empresa)
                                 ? collect([$user->empresa])
                                 : Empresa::orderBy('razsoem')->get(),
@@ -195,36 +231,36 @@ class VehiculoController extends Controller
     /**
      * Validación compartida para store y update
      */
-    private function validateVehiculo(Request $request): array
+    private function validateVehiculo(Request $request, $id = null): array
     {
         return $request->validate([
             'nordveh'      => 'nullable|string|max:30',
-            'placaveh'     => 'required|string|max:6',
+            'placaveh'     => 'required|string|max:6|unique:vehiculo,placaveh,' . ($id ? $id : 'NULL') . ',idveh',
             'tipo_servicio'=> 'required|in:1,2',
-            'linveh'       => 'nullable|integer|exists:marca,idmar',
-            'modveh'       => 'nullable|integer|min:1950|max:2035',
-            'colveh'       => 'nullable|string|max:20',
-            'clveh'        => 'nullable|integer|exists:valor,idval',
-            'tmotveh'      => 'nullable|integer|exists:valor,idval',
-            'combuveh'     => 'nullable|integer|exists:valor,idval',
-            'capveh'       => 'nullable|integer|min:1',
-            'cilveh'       => 'nullable|integer|min:0',
-            'crgveh'       => 'nullable|integer|exists:valor,idval',
-            'nmotveh'      => 'nullable|string|max:30',
-            'nchaveh'      => 'nullable|string|max:30',
-            'blinveh'      => 'nullable|in:1,2',
+            'linveh'       => 'required|integer|exists:marca,idmar',
+            'modveh'       => 'required|integer|min:1950|max:2035',
+            'colveh'       => 'required|string|max:20',
+            'clveh'        => 'required|integer|exists:valor,idval',
+            'tmotveh'      => 'required|integer|exists:valor,idval',
+            'combuveh'     => 'required|integer|exists:valor,idval',
+            'capveh'       => 'required|integer|min:1',
+            'cilveh'       => 'required|integer|min:0',
+            'crgveh'       => 'required|integer|exists:valor,idval',
+            'nmotveh'      => 'required|string|max:30',
+            'nchaveh'      => 'required|string|max:30',
+            'blinveh'      => 'required|in:1,2',
             'polaveh'      => 'nullable|in:1,2',
-            'lictraveh'    => 'nullable|string|max:15',
-            'fmatv'        => 'nullable|date',
+            'lictraveh'    => 'required|numeric|digits_between:1,15',
+            'fmatv'        => 'required|date',
             'fecvenr'      => 'nullable|date',
-            'soat'         => 'nullable|string|max:15',
-            'fecvens'      => 'nullable|date',
-            'extcontveh'   => 'nullable|string|max:15',
-            'fecvene'      => 'nullable|date',
-            'tecmecveh'    => 'nullable|string|max:15',
-            'fecvent'      => 'nullable|date',
-            'prop'         => 'nullable|integer|exists:persona,idper',
-            'cond'         => 'nullable|integer|exists:persona,idper',
+            'soat'         => 'required|numeric|digits_between:1,15',
+            'fecvens'      => 'required|date',
+            'extcontveh'   => 'required|numeric|digits_between:1,15',
+            'fecvene'      => 'required|date',
+            'tecmecveh'    => 'required|numeric|digits_between:1,15',
+            'fecvent'      => 'required|date',
+            'prop'         => 'required|integer|exists:persona,idper',
+            'cond'         => 'required|integer|exists:persona,idper',
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
         ]);
     }

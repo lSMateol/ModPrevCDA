@@ -92,6 +92,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
     Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
     Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::delete('/vehiculos/{id}', [VehiculoController::class, 'destroy'])->name('vehiculos.destroy');
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
     Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
 
@@ -142,6 +143,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
     Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
     Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::delete('/vehiculos/{id}', [VehiculoController::class, 'destroy'])->name('vehiculos.destroy');
     Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
     Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
 
