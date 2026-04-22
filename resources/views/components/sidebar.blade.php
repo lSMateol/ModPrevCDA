@@ -1,35 +1,80 @@
-<aside class="w-64 bg-[#0a1d37] h-full flex flex-col text-gray-300 shadow-xl" x-data="{ openMenu: null }">
-    <div class="p-6 border-b border-gray-700/50 flex items-center space-x-3">
-        <div class="bg-orange-500 w-9 h-9 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
-            <i class="fa-solid fa-car-side text-white text-sm"></i>
+@php
+    $prefix = Auth::check() && Auth::user()->hasRole('Administrador') ? 'admin' : (Auth::check() && Auth::user()->hasRole('Digitador') ? 'digitador' : 'empresa');
+    $ultimoDiag = \App\Models\Diag::latest('iddia')->first();
+    $currentId = Request::route('diagnostico') ?? ($ultimoDiag ? $ultimoDiag->iddia : null);
+@endphp
+
+{{-- Overlay para móvil --}}
+<div x-show="mobileMenuOpen" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     @click="mobileMenuOpen = false"
+     class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden">
+</div>
+
+<aside :class="{
+        'w-64': !sidebarCollapsed,
+        'w-20': sidebarCollapsed,
+        'translate-x-0': mobileMenuOpen,
+        '-translate-x-full lg:translate-x-0': !mobileMenuOpen
+    }"
+    class="fixed inset-y-0 left-0 z-50 bg-[#0a1d37] h-full flex flex-col text-gray-300 shadow-2xl transition-all duration-300 ease-in-out lg:static lg:inset-0"
+    x-data="{ openMenu: null }">
+    
+    {{-- HEADER --}}
+    <div class="p-4 sm:p-6 border-b border-gray-700/50 flex items-center justify-between relative overflow-hidden h-[88px] shrink-0">
+        <div class="flex items-center space-x-3 min-w-0" x-show="!sidebarCollapsed || mobileMenuOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+            <div class="bg-orange-500 w-9 h-9 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20 shrink-0">
+                <i class="fa-solid fa-car-side text-white text-sm"></i>
+            </div>
+            <div class="truncate">
+                <h1 class="text-white font-bold text-[10px] leading-tight truncate">CDA RASTRILLANTAS LTDA.</h1>
+                <p class="text-[9px] text-gray-400 font-medium truncate">CENTRO DE DIAGNÓSTICO</p>
+            </div>
         </div>
-        <div>
-            <h1 class="text-white font-bold text-[10px] leading-tight">CDA RASTRILLANTAS LTDA.</h1>
-            <p class="text-[9px] text-gray-400 font-medium">CENTRO DE DIAGNÓSTICO AUTOMOTOR</p>
+
+        {{-- Isotipo para modo colapsado --}}
+        <div x-show="sidebarCollapsed && !mobileMenuOpen" class="w-full flex justify-center" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-50" x-transition:enter-end="opacity-100 scale-100">
+            <div class="bg-orange-500 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-orange-900/20">
+                <i class="fa-solid fa-car-side text-white text-base"></i>
+            </div>
         </div>
+
+        {{-- Botón Toggle Desktop --}}
+        <button @click="sidebarCollapsed = !sidebarCollapsed" 
+                class="hidden lg:flex absolute -right-0 top-1/2 -translate-y-1/2 p-1.5 bg-white/5 hover:bg-white/10 rounded-l-md text-gray-500 hover:text-white transition-all duration-300"
+                :class="sidebarCollapsed ? 'px-3' : ''">
+            <i class="fa-solid" :class="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+        </button>
+
+        {{-- Botón Cerrar Móvil --}}
+        <button @click="mobileMenuOpen = false" class="lg:hidden p-2 hover:bg-white/10 rounded-md">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
     </div>
 
+    {{-- NAVEGACIÓN --}}
     <nav class="flex-1 overflow-y-auto py-4 custom-scrollbar">
-        <div class="px-4 space-y-1">
-
-            @php
-                $prefix = Auth::check() && Auth::user()->hasRole('Administrador') ? 'admin' : (Auth::check() && Auth::user()->hasRole('Digitador') ? 'digitador' : 'empresa');
-                $ultimoDiag = \App\Models\Diag::latest('iddia')->first();
-                $currentId = Request::route('diagnostico') ?? ($ultimoDiag ? $ultimoDiag->iddia : null);
-            @endphp
+        <div class="px-3 sm:px-4 space-y-1">
 
             {{-- 1. OPERACIÓN --}}
             @hasanyrole('Administrador|Digitador')
             <div class="space-y-1">
-                <button @click="openMenu = (openMenu === 'operacion' ? null : 'operacion')" 
-                        class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
-                    <div class="flex items-center space-x-3">
-                        <i class="fa-solid fa-table-cells-large text-xs group-hover:text-white"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white">Operación</span>
+                <button @click="sidebarCollapsed ? (sidebarCollapsed = false, openMenu = 'operacion') : (openMenu = (openMenu === 'operacion' ? null : 'operacion'))" 
+                        class="w-full flex items-center justify-between py-2.5 px-3 hover:bg-white/5 rounded-md group transition-all duration-200 text-left"
+                        :class="openMenu === 'operacion' ? 'bg-white/5 text-white' : ''"
+                        title="Operación">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <i class="fa-solid fa-table-cells-large text-sm group-hover:text-white shrink-0" :class="openMenu === 'operacion' ? 'text-white' : ''"></i>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white truncate" x-transition>Operación</span>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'operacion' ? 'rotate-180' : ''"></i>
+                    <i x-show="!sidebarCollapsed || mobileMenuOpen" class="fa-solid fa-chevron-down text-[10px] transition-transform shrink-0" :class="openMenu === 'operacion' ? 'rotate-180' : ''"></i>
                 </button>
-                <div x-show="openMenu === 'operacion'" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative">
+                <div x-show="(openMenu === 'operacion') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative py-1">
                     <a href="{{ url($prefix . '/diagnosticos') }}" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-table-cells text-[8px] mr-2"></i>
@@ -58,10 +103,11 @@
             @if(auth()->user()->hasRole('Empresa'))
             <div class="space-y-1 mb-2">
                 <a href="{{ url($prefix . '/vehiculos-empresa?view=perfil') }}" 
-                   class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left {{ Request::query('view') == 'perfil' ? 'bg-white/10 text-white' : 'text-gray-400' }}">
-                    <div class="flex items-center space-x-3">
-                        <i class="fa-solid fa-building-user text-xs group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }}"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }}">Mi Perfil</span>
+                   class="w-full flex items-center justify-between py-2.5 px-3 hover:bg-white/5 rounded-md group transition text-left {{ Request::query('view') == 'perfil' ? 'bg-white/10 text-white' : 'text-gray-400' }}"
+                   title="Mi Perfil">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <i class="fa-solid fa-building-user text-sm group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }} shrink-0"></i>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white {{ Request::query('view') == 'perfil' ? 'text-white' : '' }} truncate">Mi Perfil</span>
                     </div>
                 </a>
             </div>
@@ -69,15 +115,17 @@
 
             @hasanyrole('Administrador|Digitador|Empresa')
             <div class="space-y-1">
-                <button @click="openMenu = (openMenu === 'gestion' ? null : 'gestion')" 
-                        class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
-                    <div class="flex items-center space-x-3">
-                        <i class="fa-solid fa-car text-xs group-hover:text-white"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white">Gestión Vehicular</span>
+                <button @click="sidebarCollapsed ? (sidebarCollapsed = false, openMenu = 'gestion') : (openMenu = (openMenu === 'gestion' ? null : 'gestion'))" 
+                        class="w-full flex items-center justify-between py-2.5 px-3 hover:bg-white/5 rounded-md group transition-all duration-200 text-left"
+                        :class="openMenu === 'gestion' ? 'bg-white/5 text-white' : ''"
+                        title="Gestión Vehicular">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <i class="fa-solid fa-car text-sm group-hover:text-white shrink-0" :class="openMenu === 'gestion' ? 'text-white' : ''"></i>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white truncate">Gestión Vehicular</span>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'gestion' ? 'rotate-180' : ''"></i>
+                    <i x-show="!sidebarCollapsed || mobileMenuOpen" class="fa-solid fa-chevron-down text-[10px] transition-transform shrink-0" :class="openMenu === 'gestion' ? 'rotate-180' : ''"></i>
                 </button>
-                <div x-show="openMenu === 'gestion'" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative">
+                <div x-show="(openMenu === 'gestion') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative py-1">
                     <a href="{{ url($prefix . '/vehiculos') }}" class="relative flex items-center py-2 text-[10px] {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-car-side text-[8px] mr-2"></i>
@@ -108,15 +156,17 @@
             {{-- 3. ENTIDADES --}}
             @hasanyrole('Administrador|Digitador')
             <div class="space-y-1">
-                <button @click="openMenu = (openMenu === 'entidades' ? null : 'entidades')" 
-                        class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
-                    <div class="flex items-center space-x-3">
-                        <i class="fa-solid fa-building text-xs group-hover:text-white"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white">Entidades</span>
+                <button @click="sidebarCollapsed ? (sidebarCollapsed = false, openMenu = 'entidades') : (openMenu = (openMenu === 'entidades' ? null : 'entidades'))" 
+                        class="w-full flex items-center justify-between py-2.5 px-3 hover:bg-white/5 rounded-md group transition-all duration-200 text-left"
+                        :class="openMenu === 'entidades' ? 'bg-white/5 text-white' : ''"
+                        title="Entidades">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <i class="fa-solid fa-building text-sm group-hover:text-white shrink-0" :class="openMenu === 'entidades' ? 'text-white' : ''"></i>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white truncate">Entidades</span>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'entidades' ? 'rotate-180' : ''"></i>
+                    <i x-show="!sidebarCollapsed || mobileMenuOpen" class="fa-solid fa-chevron-down text-[10px] transition-transform shrink-0" :class="openMenu === 'entidades' ? 'rotate-180' : ''"></i>
                 </button>
-                <div x-show="openMenu === 'entidades'" x-collapse class="ml-4 pl-4 border-l border-gray-700/50 space-y-0.5 mt-1 relative">
+                <div x-show="(openMenu === 'entidades') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="ml-4 pl-4 border-l border-gray-700/50 space-y-0.5 mt-1 relative py-1">
                     @php
                         $mupRoute = auth()->user()->hasRole('Administrador')
                             ? route('admin.mup.usuarios.index')
@@ -135,15 +185,17 @@
             {{-- 4. CONFIGURACIÓN GLOBAL --}}
             @role('Administrador')
             <div class="space-y-1">
-                <button @click="openMenu = (openMenu === 'config' ? null : 'config')"
-                        class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
-                    <div class="flex items-center space-x-3">
-                        <i class="fa-solid fa-gears text-xs group-hover:text-white"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white">Configuración Global</span>
+                <button @click="sidebarCollapsed ? (sidebarCollapsed = false, openMenu = 'config') : (openMenu = (openMenu === 'config' ? null : 'config'))"
+                        class="w-full flex items-center justify-between py-2.5 px-3 hover:bg-white/5 rounded-md group transition-all duration-200 text-left"
+                        :class="openMenu === 'config' ? 'bg-white/5 text-white' : ''"
+                        title="Configuración Global">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <i class="fa-solid fa-gears text-sm group-hover:text-white shrink-0" :class="openMenu === 'config' ? 'text-white' : ''"></i>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider group-hover:text-white truncate">Configuración</span>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'config' ? 'rotate-180' : ''"></i>
+                    <i x-show="!sidebarCollapsed || mobileMenuOpen" class="fa-solid fa-chevron-down text-[10px] transition-transform shrink-0" :class="openMenu === 'config' ? 'rotate-180' : ''"></i>
                 </button>
-                <div x-show="openMenu === 'config'" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative">
+                <div x-show="(openMenu === 'config') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative py-1">
                     <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-list text-[8px] mr-2"></i>
@@ -175,9 +227,11 @@
     <div class="p-4 border-t border-gray-700/50">
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="w-full flex items-center space-x-3 py-2 px-3 text-gray-400 hover:text-red-400 transition group">
-                <i class="fa-solid fa-right-from-bracket text-xs group-hover:animate-pulse"></i>
-                <span class="text-[11px] font-bold uppercase tracking-wider">Salir</span>
+            <button type="submit" class="w-full flex items-center py-2.5 px-3 text-gray-400 hover:text-red-400 transition-all duration-200 group rounded-md hover:bg-red-500/5" title="Cerrar Sesión">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <i class="fa-solid fa-right-from-bracket text-sm group-hover:animate-pulse shrink-0"></i>
+                    <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-bold uppercase tracking-wider truncate">Salir</span>
+                </div>
             </button>
         </form>
     </div>
