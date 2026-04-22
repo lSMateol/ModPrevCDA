@@ -150,13 +150,13 @@ class VehiculoController extends Controller
      */
     public function destroy($id)
     {
-        $vehiculo = Vehiculo::withCount(['diagnosticos', 'documentos'])->findOrFail($id);
+        $vehiculo = Vehiculo::withCount(['diagnosticos'])->findOrFail($id);
 
         // Validar integridad relacional (Diagnósticos y Documentos)
         if ($vehiculo->diagnosticos_count > 0 || $vehiculo->documentos_count > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos o documentos de respaldo asociados, lo cual afectaría la trazabilidad del sistema.'
+                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos asociados.'
             ], 422);
         }
 
@@ -276,6 +276,8 @@ class VehiculoController extends Controller
             'prop'         => 'required|integer|exists:persona,idper',
             'cond'         => 'required|integer|exists:persona,idper',
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
+        ], [
+            'placaveh.unique' => 'Ya existe un vehículo con esta placa.',
         ]);
     }
 }

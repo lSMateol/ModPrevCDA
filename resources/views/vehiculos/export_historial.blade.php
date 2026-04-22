@@ -11,12 +11,10 @@
         .report-container { width: 100%; max-width: 800px; margin: 0 auto; }
         
         /* Header Table */
-        .header-table { width: 100%; border-bottom: 3px solid #001834; margin-bottom: 25px; padding-bottom: 10px; }
-        .logo-box { width: 60%; vertical-align: middle; }
-        .logo-text { background-color: #fcd34d; padding: 12px 15px; border-radius: 6px; display: inline-block; font-weight: 800; font-size: 22px; color: #001834; letter-spacing: -0.5px; }
-        .logo-subtext { font-size: 9px; font-weight: 700; display: block; margin-top: -2px; color: #1f2937; }
-        .header-title-box { width: 40%; text-align: right; vertical-align: middle; }
-        .header-title { font-size: 18px; font-weight: 700; color: #001834; text-transform: uppercase; line-height: 1.1; }
+        .header-table { width: 100%; border-bottom: 3px solid #001834; margin-bottom: 25px; padding-bottom: 15px; }
+        .logo-box { width: 50%; vertical-align: middle; }
+        .header-title-box { width: 50%; text-align: right; vertical-align: middle; }
+        .header-title { font-size: 20px; font-weight: 800; color: #001834; text-transform: uppercase; line-height: 1.1; letter-spacing: -0.5px; background: #f3f4f6; padding: 10px 15px; border-radius: 4px; display: inline-block; border-right: 4px solid #001834; }
         
         /* Info de contacto */
         .contact-info { width: 100%; margin-bottom: 20px; font-size: 9.5px; color: #4b5563; }
@@ -86,10 +84,7 @@
         <table class="header-table">
             <tr>
                 <td class="logo-box">
-                    <div class="logo-text">
-                        CDA RASTRILLANTAS LTDA.
-                        <span class="logo-subtext">CENTRO DIAGNÓSTICO AUTOMOTOR</span>
-                    </div>
+                    <img src="{{ asset('assets/logos/logo-cda.webp') }}" alt="CDA RASTRILLANTAS LTDA" style="height: 75px; width: auto; display: block;">
                 </td>
                 <td class="header-title-box">
                     <div class="header-title">Informe de<br>Mantenimiento Preventivo</div>

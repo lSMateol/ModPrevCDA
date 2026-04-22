@@ -10,7 +10,6 @@
         empresaFiltro: '',
         claseFiltro: '',
         servicioFiltro: '',
-        editMode: false,
         showAll: false,
         maxRows: 5,
         vinculoMode: false,
@@ -22,8 +21,6 @@
         allClases: {{ $clasesFiltro->toJson() }},
         allCombustibles: {{ $combustibles->toJson() }},
         allCargas: {{ $cargas->toJson() }},
-        editForm: {},
-        editSaving: false,
 
         get filteredVehiculos() {
             return this.vehiculos.filter(v => {
@@ -62,54 +59,6 @@
         blindajeLabel(tipo) {
             const map = {1: 'S\u00ed', 2: 'No'};
             return map[tipo] || 'N/A';
-        },
-
-        toggleEdit() {
-            this.editForm = {
-                linveh: this.selectedVehiculo.linveh || '',
-                clveh: this.selectedVehiculo.clveh || '',
-                tipo_servicio: this.selectedVehiculo.tipo_servicio || '',
-                idemp: this.selectedVehiculo.idemp || '',
-                combuveh: this.selectedVehiculo.combuveh || '',
-                crgveh: this.selectedVehiculo.crgveh || '',
-                blinveh: this.selectedVehiculo.blinveh || '',
-                polaveh: this.selectedVehiculo.polaveh || '',
-                prop: this.selectedVehiculo.prop || '',
-                cond: this.selectedVehiculo.cond || '',
-            };
-            this.editMode = true;
-        },
-        cancelEdit() {
-            this.editMode = false;
-            const original = this.vehiculos.find(v => v.idveh === this.selectedVehiculo.idveh);
-            if (original) this.selectedVehiculo = JSON.parse(JSON.stringify(original));
-        },
-
-        async saveInlineEdit() {
-            this.editSaving = true;
-            try {
-                const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const url = '/' + prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/edicion-rapida';
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify(this.editForm)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const idx = this.vehiculos.findIndex(v => v.idveh === this.selectedVehiculo.idveh);
-                    if (idx !== -1) this.vehiculos[idx] = data.vehiculo;
-                    this.selectedVehiculo = data.vehiculo;
-                    this.editMode = false;
-                } else {
-                    alert('Error: ' + (data.message || 'Verifique los datos'));
-                }
-            } catch (e) { console.error('Error:', e); alert('Error de red al guardar'); }
-            finally { this.editSaving = false; }
         },
 
         init() {
@@ -378,7 +327,7 @@
                 </thead>
                 <tbody>
                     <template x-for="vehiculo in displayedVehiculos" :key="vehiculo.idveh">
-                        <tr @click="selectedVehiculo = vehiculo; editMode = false; tab = 'todos'; setTimeout(() => { const el = document.getElementById('vehiculo-detalles'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
+                        <tr @click="selectedVehiculo = vehiculo; tab = 'todos'; setTimeout(() => { const el = document.getElementById('vehiculo-detalles'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
                             <td><span style="font-weight: 500; color: #111827;" x-text="vehiculo.nordveh || 'N/A'"></span></td>
                             <td><div class="plate-badge" x-text="vehiculo.placaveh"></div></td>
                             <td x-text="vehiculo.marca?.nommarlin || 'N/A'"></td>
@@ -419,22 +368,10 @@
             <div class="vcard" style="display: flex; flex-direction: column; min-width: 0;">
                 <div style="padding-top: 24px;">
                     <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
-                        <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Detalle del Vehículo</h3>
-                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
-                            {{-- Botón Editar (solo Admin/Digitador, solo en modo consulta) --}}
-                            @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                            <button class="vbtn vbtn-edit" x-show="!editMode" @click="toggleEdit()">
-                                <i class="fa-solid fa-pen"></i> Editar
-                            </button>
-                            @endif
-                        </div>
+                        <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0; white-space: nowrap;">Detalle del Vehículo</h3>
                     </div>
 
-                    {{-- Banner modo edición --}}
-                    <div class="edit-banner" x-show="editMode" x-cloak style="margin: 0 24px 12px 24px;">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Modo edición activado — los cambios no se guardarán hasta confirmar.
-                    </div>
+
 
                     <div class="vtabs">
                         <button class="vtab" :class="{'active': tab === 'todos'}" @click="tab = 'todos'">Todos los datos</button>
@@ -457,87 +394,39 @@
                             </div>
                             <div class="form-group">
                                 <label>No. placa</label>
-                                <input type="text" :value="selectedVehiculo.placaveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.placaveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Línea (Marca)</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.marca?.nommarlin || 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.linveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Seleccionar línea</option>
-                                        <template x-for="m in allMarcas" :key="m.idmar">
-                                            <option :value="m.idmar" x-text="m.idmar + ' - ' + m.nommarlin"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.marca?.nommarlin || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Modelo (Año)</label>
-                                <input type="text" :value="selectedVehiculo.modveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.modveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Clase de vehículo</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.clase?.nomval || 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.clveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Seleccionar clase</option>
-                                        <template x-for="c in allClases" :key="c.idval">
-                                            <option :value="c.idval" x-text="c.nomval"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.clase?.nomval || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Tipo de servicio</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="servicioLabel(selectedVehiculo.tipo_servicio)" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.tipo_servicio" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="1">Particular</option>
-                                        <option value="2">Público</option>
-                                    </select>
-                                </template>
+                                <input type="text" :value="servicioLabel(selectedVehiculo.tipo_servicio)" readonly />
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>Empresa asociada</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="empresaDisplay(selectedVehiculo)" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.idemp" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Sin empresa / Independiente</option>
-                                        <template x-for="e in allEmpresas" :key="e.idemp">
-                                            <option :value="e.idemp" x-text="e.razsoem"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="empresaDisplay(selectedVehiculo)" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Color del vehículo</label>
-                                <input type="text" :value="selectedVehiculo.colveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.colveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Cilindraje</label>
-                                <input type="text" :value="selectedVehiculo.cilveh ? selectedVehiculo.cilveh + ' cc' : 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.cilveh ? selectedVehiculo.cilveh + ' cc' : 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Tipo de combustible</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.combustible?.nomval || 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.combuveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Seleccionar combustible</option>
-                                        <template x-for="cb in allCombustibles" :key="cb.idval">
-                                            <option :value="cb.idval" x-text="cb.nomval"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.combustible?.nomval || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Tipo de motor</label>
@@ -545,58 +434,31 @@
                             </div>
                             <div class="form-group">
                                 <label>Categoría de carga</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.categoria_carga?.nomval || 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.crgveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Seleccionar carga</option>
-                                        <template x-for="cr in allCargas" :key="cr.idval">
-                                            <option :value="cr.idval" x-text="cr.nomval"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.categoria_carga?.nomval || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Número de sillas</label>
-                                <input type="text" :value="selectedVehiculo.capveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.capveh || 'N/A'" readonly />
                             </div>
-                            {{-- País de fabricación: RETIRADO (siempre es Colombia, ver tabla de cambios) --}}
                             <div class="form-group">
                                 <label>Blindaje</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="blindajeLabel(selectedVehiculo.blinveh)" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.blinveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="2">No</option>
-                                        <option value="1">Sí</option>
-                                    </select>
-                                </template>
+                                <input type="text" :value="blindajeLabel(selectedVehiculo.blinveh)" readonly />
                             </div>
                             <div class="form-group">
                                 <label>No. motor</label>
-                                <input type="text" :value="selectedVehiculo.nmotveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.nmotveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>No. chasis</label>
-                                <input type="text" :value="selectedVehiculo.nchaveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.nchaveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Radio de acción</label>
-                                <input type="text" :value="selectedVehiculo.radaccveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.radaccveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Tipo de póliza</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="polizaLabel(selectedVehiculo.polaveh)" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.polaveh" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="1">Todo Riesgo</option>
-                                        <option value="2">Terceros</option>
-                                    </select>
-                                </template>
+                                <input type="text" :value="polizaLabel(selectedVehiculo.polaveh)" readonly />
                             </div>
                         </div>
                     </div>
@@ -609,48 +471,41 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Licencia de tránsito</label>
-                                <input type="text" :value="selectedVehiculo.lictraveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.lictraveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Fecha de matrícula</label>
-                                <input type="text" :value="selectedVehiculo.fmatv || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.fmatv || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Venc. tarjeta de operación</label>
-                                <input type="text" :value="selectedVehiculo.fecvenr || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.fecvenr || 'N/A'" readonly />
                             </div>
-                            {{-- Tarjeta de operación (taroperveh) y Expedición (fecexpr): RETIRADOS, ver tabla de cambios --}}
-
-                            {{-- SOAT --}}
                             <div class="form-group">
                                 <label>SOAT</label>
-                                <input type="text" :value="selectedVehiculo.soat || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.soat || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Vencimiento SOAT</label>
-                                <input type="text" :value="selectedVehiculo.fecvens || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.fecvens || 'N/A'" readonly />
                             </div>
                             <div class="form-group" style="border-right: none;"></div>
-
-                            {{-- Tecnomecánica --}}
                             <div class="form-group">
                                 <label>Tecnomecánica</label>
-                                <input type="text" :value="selectedVehiculo.tecmecveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.tecmecveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Vencimiento tecnomecánica</label>
-                                <input type="text" :value="selectedVehiculo.fecvent || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.fecvent || 'N/A'" readonly />
                             </div>
                             <div class="form-group" style="border-right: none;"></div>
-
-                            {{-- Extracontractual --}}
                             <div class="form-group">
                                 <label>Póliza extracontractual</label>
-                                <input type="text" :value="selectedVehiculo.extcontveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.extcontveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Vencimiento extracontractual</label>
-                                <input type="text" :value="selectedVehiculo.fecvene || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.fecvene || 'N/A'" readonly />
                             </div>
                         </div>
                     </div>
@@ -663,47 +518,17 @@
                         <div class="form-grid">
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>Propietario</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '') + ' — CC. ' + (selectedVehiculo.propietario.ndocper || 'N/A')) : 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.prop" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Sin asignar</option>
-                                        <template x-for="p in personas" :key="'prop-'+p.idper">
-                                            <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '') + ' — CC. ' + (selectedVehiculo.propietario.ndocper || 'N/A')) : 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Conductor principal</label>
-                                <template x-if="!editMode">
-                                    <input type="text" :value="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '') + ' — CC. ' + (selectedVehiculo.conductor.ndocper || 'N/A')) : 'N/A'" readonly />
-                                </template>
-                                <template x-if="editMode">
-                                    <select x-model="editForm.cond" style="height: 40px; border: 1px solid #3b82f6; border-radius: 6px; padding: 0 12px; font-size: 14px; background: #ffffff; width: 100%; color: #111827; box-shadow: 0 0 0 2px rgba(59,130,246,0.1);">
-                                        <option value="">Sin asignar</option>
-                                        <template x-for="p in personas" :key="'cond-'+p.idper">
-                                            <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
-                                        </template>
-                                    </select>
-                                </template>
+                                <input type="text" :value="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '') + ' — CC. ' + (selectedVehiculo.conductor.ndocper || 'N/A')) : 'N/A'" readonly />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Footer: Botones solo en modo edición -->
-                <div x-show="editMode" x-cloak style="padding: 16px 24px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: flex-end; gap: 12px; background: #ffffff;">
-                    <button class="vbtn vbtn-secondary" @click="cancelEdit()" :disabled="editSaving">
-                        <i class="fa-solid fa-xmark"></i> Descartar cambios
-                    </button>
-                    <button class="vbtn vbtn-primary" @click="saveInlineEdit()" :disabled="editSaving">
-                        <i class="fa-solid fa-floppy-disk" x-show="!editSaving"></i>
-                        <i class="fa-solid fa-spinner fa-spin" x-show="editSaving"></i>
-                        <span x-text="editSaving ? 'Guardando...' : 'Guardar cambios'"></span>
-                    </button>
-                </div>
+
             </div>
 
             <!-- Relational Graph Panel -->
