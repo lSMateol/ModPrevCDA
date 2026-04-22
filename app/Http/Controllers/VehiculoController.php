@@ -173,6 +173,9 @@ class VehiculoController extends Controller
             ], 422);
         }
 
+        // Limpiar la tabla pivote proveh para evitar errores de restricción de llave foránea
+        $vehiculo->personas()->detach();
+
         $vehiculo->delete();
 
         return response()->json([
