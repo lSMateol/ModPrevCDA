@@ -17,14 +17,27 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="font-sans antialiased bg-gray-100">
+<body class="font-sans antialiased bg-gray-100" x-data="{ sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', mobileMenuOpen: false }" x-init="$watch('sidebarCollapsed', value => localStorage.setItem('sidebarCollapsed', value))">
     <div class="flex h-screen overflow-hidden">
         
         @include('components.sidebar')
 
-        <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+        <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300">
             
-            <main class="p-6">
+            {{-- Mobile header if needed --}}
+            <div class="lg:hidden flex items-center justify-between p-4 bg-[#0a1d37] text-white shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-orange-500 w-8 h-8 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-car-side text-white text-xs"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider">RASTRILLANTAS</span>
+                </div>
+                <button @click="mobileMenuOpen = true" class="p-2 hover:bg-white/10 rounded-md">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+
+            <main class="p-4 sm:p-6">
                 @yield('content')
             </main>
         </div>
