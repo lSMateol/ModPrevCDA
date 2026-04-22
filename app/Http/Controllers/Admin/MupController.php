@@ -32,22 +32,19 @@ class MupController extends Controller
 
         return [
             'catcon' => [
-                'nullable',
+                'required',
                 'string',
                 'max:5',
-                Rule::requiredIf($licenciaPresente),
                 Rule::in(LicenciaConduccion::CATEGORIAS),
             ],
             'nliccon' => [
-                'nullable',
+                'required',
                 'string',
                 'max:20',
-                Rule::requiredIf($licenciaPresente),
             ],
             'fvencon' => [
-                'nullable',
+                'required',
                 'date',
-                Rule::requiredIf($licenciaPresente),
             ],
         ];
     }
@@ -694,7 +691,7 @@ class MupController extends Controller
     {
         $request->validate([
             'razsoem' => 'required|string|max:100',
-            'nonitem' => 'required|string|unique:empresa,nonitem',
+            'nonitem' => 'required|numeric|unique:empresa,nonitem',
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
             'ciudeem' => 'nullable|string|max:50',
@@ -722,6 +719,7 @@ class MupController extends Controller
                 'nonitem' => $request->nonitem,
                 'abremp' => $request->abremp,
                 'direm' => $request->direm,
+                'ciudeem' => $request->ciudeem,
                 'telem' => $request->telem,
                 'emaem' => $request->emaem,
                 'nomger' => $request->nomger,
@@ -762,9 +760,10 @@ class MupController extends Controller
 
         $request->validate([
             'razsoem' => 'required|string|max:100',
-            'nonitem' => 'required|string|unique:empresa,nonitem,' . $id . ',idemp',
+            'nonitem' => 'required|numeric|unique:empresa,nonitem,' . $id . ',idemp',
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
+            'ciudeem' => 'nullable|string|max:50',
             'nomger' => 'required|string|max:100',
             'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
             'emaem' => 'required|email|max:60',
@@ -780,6 +779,7 @@ class MupController extends Controller
                 'nonitem' => $request->nonitem,
                 'abremp' => $request->abremp,
                 'direm' => $request->direm,
+                'ciudeem' => $request->ciudeem,
                 'telem' => $request->telem,
                 'emaem' => $request->emaem,
                 'nomger' => $request->nomger,

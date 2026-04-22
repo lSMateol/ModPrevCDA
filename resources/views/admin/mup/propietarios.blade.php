@@ -242,7 +242,7 @@
                                                     <p class="text-xs font-bold text-gray-700 mt-1" x-text="'ORD: ' + (veh.nordveh || 'S/I')"></p>
                                                 </div>
                                                 <div class="ml-auto">
-                                                    <a :href="'/admin/vehiculos?placa=' + veh.placaveh" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-50 hover:text-blue-600 transition-all">
+                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-50 hover:text-blue-600 transition-all" title="Ver Detalle Vehículo">
                                                         <iconify-icon icon="lucide:external-link" class="text-lg"></iconify-icon>
                                                     </a>
                                                 </div>

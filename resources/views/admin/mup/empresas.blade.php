@@ -241,7 +241,7 @@
                                                     <p class="text-xs font-bold text-gray-700 mt-1 uppercase" x-text="veh.marveh + ' ' + (veh.modveh || '')"></p>
                                                 </div>
                                                 <div class="ml-auto">
-                                                    <a :href="'/admin/vehiculos?placa=' + veh.placaveh" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Ver Detalle Vehículo">
                                                         <iconify-icon icon="lucide:arrow-up-right" class="text-lg"></iconify-icon>
                                                     </a>
                                                 </div>
@@ -295,7 +295,11 @@
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">NIT / Identificación <span class="text-blue-500">*</span></label>
-                        <input type="text" name="nonitem" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="900.000.000-0" required>
+                        <input type="text" name="nonitem" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="900000000" required inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Ciudad <span class="text-blue-500">*</span></label>
+                        <input type="text" name="ciudeem" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. Bogotá" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Abreviatura</label>
@@ -371,7 +375,11 @@
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">NIT / Identificación <span class="text-amber-600">*</span></label>
-                        <input type="text" name="nonitem" x-model="currentEmp.nonitem" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                        <input type="text" name="nonitem" x-model="currentEmp.nonitem" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Ciudad <span class="text-amber-600">*</span></label>
+                        <input type="text" name="ciudeem" x-model="currentEmp.ciudeem" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Abreviatura</label>

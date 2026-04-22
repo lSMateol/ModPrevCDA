@@ -152,10 +152,24 @@ class VehiculoController extends Controller
     {
         $vehiculo = Vehiculo::withCount(['diagnosticos', 'documentos'])->findOrFail($id);
 
+        // Validar integridad relacional (Diagnósticos y Documentos)
         if ($vehiculo->diagnosticos_count > 0 || $vehiculo->documentos_count > 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos o documentos de respaldo asociados, lo cual afectaría la trazabilidad del sistema.'
+            ], 422);
+        }
+
+        // Validar vínculos activos con MUP (Propietario, Conductor, Empresa)
+        if ($vehiculo->prop || $vehiculo->cond || $vehiculo->idemp) {
+            $vinculos = [];
+            if ($vehiculo->prop) $vinculos[] = 'Propietario';
+            if ($vehiculo->cond) $vinculos[] = 'Conductor';
+            if ($vehiculo->idemp) $vinculos[] = 'Empresa';
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar el vehículo porque tiene vínculos activos con: ' . implode(', ', $vinculos) . '. Debe desvincular estas entidades antes de proceder.'
             ], 422);
         }
 
