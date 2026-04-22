@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inspección Preventiva - {{ $diagnostico->vehiculo->placaveh }}</title>
+<<<<<<< HEAD
     <style>
         @page {
             size: letter;
@@ -190,6 +191,9 @@
             }
         }
     </style>
+=======
+    @include('diagnosticos.partials.report_styles')
+>>>>>>> 5bb40ed014e02b9909e9656ee33df47bbfb92e3f
 </head>
 <body>
     <button class="no-print print-btn" onclick="window.print()" style="display: none;">
@@ -198,13 +202,12 @@
     </button>
     
     <script>
-        // Mostrar el botón solo si estamos en un navegador con JS habilitado
-        // Esto evita que aparezca en exportaciones estáticas de PDF
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('.print-btn').style.display = 'flex';
         });
     </script>
     
+<<<<<<< HEAD
     <div class="container">
         <header>
             <div class="header-left">
@@ -545,9 +548,16 @@
 
     <!-- Marca de Agua (Añadida al final para superposición suave) -->
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; pointer-events: none; overflow: hidden; opacity: 0.04; display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around; transform: rotate(-30deg) scale(1.5);">
+=======
+    <!-- Marca de Agua (Fija en el fondo) -->
+    <div class="watermark" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.04; display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around; transform: rotate(-30deg) scale(1.5);">
+>>>>>>> 5bb40ed014e02b9909e9656ee33df47bbfb92e3f
         @for($i=0; $i<20; $i++)
             <div style="font-size: 40pt; font-weight: 900; margin: 40px; white-space: nowrap;">REVISIÓN PREVENTIVA</div>
         @endfor
     </div>
+
+    @include('diagnosticos.partials.report_body', ['diagnostico' => $diagnostico])
+
 </body>
 </html>

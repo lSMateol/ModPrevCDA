@@ -69,8 +69,4 @@ class Vehiculo extends Model
         return $this->hasMany(Diag::class, 'idveh', 'idveh');
     }
 
-    public function documentos()
-    {
-        return $this->hasMany(DocumentoRespaldo::class, 'idveh', 'idveh');
-    }
 }

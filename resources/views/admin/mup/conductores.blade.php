@@ -4,279 +4,441 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="conductorManager()" x-cloak>
-    <header class="mup-topbar">
-        <div class="mup-page-title">
-            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
-            <p>Gestión de conductores, licencias y estados operativos del CDA.</p>
+@php
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+@endphp
+
+<div class="px-4 sm:px-10 pb-20 max-w-[1600px] mx-auto" x-data="conductorManager()" x-init="init()" x-cloak>
+    
+    <!-- HEADER & BENTO METRICS -->
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8 mt-4">
+        <div>
+            <h1 class="font-headline font-black text-[#002D54] text-2xl md:text-3xl tracking-tight">Gestión de Conductores</h1>
+            <p class="text-on-surface-variant font-body text-sm mt-1">Directorio maestro y control de licencias operativas</p>
         </div>
-        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'conductores'])
-    </header>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full xl:w-auto">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-[#0d3b5a] flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total</span>
+                <span class="text-2xl font-black text-[#001834]" x-text="conductores.length"></span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-emerald-500 flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Activos</span>
+                <span class="text-2xl font-black text-emerald-600" x-text="activeCount()"></span>
+            </div>
+            <div class="bg-[#001834] p-4 rounded-2xl shadow-lg flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Filtrados</span>
+                <span class="text-2xl font-black text-primary-fixed-dim" x-text="filteredConductores().length"></span>
+            </div>
+            <button @click="showCreateModal = true" class="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-2xl shadow-lg shadow-orange-500/20 flex flex-col items-center justify-center gap-1 hover:scale-[1.03] transition-all group">
+                <iconify-icon icon="lucide:user-plus" class="text-xl group-hover:rotate-12 transition-transform"></iconify-icon>
+                <span class="text-[9px] font-black uppercase tracking-tighter">Nuevo</span>
+            </button>
+        </div>
+    </div>
 
-    <div class="mup-content-scroll">
-        @include('admin.mup.partials.flash')
-        <div class="space-y-6 pb-12">
+    @include('admin.mup.partials.navigation')
+
+    @include('admin.mup.partials.flash')
+
+    <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
+    <div class="grid grid-cols-12 gap-8 mt-6">
+        
+        <!-- MASTER COLUMN: SEARCH & LIST -->
+        <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
             
-            {{-- SECCIÓN: Listado de Conductores --}}
-            <section class="mup-card">
-                <div class="mup-card-header-plain" style="flex-wrap: wrap;">
-                    <div>
-                        <div class="mup-card-title text-gray-800">Listado Maestro de Conductores</div>
-                        <div class="mup-card-subtitle">Incluye conductores por perfil y los asignados en vehículos del sistema. Los datos son los mismos en todo el CDA.</div>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
-                        <div class="export-group">
-                            <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado filtrado (datos actuales)">
-                                <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
-                            </button>
-                            <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
-                                <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
-                            </button>
-                            <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
-                                <iconify-icon icon="lucide:file"></iconify-icon> PDF
-                            </button>
-                        </div>
-                        <div class="mup-toolbar-search relative">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o licencia..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
-                            <div class="absolute left-3 top-2.5 text-gray-400">
-                                <iconify-icon icon="lucide:search"></iconify-icon>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Barra de Búsqueda Premium -->
+            <div class="relative group">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors">
+                    <iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 sm:px-6 pb-4">
-                    <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
-                        <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
-                        <div class="text-xl font-bold text-gray-800" x-text="conductores.length"></div>
-                    </div>
-                    <div class="bg-green-50 border border-green-100 rounded-lg px-4 py-3">
-                        <div class="text-[11px] text-green-700 uppercase tracking-wider">Activos</div>
-                        <div class="text-xl font-bold text-green-700" x-text="activeCount()"></div>
-                    </div>
-                    <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-                        <div class="text-[11px] text-blue-700 uppercase tracking-wider">Resultados filtro</div>
-                        <div class="text-xl font-bold text-blue-700" x-text="filteredConductores().length"></div>
-                    </div>
-                </div>
+                <input type="text" x-model="search" placeholder="Buscar por nombre, documento..." 
+                    class="w-full bg-white border-2 border-transparent focus:border-orange-500/20 focus:ring-4 focus:ring-orange-500/5 rounded-2xl py-4 pl-12 pr-4 shadow-sm text-sm font-semibold transition-all">
                 
-                <div class="mup-table-wrap overflow-x-auto">
-                    <table class="mup-data-table">
-                        <thead>
-                            <tr>
-                                <th class="w-16">ID</th>
-                                <th>Conductor</th>
-                                <th>Identificación</th>
-                                <th>Licencia / Vencimiento</th>
-                                <th>Estado</th>
-                                <th class="text-center" style="text-align: center;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="con in filteredConductores()" :key="con.idper">
-                                <tr class="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0 group">
-                                    <td class="text-[10px] font-bold text-gray-400" x-text="'C-'+con.idper"></td>
-                                    <td>
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] text-white flex items-center justify-center font-black text-[10px] shadow-sm uppercase"
-                                                 x-text="con.nomper[0] + (con.apeper ? con.apeper[0] : '')"></div>
-                                            <div>
-                                                <div class="font-bold text-gray-800 text-sm leading-tight" x-text="con.nomper + ' ' + (con.apeper || '')"></div>
-                                                <div class="text-[10px] text-gray-400" x-text="con.emaper"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="text-xs text-gray-700 font-bold" x-text="numberFormat(con.ndocper)"></div>
-                                        <div class="text-[9px] text-gray-400 uppercase font-black" x-text="getDocType(con.tdocper)"></div>
-                                    </td>
-                                    <td>
-                                        <div class="flex flex-col">
-                                            <span class="text-[10px] font-black text-gray-500 uppercase" x-text="con.catcon ? ('Cat. ' + con.catcon) : '—'"></span>
-                                            <span class="text-[11px] font-bold text-[#0d3b5a]" x-text="con.nliccon || 'N/A'"></span>
-                                            <span class="text-[10px] text-gray-400" x-text="formatDate(con.fvencon)"></span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="mup-state-badge" :class="con.actper ? 'mup-state-active' : 'mup-state-inactive'">
-                                            <div class="w-2 h-2 rounded-full bg-current"></div>
-                                            <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="flex justify-center gap-1">
-                                            <button @click="editConductor(con)" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Editar Conductor">
-                                                <iconify-icon icon="lucide:pencil"></iconify-icon>
-                                            </button>
-                                            <button @click="deleteConductor(con)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Eliminar">
-                                                <iconify-icon icon="lucide:trash-2"></iconify-icon>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                            <tr x-show="filteredConductores().length === 0">
-                                <td colspan="6" class="text-center py-10">
-                                    <div class="flex flex-col items-center gap-2 text-gray-500">
-                                        <iconify-icon icon="lucide:search-x" class="text-2xl"></iconify-icon>
-                                        <span class="text-sm font-medium">No hay conductores para la búsqueda aplicada.</span>
-                                        <span class="text-xs">Ajusta los filtros o registra un nuevo conductor.</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
+                    <button @click="exportCsv()" class="p-2 text-gray-400 hover:text-[#0d3b5a] transition-colors" title="Exportar CSV">
+                        <iconify-icon icon="lucide:download" class="text-lg"></iconify-icon>
+                    </button>
                 </div>
+            </div>
 
-                <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
-                    <div x-text="filteredConductores().length + ' conductor(es) registrado(s)'"></div>
-                    <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
-                </div>
-            </section>
-
-            <div>
-                <section class="mup-card">
-                    <div class="mup-card-header-soft">
-                        <div class="mup-card-title">Registro de Conductor</div>
-                        <div class="mup-card-subtitle">Ingresa la información básica, contacto y datos de licencia.</div>
-                    </div>
-                    <div class="mup-card-body">
-                        <form action="{{ route('admin.mup.conductores.store') }}" method="POST" id="createForm">
-                            @csrf
-                            <input type="hidden" name="_mup_conductor_form" value="create">
-                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span>Información Identitaria</span>
-                                <div class="flex-1 h-px bg-gray-100"></div>
+            <!-- Listado de Resultados (Scrollable) -->
+            <div class="flex flex-col gap-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
+                <template x-for="con in filteredConductores()" :key="con.idper">
+                    <div @click="selectConductor(con)" 
+                        class="group bg-white p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden"
+                        :class="selectedId === con.idper ? 'border-orange-500 shadow-md translate-x-2' : 'border-transparent hover:border-gray-200 shadow-sm'">
+                        
+                        <div class="flex items-center gap-4">
+                            <!-- Avatar con iniciales -->
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0 transition-transform group-hover:scale-110"
+                                :class="con.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]' : 'bg-gray-300'"
+                                x-text="con.nomper[0] + (con.apeper ? con.apeper[0] : '')">
                             </div>
                             
-                            <div class="mup-form-grid">
-                                <div class="mup-form-group span-2">
-                                    <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
-                                    <input type="text" name="nombre_completo" value="{{ old('nombre_completo') }}" class="mup-input" placeholder="Ej. Carlos Alberto Soto" required>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-[#001834] text-sm truncate uppercase tracking-tight" x-text="con.nomper + ' ' + (con.apeper || '')"></h3>
+                                    <span :class="con.actper ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'" 
+                                        class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                                        x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
                                 </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
-                                    <select name="tdocper" class="mup-input" required>
-                                        @foreach($tiposDoc as $tipo)
-                                            <option value="{{ $tipo->idval }}" @selected(old('tdocper') == $tipo->idval)>{{ $tipo->nomval }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Identificación <span class="mup-required">*</span></label>
-                                    <input type="number" name="ndocper" value="{{ old('ndocper') }}" class="mup-input" placeholder="Sin puntos ni comas" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Correo Electrónico <span class="mup-required">*</span></label>
-                                    <input type="email" name="emaper" value="{{ old('emaper') }}" class="mup-input" placeholder="ejemplo@email.com" required>
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Celular / Teléfono</label>
-                                    <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="300 000 0000">
+                                <div class="flex items-center gap-2 mt-1">
+                                    <iconify-icon icon="lucide:hash" class="text-gray-400 text-[10px]"></iconify-icon>
+                                    <span class="text-[11px] font-bold text-gray-500" x-text="numberFormat(con.ndocper)"></span>
+                                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                    <span class="text-[10px] text-gray-400 uppercase font-black" x-text="con.catcon ? 'CAT. ' + con.catcon : 'S/L'"></span>
                                 </div>
                             </div>
 
-                            <div class="text-[11px] font-black text-[#0d3b5a]/40 mt-10 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span>Capacidad Operativa</span>
-                                <div class="flex-1 h-px bg-gray-100"></div>
-                            </div>
-                            <p class="text-[11px] text-gray-500 mb-4">Licencia opcional: si completa uno de categoría, número o vencimiento, debe indicar los tres.</p>
+                            <iconify-icon icon="lucide:chevron-right" class="text-gray-300 group-hover:text-orange-500 transition-colors"></iconify-icon>
+                        </div>
 
-                            <div class="mup-form-grid">
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Categoría Licencia</label>
-                                    <select name="catcon" class="mup-input">
-                                        <option value="">— Sin licencia —</option>
-                                        @foreach($licenciaCategorias as $cat)
-                                            <option value="{{ $cat }}" @selected(old('catcon') === $cat)>{{ $cat }}</option>
-                                        @endforeach
-                                    </select>
+                        <!-- Indicador de selección activa -->
+                        <div x-show="selectedId === con.idper" class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500"></div>
+                    </div>
+                </template>
+
+                <div x-show="filteredConductores().length === 0" class="bg-white/50 border-2 border-dashed border-gray-200 rounded-3xl p-10 text-center flex flex-col items-center gap-3">
+                    <iconify-icon icon="lucide:user-x" class="text-4xl text-gray-200"></iconify-icon>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sin resultados</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAIL COLUMN: INFORMATION & GRAPH -->
+        <div class="col-span-12 lg:col-span-7 xl:col-span-8">
+            
+            <template x-if="selectedConductor">
+                <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+                    
+                    <!-- Detail Header -->
+                    <div class="p-6 sm:p-8 bg-gradient-to-r from-[#0d3b5a] to-[#0a2d46] text-white">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                            <div class="flex items-center gap-5">
+                                <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-3xl font-black shadow-inner"
+                                    x-text="selectedConductor.nomper[0] + (selectedConductor.apeper ? selectedConductor.apeper[0] : '')">
                                 </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Nro de Licencia</label>
-                                    <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="mup-input" placeholder="Nro de pase">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Vencimiento Licencia</label>
-                                    <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="mup-input">
-                                </div>
-                                <div class="mup-form-group">
-                                    <label class="mup-label">Estado Inicial</label>
-                                    <select name="actper" class="mup-input" required>
-                                        <option value="1" @selected(old('actper', '1') == '1')>Disponible / Activo</option>
-                                        <option value="0" @selected((string) old('actper') === '0')>Fuera de Servicio / Inactivo</option>
-                                    </select>
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <h2 class="text-2xl font-black tracking-tight" x-text="selectedConductor.nomper + ' ' + (selectedConductor.apeper || '')"></h2>
+                                        <span x-show="selectedConductor.actper" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Disponible</span>
+                                    </div>
+                                    <p class="text-white/60 text-xs font-medium mt-1 flex items-center gap-2">
+                                        <iconify-icon icon="lucide:mail"></iconify-icon>
+                                        <span x-text="selectedConductor.emaper"></span>
+                                        <span class="opacity-30">|</span>
+                                        <iconify-icon icon="lucide:phone"></iconify-icon>
+                                        <span x-text="selectedConductor.telper || 'Sin teléfono'"></span>
+                                    </p>
                                 </div>
                             </div>
-
-                            <div class="mt-10 flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                <button type="reset" class="mup-btn mup-btn-outline">Limpiar todo</button>
-                                <button type="submit" class="mup-btn mup-btn-primary">
-                                    <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
-                                    Registrar Conductor
+                            
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button @click="editConductor(selectedConductor)" class="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border border-white/10">
+                                    Editar Perfil
+                                </button>
+                                <button @click="deleteConductor(selectedConductor)" class="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/20">
+                                    <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
-                </section>
+
+                    <!-- Detail Tabs -->
+                    <div class="flex border-b border-gray-100 bg-gray-50/50 px-8">
+                        <button @click="detailTab = 'info'" 
+                            class="px-6 py-4 text-[11px] font-black uppercase tracking-widest transition-all border-b-2"
+                            :class="detailTab === 'info' ? 'border-orange-500 text-[#0d3b5a]' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                            Información General
+                        </button>
+                        <button @click="detailTab = 'licencia'" 
+                            class="px-6 py-4 text-[11px] font-black uppercase tracking-widest transition-all border-b-2"
+                            :class="detailTab === 'licencia' ? 'border-orange-500 text-[#0d3b5a]' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                            Licencia de Conducción
+                        </button>
+                        <button @click="detailTab = 'vinculos'" 
+                            class="px-6 py-4 text-[11px] font-black uppercase tracking-widest transition-all border-b-2"
+                            :class="detailTab === 'vinculos' ? 'border-orange-500 text-[#0d3b5a]' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                            Vehículos Vinculados
+                        </button>
+                    </div>
+
+                    <!-- Detail Content -->
+                    <div class="p-8">
+                        <!-- TAB: INFO -->
+                        <div x-show="detailTab === 'info'" class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-300">
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Documento de Identidad</label>
+                                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                        <p class="text-sm font-bold text-[#0d3b5a]" x-text="getDocType(selectedConductor.tdocper)"></p>
+                                        <p class="text-2xl font-black text-[#001834] mt-1" x-text="numberFormat(selectedConductor.ndocper)"></p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Contacto Directo</label>
+                                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-500 shadow-sm border border-gray-100">
+                                            <iconify-icon icon="lucide:smartphone" class="text-xl"></iconify-icon>
+                                        </div>
+                                        <p class="text-lg font-black text-[#001834]" x-text="selectedConductor.telper || 'N/A'"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Registro del Sistema</label>
+                                    <div class="bg-white p-5 rounded-2xl border-2 border-dashed border-gray-100">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-xs font-bold text-gray-500">ID de Ficha</span>
+                                            <span class="bg-[#0d3b5a] text-white px-3 py-1 rounded-lg text-[10px] font-black" x-text="'C-' + selectedConductor.idper"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-bold text-gray-500">Perfil CDA</span>
+                                            <span class="text-xs font-black text-[#0d3b5a] uppercase tracking-tighter">Conductor Operativo</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: LICENCIA -->
+                        <div x-show="detailTab === 'licencia'" class="animate-in fade-in duration-300">
+                            <div x-show="!selectedConductor.nliccon" class="bg-amber-50 border-l-4 border-amber-400 p-6 rounded-2xl flex items-center gap-4">
+                                <iconify-icon icon="lucide:alert-circle" class="text-3xl text-amber-500"></iconify-icon>
+                                <div>
+                                    <p class="text-sm font-bold text-amber-900">Información de Licencia no Registrada</p>
+                                    <p class="text-xs text-amber-700">Este conductor no tiene datos de licencia cargados en el sistema.</p>
+                                </div>
+                            </div>
+
+                            <div x-show="selectedConductor.nliccon" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">Categoría</p>
+                                    <div class="text-3xl font-black text-orange-500 text-center" x-text="selectedConductor.catcon || '—'"></div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm col-span-2">
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Número de Licencia</p>
+                                    <div class="text-2xl font-black text-[#001834]" x-text="selectedConductor.nliccon || 'N/A'"></div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm col-span-3 flex items-center justify-between">
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fecha de Vencimiento</p>
+                                        <p class="text-xl font-black text-[#0d3b5a]" x-text="formatDate(selectedConductor.fvencon)"></p>
+                                    </div>
+                                    <div :class="isExpiringSoon(selectedConductor.fvencon) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'" 
+                                        class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                        <span x-text="isExpiringSoon(selectedConductor.fvencon) ? 'Vencimiento Próximo' : 'Licencia Vigente'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: VINCULOS (GRAFO) -->
+                        <div x-show="detailTab === 'vinculos'" class="animate-in fade-in duration-300">
+                            <div class="flex flex-col items-center py-6">
+                                <!-- Nodo Central -->
+                                <div class="relative z-10">
+                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] flex items-center justify-center text-white text-2xl font-black shadow-xl border-4 border-white"
+                                        x-text="selectedConductor.nomper[0] + (selectedConductor.apeper ? selectedConductor.apeper[0] : '')">
+                                    </div>
+                                    <div class="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow-md">
+                                        <iconify-icon icon="lucide:user" class="text-lg text-orange-500"></iconify-icon>
+                                    </div>
+                                </div>
+
+                                <!-- Línea Conectora Vertical -->
+                                <div x-show="selectedConductor.vehiculos_conducidos.length > 0" class="w-0.5 h-10 bg-gradient-to-b from-[#0d3b5a] to-transparent"></div>
+
+                                <!-- Lista de Vehículos Vinculados -->
+                                <div class="w-full mt-4 space-y-4">
+                                    <template x-for="veh in selectedConductor.vehiculos_conducidos" :key="veh.idveh">
+                                        <div class="flex items-center gap-6 group">
+                                            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-gray-200"></div>
+                                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 min-w-[280px] hover:border-orange-200 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300">
+                                                <div class="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-[#0d3b5a]">
+                                                    <iconify-icon icon="lucide:car" class="text-2xl"></iconify-icon>
+                                                </div>
+                                                <div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-mono" x-text="veh.placaveh"></span>
+                                                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Vehículo Vinculado</span>
+                                                    </div>
+                                                    <p class="text-xs font-bold text-gray-700 mt-1" x-text="(veh.nordveh ? 'INT: ' + veh.nordveh : 'S/I')"></p>
+                                                </div>
+                                                <div class="ml-auto">
+                                                    <a :href="'/admin/vehiculos?placa=' + veh.placaveh" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-50 hover:text-[#0d3b5a] transition-all">
+                                                        <iconify-icon icon="lucide:external-link" class="text-lg"></iconify-icon>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 h-px bg-gradient-to-l from-transparent via-gray-200 to-gray-200"></div>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="selectedConductor.vehiculos_conducidos.length === 0" class="text-center py-10 opacity-40">
+                                        <iconify-icon icon="lucide:link-2-off" class="text-4xl mb-2"></iconify-icon>
+                                        <p class="text-[10px] font-black uppercase tracking-widest">Sin vehículos vinculados</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Placeholder cuando no hay selección -->
+            <div x-show="!selectedConductor" class="h-full min-h-[500px] bg-white rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center p-10">
+                <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <iconify-icon icon="lucide:user-check" class="text-5xl text-gray-200"></iconify-icon>
+                </div>
+                <h3 class="text-xl font-black text-[#001834] tracking-tight">Seleccione un Conductor</h3>
+                <p class="text-sm text-gray-400 mt-2 max-w-xs">Haga clic en un registro de la lista de la izquierda para ver su información detallada y grafo de vínculos.</p>
             </div>
         </div>
     </div>
 
-    {{-- MODAL DE EDICIÓN --}}
-    <div x-show="editing" x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95"
-         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        
-        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[min(100dvh,900px)] overflow-hidden flex flex-col m-3 sm:m-4" @click.away="closeModal()">
-            <div class="p-4 sm:p-8 bg-[#0d3b5a] text-white flex justify-between items-start sm:items-center gap-3 bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] shrink-0">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/10 rounded-2xl">
-                        <iconify-icon icon="lucide:pencil-line" class="text-2xl"></iconify-icon>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-black tracking-tight" x-text="'Editando: ' + currentCon.nomper"></h2>
-                        <p class="text-[#89b3d0] text-[11px] uppercase tracking-widest font-bold">Actualización de ficha operativa</p>
-                    </div>
+    <!-- MODAL: REGISTRO (CONSERVANDO LÓGICA ORIGINAL) -->
+    <div x-show="showCreateModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#001834]/60 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.away="showCreateModal = false">
+            <div class="p-8 bg-[#0d3b5a] text-white flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight">Registrar Nuevo Conductor</h2>
+                    <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Alta en Módulo MUP</p>
                 </div>
-                <button @click="closeModal()" class="p-2 hover:bg-white/10 rounded-xl transition-all">
+                <button @click="showCreateModal = false" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all">
                     <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
                 </button>
             </div>
 
-            <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0">
+            <form action="{{ route($mupPrefix . '.conductores.store') }}" method="POST" id="createForm" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                @csrf
+                <input type="hidden" name="_mup_conductor_form" value="create">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-orange-500">*</span></label>
+                        <input type="text" name="nombre_completo" value="{{ old('nombre_completo') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. Carlos Alberto Soto" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Tipo Documento <span class="text-orange-500">*</span></label>
+                        <select name="tdocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            @foreach($tiposDoc as $tipo)
+                                <option value="{{ $tipo->idval }}" @selected(old('tdocper') == $tipo->idval)>{{ $tipo->nomval }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Identificación <span class="text-orange-500">*</span></label>
+                        <input type="number" name="ndocper" value="{{ old('ndocper') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Solo números" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Correo Electrónico <span class="text-orange-500">*</span></label>
+                        <input type="email" name="emaper" value="{{ old('emaper') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="ejemplo@email.com" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Celular / Teléfono</label>
+                        <input type="text" name="telper" value="{{ old('telper') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="3001234567" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-[10px] font-black text-[#0d3b5a]/40 uppercase tracking-[0.2em]">Datos de Licencia</span>
+                            <div class="flex-1 h-px bg-gray-100"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría</label>
+                        <select name="catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none">
+                            <option value="">— Sin licencia —</option>
+                            @foreach($licenciaCategorias as $cat)
+                                <option value="{{ $cat }}" @selected(old('catcon') === $cat)>{{ $cat }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia</label>
+                        <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Nro de pase">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento</label>
+                        <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado Operativo <span class="text-orange-500">*</span></label>
+                        <select name="actper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            <option value="1" @selected(old('actper', '1') == '1')>Disponible / Activo</option>
+                            <option value="0" @selected((string) old('actper') === '0')>Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button type="button" @click="showCreateModal = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-[#0d3b5a] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#0d3b5a]/20 transition-all hover:scale-[1.02]">
+                        Finalizar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EDICIÓN (CONSERVANDO LÓGICA ORIGINAL) -->
+    <div x-show="editing" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#001834]/60 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.away="closeModal()">
+            <div class="p-8 bg-orange-500 text-white flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight" x-text="'Editar: ' + currentCon.nomper"></h2>
+                    <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Actualización de ficha</p>
+                </div>
+                <button @click="closeModal()" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all">
+                    <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
+                </button>
+            </div>
+
+            <form :action="'{{ url($mupBase . '/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div class="col-span-1 sm:col-span-2">
-                        <label class="mup-label">Nombre Completo</label>
-                        <input type="text" name="nombre_completo" x-model="currentCon.nombre_completo" class="mup-input" required>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-orange-500">*</span></label>
+                        <input type="text" name="nombre_completo" x-model="currentCon.nombre_completo" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
-                        <label class="mup-label">Identificación</label>
-                        <input type="number" name="ndocper" x-model="currentCon.ndocper" class="mup-input" required>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Tipo Documento <span class="text-orange-500">*</span></label>
+                        <select name="tdocper" x-model="currentCon.tdocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            @foreach($tiposDoc as $tipo)
+                                <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
-                        <label class="mup-label">Email</label>
-                        <input type="email" name="emaper" x-model="currentCon.emaper" class="mup-input" required>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Identificación <span class="text-orange-500">*</span></label>
+                        <input type="number" name="ndocper" x-model="currentCon.ndocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
-                        <label class="mup-label">Licencia</label>
-                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="mup-input">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Correo Electrónico <span class="text-orange-500">*</span></label>
+                        <input type="email" name="emaper" x-model="currentCon.emaper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
-                        <label class="mup-label">Vencimiento</label>
-                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="mup-input">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Celular / Teléfono</label>
+                        <input type="text" name="telper" x-model="currentCon.telper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="300 000 0000" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
+
+                    <div class="sm:col-span-2 pt-4">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-[10px] font-black text-[#0d3b5a]/40 uppercase tracking-[0.2em]">Datos de Licencia</span>
+                            <div class="flex-1 h-px bg-gray-100"></div>
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="mup-label">Categoría</label>
-                        <select name="catcon" x-model="currentCon.catcon" class="mup-input">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría</label>
+                        <select name="catcon" x-model="currentCon.catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none">
                             <option value="">— Sin licencia —</option>
                             @foreach($licenciaCategorias as $cat)
                                 <option value="{{ $cat }}">{{ $cat }}</option>
@@ -284,42 +446,49 @@
                         </select>
                     </div>
                     <div>
-                        <label class="mup-label">Estado</label>
-                        <select name="actper" x-model="currentCon.actper" class="mup-input" required>
-                            <option value="1">Activo</option>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia</label>
+                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento</label>
+                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado Operativo <span class="text-orange-500">*</span></label>
+                        <select name="actper" x-model="currentCon.actper" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            <option value="1">Disponible / Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
                     </div>
-                    <input type="hidden" name="tdocper" x-model="currentCon.tdocper">
                 </div>
 
-                <div class="mt-8 sm:mt-10 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
-                    <button type="button" @click="closeModal()" class="flex-1 min-h-[48px] py-3 sm:py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-xl sm:rounded-2xl transition-all">Cancelar</button>
-                    <button type="submit" class="flex-1 min-h-[48px] py-3 sm:py-4 bg-[#0d3b5a] text-white font-bold rounded-xl sm:rounded-2xl shadow-xl shadow-[#0d3b5a]/20 active:scale-[0.98] transition-all">
-                        Actualizar Cambios
+                <div class="mt-10 flex gap-4">
+                    <button type="button" @click="closeModal()" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Descartar</button>
+                    <button type="submit" class="flex-1 bg-orange-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02]">
+                        Guardar Cambios
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- MODAL ELIMINAR --}}
-    <div x-show="deleting" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-[calc(100%-1.5rem)] text-center" @click.away="deleting = false">
-            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <iconify-icon icon="lucide:alert-triangle" style="font-size: 40px;"></iconify-icon>
+    <!-- MODAL: ELIMINAR (CONSERVANDO LÓGICA ORIGINAL) -->
+    <div x-show="deleting" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#001834]/80 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+        <div class="bg-white p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center" @click.away="deleting = false">
+            <div class="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <iconify-icon icon="lucide:alert-triangle" style="font-size: 48px;"></iconify-icon>
             </div>
-            <h3 class="text-xl font-black text-gray-800 mb-2">¿Eliminar Conductor?</h3>
-            <p class="text-sm text-gray-400 mb-8 leading-relaxed">
-                Esta acción es permanente y eliminará toda la ficha de <span class="text-gray-900 font-bold" x-text="currentCon.nomper"></span>.
+            <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Conductor?</h3>
+            <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
+                Esta acción es permanente y eliminará toda la ficha de <span class="text-[#001834] font-black" x-text="currentCon.nomper"></span>.
             </p>
             
-            <div class="flex gap-3">
-                <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
-                <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
+            <div class="flex gap-4">
+                <button @click="deleting = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">No, volver</button>
+                <form :action="'{{ url($mupBase . '/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>
+                    <button type="submit" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red-200 hover:scale-[1.05] transition-all">Sí, borrar</button>
                 </form>
             </div>
         </div>
@@ -327,20 +496,42 @@
 
 </div>
 
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+</style>
+
 <script>
 function conductorManager() {
     return {
         search: '',
         editing: false,
         deleting: false,
+        showCreateModal: false,
+        detailTab: 'info',
+        selectedId: null,
+        selectedConductor: null,
         currentCon: {},
         conductores: @json($conductores),
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         
         init() {
+            // Seleccionar el primero por defecto si existe
+            if (this.conductores.length > 0) {
+                this.selectConductor(this.conductores[0]);
+            }
+
             @if($errors->any() && old('_mup_conductor_form') === 'create')
-            document.getElementById('createForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                this.showCreateModal = true;
             @endif
+        },
+
+        selectConductor(con) {
+            this.selectedId = con.idper;
+            this.selectedConductor = con;
+            // No reseteamos el tab a menos que sea necesario para mejorar UX
         },
 
         exportCsv() {
@@ -420,6 +611,14 @@ function conductorManager() {
 
         activeCount() {
             return this.conductores.filter(c => Number(c.actper) === 1).length;
+        },
+
+        isExpiringSoon(dateStr) {
+            if (!dateStr) return false;
+            const date = new Date(dateStr);
+            const today = new Date();
+            const diff = date - today;
+            return diff < (30 * 24 * 60 * 60 * 1000); // 30 días
         }
     }
 }

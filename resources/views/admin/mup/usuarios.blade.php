@@ -3,652 +3,547 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+
 @php
-    $usuariosCsv = $usuarios->map(fn ($u) => [
-        'id' => $u->id,
-        'name' => $u->name ?? '',
-        'username' => $u->username ?? '',
-        'email' => $u->email ?? '',
-        'ndocper' => $u->persona?->ndocper ?? '',
-        'perfil' => $u->persona?->perfil?->nompef ?? '',
-        'actper' => $u->persona?->actper ?? '',
-        'empresa' => $u->empresa?->razsoem ?? 'Particular',
-    ]);
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+    
+    // Preparar datos para Alpine
+    $usuariosData = $usuarios->map(function($u) {
+        return [
+            'id' => $u->id,
+            'name' => $u->name,
+            'username' => $u->username,
+            'email' => $u->email,
+            'ndocper' => $u->persona->ndocper ?? 0,
+            'tdocper' => $u->persona->tdocper ?? '',
+            'telper' => $u->persona->telper ?? '',
+            'actper' => $u->persona->actper ?? 1,
+            'nompef' => $u->persona->perfil->nompef ?? 'Sin Rol',
+            'idpef' => $u->persona->idpef ?? '',
+        ];
+    });
 @endphp
 
-<div class="mup-container" x-data="mupEditor()" x-cloak>
-    <header class="mup-topbar">
-        <div class="mup-page-title">
-            <h1>MUP - Módulo de Usuarios y Perfiles</h1>
-            <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
+<div class="px-4 sm:px-10 pb-20 max-w-[1600px] mx-auto" x-data="usuariosManager()" x-init="init()" x-cloak>
+    
+    <!-- HEADER & BENTO METRICS -->
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8 mt-4">
+        <div>
+            <h1 class="font-headline font-black text-[#002D54] text-2xl md:text-3xl tracking-tight">Gestión de Accesos</h1>
+            <p class="text-on-surface-variant font-body text-sm mt-1">Control de perfiles administrativos y seguridad del sistema</p>
         </div>
-        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'usuarios'])
-    </header>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full xl:w-auto">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-[#0d3b5a] flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Personal Total</span>
+                <span class="text-2xl font-black text-[#001834]" x-text="usuarios.length"></span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-blue-500 flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Activos</span>
+                <span class="text-2xl font-black text-blue-600" x-text="usuarios.filter(u => u.actper).length"></span>
+            </div>
+            <div class="bg-[#001834] p-4 rounded-2xl shadow-lg flex flex-col justify-center min-w-[120px]">
+                <span class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Ingenieros</span>
+                <span class="text-2xl font-black text-primary-fixed-dim" x-text="usuarios.filter(u => u.nompef === 'Ingeniero').length"></span>
+            </div>
+            <button @click="openCreate()" class="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-2xl shadow-lg shadow-blue-500/20 flex flex-col items-center justify-center gap-1 hover:scale-[1.03] transition-all group">
+                <iconify-icon icon="lucide:user-plus" class="text-xl group-hover:scale-110 transition-transform"></iconify-icon>
+                <span class="text-[9px] font-black uppercase tracking-tighter">Nuevo Usuario</span>
+            </button>
+        </div>
+    </div>
 
-    <script>
-        function mupEditor() {
-            return {
-                usuariosExport: @json($usuariosCsv),
-                searchQuery: '',
-                viewModal: false,
-                deleteModal: false,
-                selectedUser: null,
-                showPass: false,
-                showConfirmPass: false,
+    @include('admin.mup.partials.navigation')
 
-                // Drawers
-                createDrawer: false,
-                editDrawer: false,
+    @include('admin.mup.partials.flash')
 
-                // Validation
-                password: '',
-                password_confirmation: '',
+    <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
+    <div class="grid grid-cols-12 gap-8 mt-6">
+        
+        <!-- MASTER COLUMN: SEARCH & LIST -->
+        <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
+            
+            <!-- Barra de Búsqueda Premium -->
+            <div class="relative group">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                    <iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>
+                </div>
+                <input type="text" x-model="search" placeholder="Buscar por Nombre, Usuario o Rol..." 
+                    class="w-full bg-white border-2 border-transparent focus:border-blue-500/20 focus:ring-4 focus:ring-blue-500/5 rounded-2xl py-4 pl-12 pr-4 shadow-sm text-sm font-semibold transition-all">
+                
+                <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                    <button @click="exportCsv()" class="p-2 text-gray-400 hover:text-[#0d3b5a] transition-colors" title="Exportar CSV">
+                        <iconify-icon icon="lucide:download" class="text-lg"></iconify-icon>
+                    </button>
+                </div>
+            </div>
 
-                get passwordsMatch() {
-                    if (!this.password || !this.password_confirmation) return true;
-                    return this.password === this.password_confirmation;
-                },
+            <!-- Listado de Usuarios (Scrollable) -->
+            <div class="flex flex-col gap-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
+                <template x-for="u in filteredUsuarios()" :key="u.id">
+                    <div @click="selectUser(u)" 
+                        class="group bg-white p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden"
+                        :class="selectedId === u.id ? 'border-blue-500 shadow-md translate-x-2' : 'border-transparent hover:border-gray-200 shadow-sm'">
+                        
+                        <div class="flex items-center gap-4">
+                            <!-- Avatar Circular -->
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 transition-transform group-hover:rotate-12"
+                                :class="u.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-blue-600' : 'bg-gray-300'"
+                                x-text="getInitials(u.name)">
+                            </div>
+                            
+                            <div class="min-w-0 flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-[#001834] text-sm truncate uppercase tracking-tight" x-text="u.name"></h3>
+                                    <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                                        :class="{
+                                            'bg-blue-50 text-blue-600': u.nompef === 'Administrador',
+                                            'bg-purple-50 text-purple-600': u.nompef === 'Ingeniero',
+                                            'bg-amber-50 text-amber-600': u.nompef === 'Digitador',
+                                            'bg-emerald-50 text-emerald-600': u.nompef === 'Inspector',
+                                            'bg-gray-50 text-gray-400': !['Administrador','Ingeniero','Digitador','Inspector'].includes(u.nompef)
+                                        }"
+                                        x-text="u.nompef">
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <iconify-icon icon="lucide:user" class="text-gray-400 text-[10px]"></iconify-icon>
+                                    <span class="text-[11px] font-bold text-gray-500 truncate" x-text="u.username"></span>
+                                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                    <span class="text-[11px] font-bold text-gray-400" x-text="u.ndocper"></span>
+                                </div>
+                            </div>
+                        </div>
 
-                openCreate() {
-                    this.password = '';
-                    this.password_confirmation = '';
-                    this.showPass = false;
-                    this.showConfirmPass = false;
-                    this.createDrawer = true;
-                },
+                        <!-- Indicador de selección activa -->
+                        <div x-show="selectedId === u.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                    </div>
+                </template>
 
-                openEdit(user) {
-                    this.selectedUser = user;
-                    this.password = '';
-                    this.password_confirmation = '';
-                    this.showPass = false;
-                    this.showConfirmPass = false;
-                    this.editDrawer = true;
-                },
+                <div x-show="filteredUsuarios().length === 0" class="bg-white/50 border-2 border-dashed border-gray-200 rounded-3xl p-10 text-center flex flex-col items-center gap-3">
+                    <iconify-icon icon="lucide:users" class="text-4xl text-gray-200"></iconify-icon>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">No se encontraron usuarios</p>
+                </div>
+            </div>
+        </div>
 
-                openView(user) {
-                    this.selectedUser = user;
-                    this.viewModal = true;
-                },
+        <!-- DETAIL COLUMN: USER PROFILE & PERMISSIONS -->
+        <div class="col-span-12 lg:col-span-7 xl:col-span-8">
+            
+            <template x-if="selectedUser">
+                <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+                    
+                    <!-- Profile Header -->
+                    <div class="p-6 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                            <div class="flex items-center gap-5">
+                                <div class="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-3xl font-black shadow-inner border-4 border-white/20"
+                                    x-text="getInitials(selectedUser.name)">
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <h2 class="text-2xl font-black tracking-tight uppercase" x-text="selectedUser.name"></h2>
+                                        <span x-show="selectedUser.actper" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Cuenta Activa</span>
+                                        <span x-show="!selectedUser.actper" class="bg-red-500/20 text-red-300 text-[10px] font-black px-3 py-1 rounded-full border border-red-500/30 uppercase tracking-widest">Bloqueado</span>
+                                    </div>
+                                    <p class="text-white/60 text-xs font-medium mt-1 flex items-center gap-2">
+                                        <iconify-icon icon="lucide:shield-check"></iconify-icon>
+                                        <span x-text="'Perfil: ' + selectedUser.nompef"></span>
+                                        <span class="opacity-30">|</span>
+                                        <iconify-icon icon="lucide:fingerprint"></iconify-icon>
+                                        <span x-text="'ID: USR-' + String(selectedUser.id).padStart(3, '0')"></span>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button @click="openEdit(selectedUser)" class="flex-1 sm:flex-none bg-white text-[#001834] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:bg-blue-50">
+                                    Editar Perfil
+                                </button>
+                                <button @click="openDelete(selectedUser)" class="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/20">
+                                    <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                openDelete(user) {
-                    this.selectedUser = user;
-                    this.deleteModal = true;
-                },
+                    <!-- Profile Detail Body -->
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Columna: Datos de Contacto -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3">Información de Contacto</label>
+                                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                            <iconify-icon icon="lucide:mail" class="text-xl"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <span class="block text-[9px] font-black text-gray-400 uppercase tracking-tighter">Correo Electrónico</span>
+                                            <p class="text-sm font-bold text-[#001834]" x-text="selectedUser.email"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                            <iconify-icon icon="lucide:phone" class="text-xl"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <span class="block text-[9px] font-black text-gray-400 uppercase tracking-tighter">Teléfono Principal</span>
+                                            <p class="text-sm font-bold text-[#001834]" x-text="selectedUser.telper || 'Sin registrar'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                getInitials(name) {
-                    if (!name) return '??';
-                    const parts = name.trim().split(' ');
-                    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-                    return name.substring(0, 2).toUpperCase();
-                },
+                            <div>
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3">Identidad Institucional</label>
+                                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                            <iconify-icon icon="lucide:id-card" class="text-xl"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <span class="block text-[9px] font-black text-gray-400 uppercase tracking-tighter">Número de Documento</span>
+                                            <p class="text-sm font-bold text-[#001834]" x-text="selectedUser.ndocper"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                filteredUsuariosExport() {
-                    if (!this.searchQuery) return this.usuariosExport;
-                    const q = this.searchQuery.toLowerCase();
-                    const s = (v) => (v ?? '').toString().toLowerCase();
-                    return this.usuariosExport.filter((u) =>
-                        s(u.name).includes(q) ||
-                        s(u.username).includes(q) ||
-                        s(u.email).includes(q) ||
-                        s(u.ndocper).includes(q) ||
-                        s(u.perfil).includes(q) ||
-                        s(u.empresa).includes(q)
-                    );
-                },
+                        <!-- Columna: Seguridad y Accesos -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3">Credenciales de Sistema</label>
+                                <div class="bg-[#001834] p-6 rounded-3xl text-white shadow-2xl relative overflow-hidden">
+                                    <div class="relative z-10">
+                                        <div class="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
+                                            <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Username / Alias</span>
+                                            <span class="text-sm font-black tracking-widest" x-text="selectedUser.username"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex items-center gap-2">
+                                                <iconify-icon icon="lucide:shield" class="text-blue-400"></iconify-icon>
+                                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Nivel de Acceso</span>
+                                            </div>
+                                            <span class="bg-blue-500 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter" x-text="selectedUser.nompef"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Decoración de fondo -->
+                                    <iconify-icon icon="lucide:lock" class="absolute -bottom-4 -right-4 text-9xl text-white/5"></iconify-icon>
+                                </div>
+                            </div>
 
-                exportCsv() {
-                    const cols = ['id', 'name', 'username', 'email', 'ndocper', 'perfil', 'actper', 'empresa'];
-                    const list = this.filteredUsuariosExport();
-                    const esc = (v) => {
-                        if (v === null || v === undefined) return '';
-                        const str = String(v);
-                        if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
-                        return str;
-                    };
-                    let csv = cols.join(',') + '\n';
-                    for (const u of list) {
-                        csv += cols.map((c) => esc(u[c])).join(',') + '\n';
-                    }
-                    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'usuarios_mup_' + new Date().toISOString().slice(0, 10) + '.csv';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                },
-            };
-        }
-    </script>
+                            <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex items-start gap-4">
+                                <iconify-icon icon="lucide:info" class="text-2xl text-blue-500 shrink-0 mt-0.5"></iconify-icon>
+                                <div class="space-y-1">
+                                    <h4 class="text-xs font-black text-[#001834] uppercase tracking-tight">Auditoría de Perfil</h4>
+                                    <p class="text-[11px] text-blue-700 font-medium leading-relaxed">
+                                        Este usuario tiene permisos basados en el rol <span class="font-black" x-text="selectedUser.nompef"></span>. 
+                                        Cualquier cambio de permisos afectará a todos los usuarios bajo este mismo perfil.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
 
-    <div class="mup-content-scroll">
-        @include('admin.mup.partials.flash')
+            <!-- Placeholder cuando no hay selección -->
+            <div x-show="!selectedUser" class="h-full min-h-[500px] bg-white rounded-[40px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center p-10 animate-pulse">
+                <div class="w-32 h-32 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                    <iconify-icon icon="lucide:shield-check" class="text-6xl text-gray-200"></iconify-icon>
+                </div>
+                <h3 class="text-xl font-black text-[#001834] tracking-tight">Panel de Seguridad</h3>
+                <p class="text-sm text-gray-400 mt-2 max-w-xs">Seleccione un miembro del personal para gestionar sus credenciales, roles y estados de acceso.</p>
+            </div>
+        </div>
+    </div>
 
-        {{-- SECCIÓN: Listado de Usuarios --}}
-        <section class="mup-card">
-            {{-- TOOLBAR CONSOLIDADA --}}
-            <div class="mup-card-header-plain" style="flex-wrap: wrap;">
+    <!-- MODAL: REGISTRO (SIN EMPRESA ASOCIADA) -->
+    <div x-show="createDrawer" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#001834]/60 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.away="createDrawer = false">
+            <div class="p-8 bg-[#001834] text-white flex justify-between items-center shrink-0">
                 <div>
-                    <div class="mup-card-title text-gray-800">Listado de usuarios del sistema</div>
-                    <div class="mup-card-subtitle">Filtra por rol, estado o documento y exporta el listado correspondiente.</div>
+                    <h2 class="text-2xl font-black tracking-tight">Alta de Usuario</h2>
+                    <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Personal Administrativo CDA</p>
                 </div>
-                <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
-                    <div class="export-group">
-                        <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado (respeta el filtro de búsqueda)">
-                            <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
-                        </button>
-                        <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
-                            <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
-                        </button>
-                        <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
-                            <iconify-icon icon="lucide:file"></iconify-icon> PDF
-                        </button>
-                    </div>
-                    <div class="mup-toolbar-search relative">
-                        <input type="text" x-model="searchQuery" placeholder="Buscar por nombre, rol o documento..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
-                        <div class="absolute left-3 top-2.5 text-gray-400">
-                            <iconify-icon icon="lucide:search"></iconify-icon>
-                        </div>
-                    </div>
-                    <button type="button" @click="openCreate()" class="mup-btn mup-btn-primary h-10">
-                        <iconify-icon icon="lucide:plus"></iconify-icon>
-                        Nuevo usuario
-                    </button>
-                    <a href="{{ route('admin.mup.perfil.nuevo') }}" class="mup-btn mup-btn-outline h-10 no-underline" title="Crear un rol y su matriz de permisos">
-                        <iconify-icon icon="lucide:shield-plus"></iconify-icon>
-                        Nuevo perfil
-                    </a>
-                </div>
-            </div>
-
-            {{-- TABLA PREMIUM --}}
-            <div class="mup-table-wrap">
-                <table class="mup-data-table">
-                    <thead>
-                        <tr>
-                            <th>Usuario</th>
-                            <th>Documento</th>
-                            <th>Correo</th>
-                            <th>Rol</th>
-                            <th>Estado</th>
-                            <th class="text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($usuarios as $user)
-                        <tr x-show="searchQuery === '' || @js(strtolower($user->name . ' ' . ($user->persona->ndocper ?? '') . ' ' . ($user->persona->perfil->nompef ?? ''))).includes(searchQuery.toLowerCase())"
-                            class="hover:bg-blue-50/30 transition-colors">
-                            <td>
-                                <div class="mup-user-identity">
-                                    <div class="mup-avatar">{{ strtoupper(substr($user->name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $user->name)[1] ?? $user->name, 0, 1)) }}</div>
-                                    <div>
-                                        <div class="font-semibold text-gray-800">{{ $user->name }}</div>
-                                        <div class="text-xs text-gray-400">USR-{{ str_pad($user->id, 3, '0', STR_PAD_LEFT) }} · {{ $user->username }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="text-sm font-medium text-gray-600">{{ number_format($user->persona->ndocper ?? 0, 0, ',', '.') }}</span>
-                            </td>
-                            <td>
-                                <span class="text-sm text-gray-600">{{ $user->email }}</span>
-                            </td>
-                            <td>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0d3b5a] border border-blue-100">
-                                    <iconify-icon icon="lucide:shield" style="font-size: 12px;"></iconify-icon>
-                                    {{ $user->persona->perfil->nompef ?? 'Sin Rol' }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="mup-state-badge {{ ($user->persona->actper ?? 1) ? 'mup-state-active' : 'mup-state-inactive' }}">
-                                    <div class="w-2 h-2 rounded-full bg-current"></div>
-                                    {{ ($user->persona->actper ?? 1) ? 'Activo' : 'Inactivo' }}
-                                </span>
-                            </td>
-                            <td class="text-right">
-                                @php
-                                    $viewPayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                        'username' => $user->username,
-                                        'email' => $user->email,
-                                        'ndocper' => $user->persona->ndocper ?? 0,
-                                        'tdocper' => $user->persona->tdocper ?? '',
-                                        'telper' => $user->persona->telper ?? '',
-                                        'actper' => $user->persona->actper ?? 1,
-                                        'nompef' => $user->persona->perfil->nompef ?? 'Sin Rol',
-                                        'idpef' => $user->persona->idpef ?? '',
-                                        'idemp' => $user->idemp ?? '',
-                                        'empresa' => $user->empresa->razsoem ?? 'Particular',
-                                    ];
-                                    $editPayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                        'username' => $user->username,
-                                        'email' => $user->email,
-                                        'ndocper' => $user->persona->ndocper ?? 0,
-                                        'tdocper' => $user->persona->tdocper ?? '',
-                                        'telper' => $user->persona->telper ?? '',
-                                        'actper' => $user->persona->actper ?? 1,
-                                        'idpef' => $user->persona->idpef ?? '',
-                                        'idemp' => $user->idemp ?? '',
-                                    ];
-                                    $deletePayload = [
-                                        'id' => $user->id,
-                                        'name' => $user->name,
-                                    ];
-                                @endphp
-                                <div class="flex justify-end gap-2">
-                                    <button @click='openView(@json($viewPayload))' class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
-                                        <iconify-icon icon="lucide:eye"></iconify-icon>
-                                    </button>
-                                    
-                                    <button @click='openEdit(@json($editPayload))' class="p-2 bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100 transition" title="Editar">
-                                        <iconify-icon icon="lucide:pencil"></iconify-icon>
-                                    </button>
-                                    
-                                    <button @click='openDelete(@json($deletePayload))' class="p-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition" title="Eliminar">
-                                        <iconify-icon icon="lucide:trash-2"></iconify-icon>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-16">
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center">
-                                        <iconify-icon icon="lucide:users" class="text-2xl text-gray-300"></iconify-icon>
-                                    </div>
-                                    <p class="text-gray-400 font-medium">No hay usuarios registrados.</p>
-                                    <button @click="openCreate()" class="mup-btn mup-btn-primary h-9 text-sm mt-1">
-                                        <iconify-icon icon="lucide:plus"></iconify-icon> Crear primer usuario
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- FOOTER DE TABLA --}}
-            <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
-                <span>{{ count($usuarios) }} usuario(s) registrado(s)</span>
-                <span>Última actualización: {{ now()->format('d/m/Y H:i') }}</span>
-            </div>
-        </section>
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════ --}}
-    {{-- DRAWER: Crear Nuevo Usuario                        --}}
-    {{-- ═══════════════════════════════════════════════════ --}}
-    <div x-show="createDrawer" class="mup-drawer-overlay" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="mup-drawer" @click.away="createDrawer = false">
-            <form action="{{ route('admin.mup.usuarios.store') }}" method="POST" class="flex flex-col h-full">
-                @csrf
-                {{-- HEADER --}}
-                <div class="mup-drawer-header">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-[#0d3b5a] text-white flex items-center justify-center">
-                            <iconify-icon icon="lucide:user-round-plus" class="text-xl"></iconify-icon>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-gray-800 text-[15px]">Nuevo usuario</h3>
-                            <p class="text-xs text-gray-400">Crea un nuevo usuario y asígnale su rol operativo.</p>
-                        </div>
-                    </div>
-                    <button type="button" @click="createDrawer = false" class="text-gray-400 hover:text-red-500 transition">
-                        <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
-                    </button>
-                </div>
-
-                {{-- BODY --}}
-                <div class="mup-drawer-body">
-                    {{-- Bloque: Info Personal --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:id-card" class="text-sm"></iconify-icon>
-                        Información personal
-                    </div>
-                    <div class="space-y-4 mb-8">
-                        <div class="mup-form-group">
-                            <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
-                            <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Pérez" required value="{{ old('nombre_completo') }}">
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Tipo doc. <span class="mup-required">*</span></label>
-                                <select name="tdocper" class="mup-input" required>
-                                    @foreach($tiposDoc as $tipo)
-                                        <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Nro. documento <span class="mup-required">*</span></label>
-                                <input type="number" name="ndocper" class="mup-input" placeholder="12345678" required value="{{ old('ndocper') }}">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Correo <span class="mup-required">*</span></label>
-                                <input type="email" name="emaper" class="mup-input" placeholder="correo@ejemplo.com" required value="{{ old('emaper') }}">
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Teléfono</label>
-                                <input type="text" name="telper" class="mup-input" placeholder="300 123 4567" value="{{ old('telper') }}">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Bloque: Acceso --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:lock" class="text-sm"></iconify-icon>
-                        Acceso al sistema
-                    </div>
-                    <div class="space-y-4 mb-8">
-                        <div class="mup-form-group">
-                            <label class="mup-label">Nombre de usuario <span class="mup-required">*</span></label>
-                            <input type="text" name="username" class="mup-input" placeholder="Ej. juan.perez" required value="{{ old('username') }}">
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Contraseña <span class="mup-required">*</span></label>
-                                <div class="relative">
-                                    <input :type="showPass ? 'text' : 'password'" name="password" x-model="password" class="mup-input pr-10" placeholder="Min. 6 caracteres" required>
-                                    <button type="button" @click="showPass = !showPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
-                                        <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Confirmar <span class="mup-required">*</span></label>
-                                <div class="relative">
-                                    <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" x-model="password_confirmation" class="mup-input pr-10" required :class="!passwordsMatch ? 'border-red-500 ring-1 ring-red-500' : ''">
-                                    <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
-                                        <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
-                                    </button>
-                                </div>
-                                <template x-if="!passwordsMatch">
-                                    <p class="text-[10px] text-red-500 mt-1 font-bold italic animate-pulse">Las contraseñas no coinciden</p>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Bloque: Rol --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:shield" class="text-sm"></iconify-icon>
-                        Rol y asignación
-                    </div>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
-                                <select name="idpef" class="mup-input" required>
-                                    @foreach($perfiles as $perf)
-                                        <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Empresa asociada</label>
-                                <select name="idemp" class="mup-input">
-                                    <option value="">Sin empresa</option>
-                                    @foreach($empresas as $emp)
-                                        <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="p-3 bg-amber-50 rounded-lg flex items-center gap-3 text-amber-700 text-xs">
-                            <iconify-icon icon="lucide:info" class="text-amber-500"></iconify-icon>
-                            <span>Este formulario aplica para perfiles distintos a conductor, propietario y empresas.</span>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- FOOTER --}}
-                <div class="mup-drawer-footer">
-                    <button type="button" @click="createDrawer = false" class="mup-btn mup-btn-outline">Cancelar</button>
-                    <button type="submit" class="mup-btn mup-btn-primary" :disabled="!passwordsMatch" :class="!passwordsMatch ? 'opacity-50 cursor-not-allowed' : ''">
-                        <iconify-icon icon="lucide:save"></iconify-icon>
-                        Guardar usuario
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════ --}}
-    {{-- DRAWER: Editar Usuario                             --}}
-    {{-- ═══════════════════════════════════════════════════ --}}
-    <div x-show="editDrawer" class="mup-drawer-overlay" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="mup-drawer" @click.away="editDrawer = false">
-            <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex flex-col h-full">
-                @csrf
-                @method('PUT')
-                {{-- HEADER --}}
-                <div class="mup-drawer-header">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center">
-                            <iconify-icon icon="lucide:pencil" class="text-xl"></iconify-icon>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-gray-800 text-[15px]">Modificar usuario</h3>
-                            <p class="text-xs text-gray-400">Actualiza la información de acceso y personal.</p>
-                        </div>
-                    </div>
-                    <button type="button" @click="editDrawer = false" class="text-gray-400 hover:text-red-500 transition">
-                        <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
-                    </button>
-                </div>
-
-                {{-- BODY --}}
-                <div class="mup-drawer-body">
-                    {{-- Bloque: Info Personal --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:id-card" class="text-sm"></iconify-icon>
-                        Información personal
-                    </div>
-                    <div class="space-y-4 mb-8">
-                        <div class="mup-form-group">
-                            <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
-                            <input type="text" name="nombre_completo" class="mup-input" required :value="selectedUser?.name">
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Tipo doc. <span class="mup-required">*</span></label>
-                                <select name="tdocper" class="mup-input" required :value="selectedUser?.tdocper">
-                                    @foreach($tiposDoc as $tipo)
-                                        <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Nro. documento <span class="mup-required">*</span></label>
-                                <input type="number" name="ndocper" class="mup-input" required :value="selectedUser?.ndocper">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Correo <span class="mup-required">*</span></label>
-                                <input type="email" name="emaper" class="mup-input" required :value="selectedUser?.email">
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Teléfono</label>
-                                <input type="text" name="telper" class="mup-input" :value="selectedUser?.telper">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Bloque: Acceso --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:lock" class="text-sm"></iconify-icon>
-                        Acceso al sistema
-                    </div>
-                    <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Nombre de usuario <span class="mup-required">*</span></label>
-                                <input type="text" name="username" class="mup-input" required :value="selectedUser?.username">
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Estado <span class="mup-required">*</span></label>
-                                <select name="actper" class="mup-input" :value="selectedUser?.actper">
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Nueva contraseña</label>
-                                <div class="relative">
-                                    <input :type="showPass ? 'text' : 'password'" name="password" x-model="password" class="mup-input pr-10" placeholder="Dejar vacío si no cambia">
-                                    <button type="button" @click="showPass = !showPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
-                                        <iconify-icon :icon="showPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Confirmar</label>
-                                <div class="relative">
-                                    <input :type="showConfirmPass ? 'text' : 'password'" name="password_confirmation" x-model="password_confirmation" class="mup-input pr-10" placeholder="********" :class="!passwordsMatch ? 'border-red-500 ring-1 ring-red-500' : ''">
-                                    <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-3 top-3 text-gray-400 hover:text-[#0d3b5a] transition">
-                                        <iconify-icon :icon="showConfirmPass ? 'lucide:eye-off' : 'lucide:eye'"></iconify-icon>
-                                    </button>
-                                </div>
-                                <template x-if="!passwordsMatch">
-                                    <p class="text-[10px] text-red-500 mt-1 font-bold italic animate-pulse">Las contraseñas no coinciden</p>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Bloque: Rol --}}
-                    <div class="text-[11px] font-bold text-[#0d3b5a] mb-3 uppercase tracking-widest flex items-center gap-2">
-                        <iconify-icon icon="lucide:shield" class="text-sm"></iconify-icon>
-                        Rol y asignación
-                    </div>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
-                                <select name="idpef" class="mup-input" required :value="selectedUser?.idpef">
-                                    @foreach($perfiles as $perf)
-                                        <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Empresa asociada</label>
-                                <select name="idemp" class="mup-input" :value="selectedUser?.idemp">
-                                    <option value="">Sin empresa</option>
-                                    @foreach($empresas as $emp)
-                                        <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- FOOTER --}}
-                <div class="mup-drawer-footer">
-                    <button type="button" @click="editDrawer = false" class="mup-btn mup-btn-outline">Cancelar</button>
-                    <button type="submit" class="mup-btn mup-btn-primary" :disabled="!passwordsMatch" :class="!passwordsMatch ? 'opacity-50 cursor-not-allowed' : ''">
-                        <iconify-icon icon="lucide:save"></iconify-icon>
-                        Actualizar cambios
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════ --}}
-    {{-- MODAL: Visualizar Usuario                          --}}
-    {{-- ═══════════════════════════════════════════════════ --}}
-    <div x-show="viewModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak
-        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" @click.away="viewModal = false">
-            <div class="p-4 sm:p-6 border-b flex justify-between items-start sm:items-center gap-3 bg-gray-50">
-                <div class="flex items-center gap-3">
-                    <div class="mup-avatar" style="width:44px;height:44px;font-size:16px;" x-text="getInitials(selectedUser?.name)"></div>
-                    <div>
-                        <h3 class="font-bold text-gray-800" x-text="selectedUser?.name"></h3>
-                        <p class="text-xs text-gray-500" x-text="'USR-' + String(selectedUser?.id).padStart(3, '0') + ' · ' + selectedUser?.nompef"></p>
-                    </div>
-                </div>
-                <button @click="viewModal = false" class="text-gray-400 hover:text-red-500 transition">
-                    <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                <button @click="createDrawer = false" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all">
+                    <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
                 </button>
             </div>
-            <div class="p-4 sm:p-8 space-y-4 sm:space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+
+            <form action="{{ route($mupPrefix . '.usuarios.store') }}" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                @csrf
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-blue-500">*</span></label>
+                        <input type="text" name="nombre_completo" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. Juan Manuel Pérez" required>
+                    </div>
+                    
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Completo</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.name"></p>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Tipo de Documento <span class="text-blue-500">*</span></label>
+                        <select name="tdocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            @foreach($tiposDoc as $tipo)
+                                <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Usuario (Alias)</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.username"></p>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro. Documento <span class="text-blue-500">*</span></label>
+                        <input type="number" name="ndocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="1000000000" required>
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Datos de Contacto</label>
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Email <span class="text-blue-500">*</span></label>
+                        <input type="email" name="emaper" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="correo@institucional.com" required>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Documento</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.ndocper"></p>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Teléfono</label>
+                        <input type="text" name="telper" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Número contacto">
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Configuración de Acceso</label>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre de Usuario <span class="text-blue-500">*</span></label>
+                        <input type="text" name="username" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. jperez.digitador" required>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Correo Electrónico</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.email"></p>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Contraseña <span class="text-blue-500">*</span></label>
+                        <input type="password" name="password" x-model="password" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rol / Perfil</span>
-                        <p class="font-medium text-blue-600" x-text="selectedUser?.nompef"></p>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Confirmar <span class="text-blue-500">*</span></label>
+                        <input type="password" name="password_confirmation" x-model="password_confirmation" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
-                    <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Empresa</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.empresa"></p>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol Operativo <span class="text-blue-500">*</span></label>
+                        <select name="idpef" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
+                                <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
-                <div class="pt-4 flex justify-end">
-                    <button @click="viewModal = false" class="mup-btn mup-btn-primary w-full sm:w-auto">Cerrar detalle</button>
+
+                <div class="mt-10 flex gap-4">
+                    <button type="button" @click="createDrawer = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-[#001834] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#001834]/20 transition-all hover:scale-[1.02]" :disabled="!passwordsMatch">
+                        Crear Usuario
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════ --}}
-    {{-- MODAL: Eliminar Usuario                            --}}
-    {{-- ═══════════════════════════════════════════════════ --}}
-    <div x-show="deleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak
-        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" @click.away="deleteModal = false">
-            <div class="p-8 text-center">
-                <div class="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-                    <iconify-icon icon="lucide:alert-triangle" class="text-3xl"></iconify-icon>
+    <!-- MODAL: EDICIÓN -->
+    <div x-show="editDrawer" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#001834]/60 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" @click.away="editDrawer = false">
+            <div class="p-8 bg-amber-500 text-white flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight" x-text="'Editar: ' + selectedUser?.name"></h2>
+                    <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Actualización de Perfil</p>
                 </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">¿Confirmar eliminación?</h3>
-                <p class="text-sm text-gray-500 mb-6">
-                    Estás a punto de eliminar permanentemente a <strong x-text="selectedUser?.name"></strong>. Esta acción no se puede deshacer y eliminará todos sus accesos vinculados.
-                </p>
-                <div class="flex flex-col gap-2">
-                    <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Eliminar permanentemente</button>
-                    </form>
-                    <button @click="deleteModal = false" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-bold transition">Cancelar</button>
-                </div>
+                <button @click="editDrawer = false" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all">
+                    <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
+                </button>
             </div>
-            <div class="bg-red-50 p-4 text-[10px] text-red-400 font-bold uppercase tracking-widest text-center border-t border-red-100">
-                Atención: Borrado físico confirmado
+
+            <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                @csrf
+                @method('PUT')
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-amber-600">*</span></label>
+                        <input type="text" name="nombre_completo" x-model="selectedUser.name" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Tipo Documento</label>
+                        <select name="tdocper" x-model="selectedUser.tdocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            @foreach($tiposDoc as $tipo)
+                                <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro. Documento</label>
+                        <input type="number" name="ndocper" x-model="selectedUser.ndocper" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Email y Estado</label>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Correo <span class="text-amber-600">*</span></label>
+                        <input type="email" name="emaper" x-model="selectedUser.email" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado de Cuenta</label>
+                        <select name="actper" x-model="selectedUser.actper" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            <option value="1">ACTIVO (CON ACCESO)</option>
+                            <option value="0">INACTIVO (BLOQUEADO)</option>
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol y Seguridad</label>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol Operativo</label>
+                        <select name="idpef" x-model="selectedUser.idpef" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
+                                <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nueva Contraseña</label>
+                        <input type="password" name="password" x-model="password" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Vacío para no cambiar">
+                    </div>
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button type="button" @click="editDrawer = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-amber-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ELIMINAR -->
+    <div x-show="deleteModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#001834]/80 backdrop-blur-md" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+        <div class="bg-white p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center" @click.away="deleteModal = false">
+            <div class="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <iconify-icon icon="lucide:user-x" style="font-size: 48px;"></iconify-icon>
+            </div>
+            <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Usuario?</h3>
+            <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
+                Se revocarán todos los permisos de <span class="text-[#001834] font-black" x-text="selectedUser?.name"></span>. Esta acción no se puede deshacer.
+            </p>
+            
+            <div class="flex gap-4">
+                <button @click="deleteModal = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
+                <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex-1">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red-200 hover:scale-[1.05] transition-all">Confirmar Borrado</button>
+                </form>
             </div>
         </div>
     </div>
 
 </div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+</style>
+
+<script>
+function usuariosManager() {
+    return {
+        search: '',
+        createDrawer: false,
+        editDrawer: false,
+        deleteModal: false,
+        selectedId: null,
+        selectedUser: null,
+        usuarios: @json($usuariosData),
+        password: '',
+        password_confirmation: '',
+        
+        init() {
+            if (this.usuarios.length > 0) {
+                this.selectUser(this.usuarios[0]);
+            }
+        },
+
+        get passwordsMatch() {
+            if (!this.password && !this.password_confirmation) return true;
+            return this.password === this.password_confirmation;
+        },
+
+        selectUser(u) {
+            this.selectedId = u.id;
+            this.selectedUser = u;
+        },
+
+        getInitials(name) {
+            if (!name) return '??';
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return name.substring(0, 2).toUpperCase();
+        },
+
+        filteredUsuarios() {
+            if (!this.search) return this.usuarios;
+            const q = this.search.toLowerCase();
+            return this.usuarios.filter(u => 
+                (u.name || '').toLowerCase().includes(q) || 
+                (u.username || '').toLowerCase().includes(q) ||
+                (u.nompef || '').toLowerCase().includes(q) ||
+                (u.ndocper || '').toString().includes(q)
+            );
+        },
+
+        exportCsv() {
+            const cols = ['id', 'name', 'username', 'email', 'ndocper', 'nompef', 'actper'];
+            const list = this.filteredUsuarios();
+            const esc = (v) => {
+                if (v === null || v === undefined) return '';
+                const s = String(v);
+                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            };
+            let csv = cols.join(',') + '\n';
+            for (const u of list) {
+                csv += cols.map((c) => esc(u[c])).join(',') + '\n';
+            }
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'usuarios_cda_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        openCreate() {
+            this.password = '';
+            this.password_confirmation = '';
+            this.createDrawer = true;
+        },
+
+        openEdit(u) {
+            this.selectedUser = { ...u };
+            this.password = '';
+            this.password_confirmation = '';
+            this.editDrawer = true;
+        },
+
+        openDelete(u) {
+            this.selectedUser = u;
+            this.deleteModal = true;
+        }
+    }
+}
+</script>
 @endsection

@@ -1,0 +1,88 @@
+:root {
+    --sidebar-bg: #001834;
+    --sidebar-accent: #0d3b5a;
+    --sidebar-hover: rgba(255, 255, 255, 0.05);
+    --sidebar-active: rgba(59, 130, 246, 0.15);
+    --sidebar-text: #94a3b8;
+    --sidebar-text-active: #ffffff;
+}
+
+/* Transiciones Suaves */
+.sidebar-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Efecto de Vidrio para Submenús */
+.submenu-glass {
+    background: rgba(13, 59, 90, 0.4);
+    backdrop-filter: blur(10px);
+    border-left: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Animación de Item al pasar el mouse */
+.sidebar-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 70%;
+    background: #3b82f6;
+    border-radius: 0 4px 4px 0;
+    transition: width 0.3s ease;
+}
+
+.sidebar-item:hover::after,
+.sidebar-item.active::after {
+    width: 4px;
+}
+
+/* Tooltips para modo colapsado */
+.collapsed-tooltip {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-10px);
+    background: #001834;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+.sidebar-item:hover .collapsed-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* Scrollbar Personalizado */
+.sidebar-scroll::-webkit-scrollbar {
+    width: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

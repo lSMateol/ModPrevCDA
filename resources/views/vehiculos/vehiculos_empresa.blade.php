@@ -504,6 +504,20 @@
         @media (max-width: 1024px) {
             .vemp-module .details-section { grid-template-columns: 1fr; }
             .vemp-module .form-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+            .vemp-module .vtabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+            .vemp-module .vtabs::-webkit-scrollbar { height: 4px; }
+            .vemp-module .vtabs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        }
+        @media (max-width: 640px) {
+            .vemp-module .form-grid { grid-template-columns: 1fr !important; }
+            .vemp-module .form-group.col-span-2 { grid-column: span 1 !important; }
+            .vemp-module .page-header-container { flex-direction: column; gap: 16px; }
+            .vemp-module .filters-container { flex-direction: column; align-items: stretch; }
+            .vemp-module .filters-container > div { width: 100%; max-width: 100% !important; }
+            .vemp-module .filters-container select, .vemp-module .filters-container button { width: 100%; flex: 1; min-width: 120px; }
+            .vemp-module .details-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+            .vemp-module .details-header .vbtn { width: 100%; justify-content: center; }
+            .vemp-module .diag-summary { flex-direction: column; align-items: center; text-align: center; }
         }
     </style>
 
@@ -515,9 +529,9 @@
         {{-- ═══════════════════════════════════════ --}}
         <div x-show="activeView === 'vehiculos'">
             {{-- PAGE HEADER --}}
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+            <div class="page-header-container" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
                 <div>
-                    <h1 class="page-title">Vehículos por Empresa</h1>
+                    <h1 class="page-title">Flotas por Empresa</h1>
                     <p class="page-subtitle">Flota vinculada a entidades corporativas — solo vehículos con empresa asignada</p>
                 </div>
             </div>
@@ -525,7 +539,7 @@
         {{-- ═══════════════════════════════════════ --}}
         {{-- FILTERS BAR                             --}}
         {{-- ═══════════════════════════════════════ --}}
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div class="filters-container" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
             <div style="position: relative; flex: 1; max-width: 400px; min-width: 200px;">
                 <i class="fa-solid fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6b7280; font-size: 14px;"></i>
                 <input x-model="search" type="text" placeholder="Buscar por placa, N° interno o NIT..." style="width: 100%; height: 40px; padding-left: 38px; padding-right: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;" />
@@ -607,19 +621,20 @@
         <div class="details-section" x-show="selectedVehiculo" x-cloak id="vehiculo-detalles">
 
             {{-- ── LEFT: Detail Card ── --}}
-            <div class="vcard" style="display: flex; flex-direction: column;">
+            <div class="vcard" style="display: flex; flex-direction: column; min-width: 0;">
                 <div style="padding-top: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
+                    <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
                         <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Detalle del Vínculo</h3>
-                        @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                        <button class="vbtn vbtn-edit" @click="openEditEmpresa()" x-show="!editandoEmpresa">
-                            <i class="fa-solid fa-pen"></i> Editar vínculo
-                        </button>
-                        @endif
+                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
+                            @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
+                            <button class="vbtn vbtn-edit" @click="openEditEmpresa()" x-show="!editandoEmpresa">
+                                <i class="fa-solid fa-pen"></i> Editar vínculo
+                            </button>
+                            @endif
+                        </div>
                     </div>
                     <div class="vtabs">
                         <button class="vtab" :class="{'active': selectedTab === 'vinculo'}" @click="selectedTab = 'vinculo'">Vínculo y Vehículo</button>
-                        <button class="vtab" :class="{'active': selectedTab === 'documentos'}" @click="selectedTab = 'documentos'">Documentos de Respaldo</button>
                         <button class="vtab" :class="{'active': selectedTab === 'historial'}" @click="selectedTab = 'historial'">Historial</button>
                     </div>
                 </div>
@@ -738,62 +753,6 @@
                         </div>
                     </template>
 
-                    {{-- ══ TAB: Documentos de Respaldo ══ --}}
-                    <template x-if="selectedTab === 'documentos'">
-                        <div>
-                            {{-- Zona de Subida --}}
-                            @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador') || auth()->user()->hasRole('Empresa'))
-                            <div class="form-section">
-                                <h4 class="form-section-title"><i class="fa-solid fa-cloud-arrow-up"></i> Subir Nuevo Documento</h4>
-                                <div class="upload-zone">
-                                    <div class="upload-content">
-                                        <i class="fa-solid fa-file-circle-plus upload-icon"></i>
-                                        <div class="upload-title">Arrastra y suelta los archivos aquí</div>
-                                        <div class="upload-subtitle">o haz clic para explorar (PDF, JPG, PNG hasta 5MB)</div>
-                                        <button class="vbtn vbtn-secondary" style="margin-top: 8px;"><i class="fa-solid fa-folder-open"></i> Seleccionar archivo</button>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
-
-                            {{-- Documentos Asociados --}}
-                            <div class="form-section">
-                                <h4 class="form-section-title"><i class="fa-solid fa-folder-open"></i> Documentos Asociados</h4>
-                                <template x-if="detailData?.vehiculo?.documentos?.length > 0">
-                                    <div class="doc-list">
-                                        <template x-for="doc in detailData.vehiculo.documentos" :key="doc.iddoc">
-                                            <div class="doc-item">
-                                                <div class="doc-icon" :class="doc.tipodoc === 'pdf' ? 'pdf' : (['jpg','png','jpeg'].includes(doc.tipodoc) ? 'img' : 'other')">
-                                                    <i class="fa-solid" :class="doc.tipodoc === 'pdf' ? 'fa-file-lines' : (['jpg','png','jpeg'].includes(doc.tipodoc) ? 'fa-image' : 'fa-file')"></i>
-                                                </div>
-                                                <div class="doc-info">
-                                                    <div class="doc-name" x-text="doc.nomdoc"></div>
-                                                    <div class="doc-meta">
-                                                        <span x-text="(doc.tamdoc ? doc.tamdoc + ' MB • ' : '')"></span>
-                                                        <span x-text="doc.created_at ? 'Subido el ' + formatDate(doc.created_at) : ''"></span>
-                                                    </div>
-                                                </div>
-                                                <span class="status-badge" :class="doc.estadoc === 'Verificado' ? 'success' : 'warning'" x-text="doc.estadoc || 'Pendiente'"></span>
-                                                <div class="doc-actions">
-                                                    <button class="icon-btn" title="Descargar"><i class="fa-solid fa-download"></i></button>
-                                                    @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                                                    <button class="icon-btn" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                                <template x-if="!detailData?.vehiculo?.documentos?.length">
-                                    <div style="text-align: center; padding: 32px; color: #9ca3af;">
-                                        <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.25;"></i>
-                                        <p style="font-size: 14px; font-weight: 500; margin: 0 0 4px 0; color: #6b7280;">Sin documentos asociados</p>
-                                        <p style="font-size: 13px; margin: 0;">Utiliza la zona de carga para subir documentos de respaldo.</p>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </template>
 
                     {{-- ══ TAB: Historial de Movimientos ══ --}}
                     <template x-if="selectedTab === 'historial'">
@@ -1284,9 +1243,6 @@
                                 <button class="tab" :class="{ 'active': peSubTab === 'conductores' }" @click="peSubTab = 'conductores'">
                                     Conductores (<span x-text="peConductores.length"></span>)
                                 </button>
-                                <button class="tab" :class="{ 'active': peSubTab === 'documentos' }" @click="peSubTab = 'documentos'">
-                                    Documentos (<span x-text="detailData?.documentos?.length || 0"></span>)
-                                </button>
                             </div>
                         </div>
 
@@ -1446,33 +1402,7 @@
                             </div>
                         </div>
 
-                        <!-- VISTA: DOCUMENTOS -->
-                        <div x-show="peSubTab === 'documentos'" style="display: none; padding: 48px 24px; text-align: center;">
-                            <iconify-icon icon="lucide:folder-open" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></iconify-icon>
-                            
-                            <template x-if="!detailData?.documentos || detailData.documentos.length === 0">
-                                <div>
-                                    <h3 style="color: #111827; font-weight: 600; margin-bottom: 8px;">No hay documentos</h3>
-                                    <p style="color: #6b7280; font-size: 14px;">La empresa aún no tiene documentos registrados o anexados en el sistema.</p>
-                                </div>
-                            </template>
 
-                            <template x-if="detailData?.documentos && detailData.documentos.length > 0">
-                                <div style="max-width: 600px; margin: 0 auto; text-align: left;">
-                                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px;">
-                                        <template x-for="doc in detailData.documentos" :key="doc.iddoc">
-                                            <li style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #f9fafb;">
-                                                <iconify-icon icon="lucide:file-text" style="color: var(--primary); font-size: 24px;"></iconify-icon>
-                                                <div style="flex: 1;">
-                                                    <div style="font-weight: 500; color: #111827;" x-text="doc.nomdoc"></div>
-                                                    <div style="font-size: 12px; color: #6b7280;" x-text="doc.anxdoc || 'Sin anexo'"></div>
-                                                </div>
-                                            </li>
-                                        </template>
-                                    </ul>
-                                </div>
-                            </template>
-                        </div>
 
                     </div>
                 </main>
