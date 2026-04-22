@@ -9,6 +9,7 @@ use App\Models\Valor;
 use App\Models\Pagina;
 use App\Models\User;
 use App\Models\Empresa;
+use App\Models\Vehiculo;
 use App\Support\LicenciaConduccion;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -65,6 +66,28 @@ class MupController extends Controller
     }
 
     /**
+     * Personas conductor en todo el sistema: perfil Conductor O asignadas en vehículo (cond).
+     */
+    protected function personaIdsConductorGlobal(Perfil $perfilConductor): array
+    {
+        $porPerfil = Persona::query()->where('idpef', $perfilConductor->idpef)->pluck('idper');
+        $porVehiculo = Vehiculo::query()->whereNotNull('cond')->distinct()->pluck('cond');
+
+        return $porPerfil->merge($porVehiculo)->unique()->filter()->values()->all();
+    }
+
+    /**
+     * Personas propietario en todo el sistema: perfil Propietario O asignadas en vehículo (prop).
+     */
+    protected function personaIdsPropietarioGlobal(Perfil $perfilPropietario): array
+    {
+        $porPerfil = Persona::query()->where('idpef', $perfilPropietario->idpef)->pluck('idper');
+        $porVehiculo = Vehiculo::query()->whereNotNull('prop')->distinct()->pluck('prop');
+
+        return $porPerfil->merge($porVehiculo)->unique()->filter()->values()->all();
+    }
+
+    /**
      * Display the Conductores view.
      */
     public function conductores()
@@ -75,10 +98,10 @@ class MupController extends Controller
             ['idpef' => 7, 'pagpri' => null]
         );
 
-        // 2. Obtener listado de conductores
-        $conductores = Persona::where('idpef', $perfilConductor->idpef)
-            ->orderBy('idper', 'desc')
-            ->get();
+        $ids = $this->personaIdsConductorGlobal($perfilConductor);
+        $conductores = $ids === []
+            ? collect()
+            : Persona::whereIn('idper', $ids)->orderBy('idper', 'desc')->get();
 
         // 3. Tipos de documento y categorías fijas de licencia (texto)
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
@@ -145,6 +168,11 @@ class MupController extends Controller
     {
         $persona = Persona::findOrFail($id);
 
+        $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 7, 'pagpri' => null]);
+        if (! in_array((int) $id, array_map('intval', $this->personaIdsConductorGlobal($perfilConductor)), true)) {
+            abort(404);
+        }
+
         $request->validate(array_merge([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required|exists:valor,idval',
@@ -173,6 +201,7 @@ class MupController extends Controller
                 'emaper' => $request->emaper,
                 'telper' => $request->telper ?? '',
                 'actper' => $request->actper,
+                'idpef' => $perfilConductor->idpef,
             ], $lic));
 
             DB::commit();
@@ -192,6 +221,14 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
             $persona = Persona::findOrFail($id);
+
+            $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 7, 'pagpri' => null]);
+            if (! in_array((int) $id, array_map('intval', $this->personaIdsConductorGlobal($perfilConductor)), true)) {
+                abort(404);
+            }
+
+            Vehiculo::where('cond', $id)->update(['cond' => null]);
+            DB::table('proveh')->where('idper', $id)->delete();
             
             // Si el conductor tiene un usuario vinculado, lo borramos también para mantener integridad
             User::where('idper', $id)->delete();
@@ -466,10 +503,10 @@ class MupController extends Controller
             ['idpef' => 6, 'pagpri' => null]
         );
 
-        // 2. Obtener listado de propietarios
-        $propietarios = Persona::where('idpef', $perfil->idpef)
-            ->orderBy('idper', 'desc')
-            ->get();
+        $ids = $this->personaIdsPropietarioGlobal($perfil);
+        $propietarios = $ids === []
+            ? collect()
+            : Persona::whereIn('idper', $ids)->orderBy('idper', 'desc')->get();
 
         // 3. Obtener datos para combos respetando estructura real
         // Tipos de documento activos para nuevos registros
@@ -557,7 +594,7 @@ class MupController extends Controller
             DB::beginTransaction();
 
             $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
-            if ((int) $persona->idpef !== (int) $perfilPropietario->idpef) {
+            if (! in_array((int) $id, array_map('intval', $this->personaIdsPropietarioGlobal($perfilPropietario)), true)) {
                 abort(404);
             }
 
@@ -577,6 +614,7 @@ class MupController extends Controller
                 'actper' => $request->actper,
                 'dirper' => $request->dirper,
                 'ciuper' => $request->ciuper,
+                'idpef' => $perfilPropietario->idpef,
             ], $lic));
 
             DB::commit();
@@ -598,9 +636,12 @@ class MupController extends Controller
             $persona = Persona::findOrFail($id);
 
             $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
-            if ((int) $persona->idpef !== (int) $perfilPropietario->idpef) {
+            if (! in_array((int) $id, array_map('intval', $this->personaIdsPropietarioGlobal($perfilPropietario)), true)) {
                 abort(404);
             }
+
+            Vehiculo::where('prop', $id)->update(['prop' => null]);
+            DB::table('proveh')->where('idper', $id)->delete();
             
             // Clean linked records if any
             User::where('idper', $id)->delete();

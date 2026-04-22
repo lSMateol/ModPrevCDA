@@ -10,53 +10,20 @@
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
             <p>Gestión de propietarios de vehículos y control operativo vinculado al CDA.</p>
         </div>
-        <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab active">Propietario</a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
-        </div>
+        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'propietarios'])
     </header>
 
     <div class="mup-content-scroll">
-        @if(session('success') || session('error') || $errors->any())
-        <div class="px-2 pt-4">
-            @if(session('success'))
-                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-red-700 font-medium">{{ session('error') }}</p>
-                </div>
-            @endif
-            @if($errors->any())
-                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4 rounded-r-md shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <iconify-icon icon="lucide:alert-triangle" class="text-orange-500 text-xl"></iconify-icon>
-                        <p class="text-sm text-orange-700 font-bold">Por favor corrija los siguientes errores:</p>
-                    </div>
-                    <ul class="list-disc list-inside text-xs text-orange-600 space-y-1 ml-8">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-        </div>
-        @endif
+        @include('admin.mup.partials.flash')
 
         <div class="space-y-6 pb-12">
             <section class="mup-card">
                 <div class="mup-card-header-plain" style="flex-wrap: wrap;">
                     <div>
                         <div class="mup-card-title text-gray-800">Directorio de Propietarios</div>
-                        <div class="mup-card-subtitle">Administración de datos personales, licencias y estado operativo.</div>
+                        <div class="mup-card-subtitle">Incluye propietarios por perfil y los enlazados como propietario en vehículos. Misma fuente de datos en todo el sistema.</div>
                     </div>
-                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
                         <div class="export-group">
                             <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado visible (datos de la base de datos)">
                                 <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
@@ -68,8 +35,8 @@
                                 <iconify-icon icon="lucide:file"></iconify-icon> PDF
                             </button>
                         </div>
-                        <div class="relative">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                        <div class="mup-toolbar-search relative">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
                             <div class="absolute left-3 top-2.5 text-gray-400">
                                 <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
@@ -81,7 +48,7 @@
                 </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-6 pb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 sm:px-6 pb-4">
                     <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
                         <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
                         <div class="text-xl font-bold text-gray-800" x-text="propietarios.length"></div>
@@ -166,7 +133,7 @@
                     </table>
                 </div>
                 
-                <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+                <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
                     <div x-text="filteredPropietarios().length + ' propietario(s) registrado(s)'"></div>
                     <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
                 </div>
@@ -207,7 +174,7 @@
                             <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
                             <input type="text" name="nombre_completo" value="{{ old('nombre_completo') }}" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
                                 <select name="tdocper" class="mup-input" required>
@@ -228,7 +195,7 @@
                         Localización y Contacto
                     </div>
                     <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Ciudad</label>
                                 <input type="text" name="ciuper" value="{{ old('ciuper') }}" class="mup-input" placeholder="Cali">
@@ -254,7 +221,7 @@
                     </div>
                     <p class="text-[11px] text-gray-500 mb-3">La licencia es opcional. Si indica categoría, número o vencimiento, debe completar los tres campos.</p>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Cat. Licencia</label>
                                 <select name="catcon" class="mup-input">
@@ -269,7 +236,7 @@
                                 <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="mup-input" placeholder="NRO-123">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Vencimiento</label>
                                 <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="mup-input">
@@ -330,7 +297,7 @@
                             <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
                             <input type="text" name="nombre_completo" x-model="currentProp.nombre_completo" class="mup-input" required>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
                                 <select name="tdocper" x-model="currentProp.tdocper" class="mup-input" required>
@@ -351,7 +318,7 @@
                         Localización y Contacto
                     </div>
                     <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Ciudad</label>
                                 <input type="text" name="ciuper" x-model="currentProp.ciuper" class="mup-input">
@@ -377,7 +344,7 @@
                     </div>
                     <div class="space-y-4">
                         <p class="text-[11px] text-gray-500">Si indica categoría, número o vencimiento, complete los tres campos o deje todos vacíos.</p>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Cat. Licencia</label>
                                 <select name="catcon" x-model="currentProp.catcon" class="mup-input">
@@ -392,7 +359,7 @@
                                 <input type="text" name="nliccon" x-model="currentProp.nliccon" class="mup-input">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Vencimiento</label>
                                 <input type="date" name="fvencon" x-model="currentProp.fvencon" class="mup-input">
@@ -437,7 +404,7 @@
                     </button>
                 </div>
 
-                <div class="grid grid-cols-2 gap-6 bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 rounded-2xl p-4 sm:p-6 border border-gray-100">
                     <div>
                         <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Identificación</div>
                         <div class="text-sm font-bold text-gray-800" x-text="getDocType(currentProp.tdocper) + ': ' + numberFormat(currentProp.ndocper)"></div>
@@ -454,7 +421,7 @@
                         <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Ciudad</div>
                         <div class="text-sm font-bold text-gray-800" x-text="currentProp.ciuper || 'N/A'"></div>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                         <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Dirección</div>
                         <div class="text-sm font-bold text-gray-800" x-text="currentProp.dirper || 'No registrada'"></div>
                     </div>
@@ -485,7 +452,7 @@
     <div x-show="deleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center" @click.away="deleteModal = false">
+        <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-[calc(100%-1.5rem)] text-center" @click.away="deleteModal = false">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <iconify-icon icon="lucide:trash-2" style="font-size: 40px;"></iconify-icon>
             </div>

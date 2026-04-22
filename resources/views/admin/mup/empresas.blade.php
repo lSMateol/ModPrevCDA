@@ -4,51 +4,17 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="empresaManager()">
+<div class="mup-container" x-data="empresaManager()" x-cloak>
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
             <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
         </div>
-        <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab">Propietario</a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab active">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
-        </div>
+        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'empresas'])
     </header>
 
     <div class="mup-content-scroll">
-        {{-- ALERTAS GLOBALES --}}
-        @if(session('success') || session('error') || $errors->any())
-        <div class="px-2 pt-4">
-            @if(session('success'))
-                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-red-700 font-medium">{{ session('error') }}</p>
-                </div>
-            @endif
-            @if($errors->any())
-                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4 rounded-r-md shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <iconify-icon icon="lucide:alert-triangle" class="text-orange-500 text-xl"></iconify-icon>
-                        <p class="text-sm text-orange-700 font-bold">Por favor corrige los siguientes errores:</p>
-                    </div>
-                    <ul class="list-disc list-inside text-xs text-orange-600 space-y-1 ml-8">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-        </div>
-        @endif
+        @include('admin.mup.partials.flash')
 
         {{-- SECCIÓN: Directorio Empresarial --}}
         <section class="mup-card">
@@ -58,14 +24,20 @@
                     <div class="mup-card-title text-gray-800">Directorio Empresarial</div>
                     <div class="mup-card-subtitle">Administración de NITs, cuentas de acceso y estados de facturación.</div>
                 </div>
-                <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
                     <div class="export-group">
-                        <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
-                        <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
-                        <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                        <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado filtrado (datos actuales)">
+                            <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
+                        </button>
+                        <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                            <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
+                        </button>
+                        <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                            <iconify-icon icon="lucide:file"></iconify-icon> PDF
+                        </button>
                     </div>
-                    <div class="relative">
-                        <input type="text" x-model="search" placeholder="Buscar por nombre, NIT o gerente..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                    <div class="mup-toolbar-search relative">
+                        <input type="text" x-model="search" placeholder="Buscar por nombre, NIT o gerente..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
                         <div class="absolute left-3 top-2.5 text-gray-400">
                             <iconify-icon icon="lucide:search"></iconify-icon>
                         </div>
@@ -138,7 +110,7 @@
             </div>
 
             {{-- FOOTER DE TABLA --}}
-            <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+            <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
                 <span x-text="filteredEmpresas().length + ' empresa(s) registrada(s)'"></span>
                 <span>Última actualización: {{ now()->format('d/m/Y H:i') }}</span>
             </div>
@@ -182,7 +154,7 @@
                             <label class="mup-label">Razón Social <span class="mup-required">*</span></label>
                             <input type="text" name="razsoem" class="mup-input" placeholder="Ej. Transportes Unidos S.A." required>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">NIT <span class="mup-required">*</span></label>
                                 <input type="text" name="nonitem" class="mup-input" placeholder="900.123.456-7" required>
@@ -204,7 +176,7 @@
                         Contacto corporativo
                     </div>
                     <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nombre del Gerente <span class="mup-required">*</span></label>
                                 <input type="text" name="nomger" class="mup-input" placeholder="Ej. Luis M. Restrepo" required>
@@ -230,7 +202,7 @@
                             <label class="mup-label">Nombre de Usuario <span class="mup-required">*</span></label>
                             <input type="text" name="username" class="mup-input" placeholder="Ej. transportes.unidos" required>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Contraseña <span class="mup-required">*</span></label>
                                 <div class="relative">
@@ -307,7 +279,7 @@
                             <label class="mup-label">Razón Social <span class="mup-required">*</span></label>
                             <input type="text" name="razsoem" x-model="currentEmp.razsoem" class="mup-input" required>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">NIT <span class="mup-required">*</span></label>
                                 <input type="text" name="nonitem" x-model="currentEmp.nonitem" class="mup-input" required>
@@ -329,7 +301,7 @@
                         Contacto corporativo
                     </div>
                     <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nombre del Gerente <span class="mup-required">*</span></label>
                                 <input type="text" name="nomger" x-model="currentEmp.nomger" class="mup-input" required>
@@ -355,7 +327,7 @@
                             <label class="mup-label">Nombre de Usuario</label>
                             <input type="text" name="username" class="mup-input" placeholder="Dejar vacío si no cambia">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nueva Contraseña</label>
                                 <div class="relative">
@@ -431,7 +403,7 @@
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" @click.away="viewModal = false">
-            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <div class="p-4 sm:p-6 border-b flex justify-between items-start sm:items-center gap-3 bg-gray-50">
                 <div class="flex items-center gap-3">
                     <div class="mup-avatar" style="width:44px;height:44px;font-size:16px;background:#0d3b5a;color:white;" x-text="currentEmp.abremp ? currentEmp.abremp.substring(0,2) : (currentEmp.razsoem || '').substring(0,2).toUpperCase()"></div>
                     <div>
@@ -443,8 +415,8 @@
                     <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
                 </button>
             </div>
-            <div class="p-8 space-y-6">
-                <div class="grid grid-cols-2 gap-6">
+            <div class="p-4 sm:p-8 space-y-4 sm:space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                         <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Razón Social</span>
                         <p class="font-medium text-gray-800" x-text="currentEmp.razsoem"></p>
@@ -502,6 +474,28 @@ function empresaManager() {
                 safe(e.nomger).includes(q) ||
                 safe(e.emaem).includes(q)
             );
+        },
+
+        exportCsv() {
+            const cols = ['idemp', 'razsoem', 'nonitem', 'abremp', 'emaem', 'telem', 'nomger', 'direm', 'codubi', 'idpef'];
+            const list = this.filteredEmpresas();
+            const esc = (v) => {
+                if (v === null || v === undefined) return '';
+                const s = String(v);
+                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            };
+            let csv = cols.join(',') + '\n';
+            for (const e of list) {
+                csv += cols.map((c) => esc(e[c])).join(',') + '\n';
+            }
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'empresas_mup_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         },
 
         openCreate() {

@@ -4,10 +4,10 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="perfilCreator()">
+<div class="mup-container" x-data="perfilCreator()" x-cloak>
     <header class="mup-topbar">
         <div class="mup-page-title">
-            <h1 class="flex items-center gap-3">
+            <h1 class="flex items-center gap-3 flex-wrap">
                 <a href="{{ route('admin.mup.usuarios.index') }}" class="flex items-center justify-center bg-gray-100 p-2 rounded-md text-sm hover:bg-gray-200 transition">
                     <iconify-icon icon="lucide:arrow-left" style="font-size: 16px; color: var(--primary)"></iconify-icon>
                 </a>
@@ -15,7 +15,7 @@
             </h1>
             <p>Crea un nuevo rol y define sus alcances, permisos y accesos en el sistema del CDA.</p>
         </div>
-        <div class="flex gap-3">
+        <div class="mup-topbar-actions flex gap-3 flex-wrap">
             <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-btn mup-btn-outline">Cancelar</a>
             <button type="submit" form="form-nuevo-perfil" class="mup-btn mup-btn-primary" :disabled="submitting">
                 <template x-if="!submitting">
@@ -35,7 +35,11 @@
     </header>
 
     <div class="mup-content-scroll">
-        <div class="max-w-[1000px] mx-auto space-y-6 pb-12">
+        <div class="mup-inner-wide mx-auto mb-4 pb-2 border-b" style="border-color: var(--border);">
+            @include('admin.mup.partials.nav-tabs', ['mupActive' => ''])
+        </div>
+        @include('admin.mup.partials.flash')
+        <div class="mup-inner-wide mx-auto space-y-6 pb-12">
             <form id="form-nuevo-perfil" action="{{ route('admin.mup.perfil.store') }}" method="POST" @submit="submitting = true">
                 @csrf
                 
@@ -97,12 +101,12 @@
                                 <div class="mup-card-title text-xl font-bold text-gray-800">Matriz de Acciones y Alcance</div>
                                 <div class="mup-card-subtitle mt-1">Marca las acciones específicas que este perfil podrá realizar.</div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" @click="toggleGroup(true)" class="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-[#0d3b5a] rounded-lg text-xs font-bold transition border border-gray-200 shadow-sm">
+                            <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                                <button type="button" @click="toggleGroup(true)" class="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-[#0d3b5a] rounded-lg text-xs font-bold transition border border-gray-200 shadow-sm">
                                     <iconify-icon icon="lucide:check-circle"></iconify-icon>
                                     Marcar Todo en esta pestaña
                                 </button>
-                                <button type="button" @click="toggleGroup(false)" class="flex items-center gap-2 px-4 py-2 bg-white hover:bg-red-50 text-red-600 rounded-lg text-xs font-bold transition border border-red-100 shadow-sm">
+                                <button type="button" @click="toggleGroup(false)" class="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-white hover:bg-red-50 text-red-600 rounded-lg text-xs font-bold transition border border-red-100 shadow-sm">
                                     <iconify-icon icon="lucide:x-circle"></iconify-icon>
                                     Desmarcar Todo
                                 </button>
@@ -183,7 +187,7 @@
                                 <div class="w-4 h-4 rounded shadow-inner bg-white border border-gray-200"></div>
                                 <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Restringido</span>
                             </div>
-                            <div class="ml-auto text-xs text-gray-400 italic">
+                            <div class="w-full md:w-auto md:ml-auto text-xs text-gray-400 italic">
                                 * Nota: Algunos permisos dependen de otros. Al marcar "Crear", se habilitará "Visualizar" automáticamente.
                             </div>
                         </div>

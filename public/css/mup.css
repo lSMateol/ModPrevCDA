@@ -33,6 +33,11 @@
 .mup-container {
     font-family: var(--font-family-body);
     color: var(--foreground);
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .mup-app-shell {
@@ -188,7 +193,7 @@
 .mup-input:focus {
   outline: none;
   border-color: var(--primary);
-  ring: 2px var(--primary);
+  box-shadow: 0 0 0 3px rgba(13, 59, 90, 0.12);
 }
 
 .mup-table-wrap {
@@ -294,6 +299,12 @@
     animation: drawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@media (max-width: 520px) {
+    .mup-drawer {
+        max-width: 100%;
+    }
+}
+
 @keyframes drawerIn {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
@@ -342,4 +353,243 @@
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+/* Alpine: evitar parpadeo antes de hidratar */
+[x-cloak] {
+    display: none !important;
+}
+
+.mup-flash-stack {
+    max-width: 100%;
+}
+
+.mup-search-field {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mup-search-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(13, 59, 90, 0.12);
+}
+
+.mup-tab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.export-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* --- Toolbar: export + search --- */
+.export-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.mup-search-input-grow {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.mup-toolbar-search {
+    position: relative;
+    flex: 1 1 12rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+    .mup-toolbar-search {
+        flex: 0 1 18rem;
+        max-width: 20rem;
+    }
+}
+
+/* --- Navegación por pestañas (scroll horizontal en pantallas estrechas) --- */
+.mup-tabs-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+}
+
+.mup-tabs-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.mup-tabs-scroll::-webkit-scrollbar-thumb {
+    background: rgba(13, 59, 90, 0.25);
+    border-radius: 999px;
+}
+
+/* --- Ancho interior (nuevo perfil, etc.) --- */
+.mup-inner-wide {
+    width: 100%;
+    max-width: min(1000px, 100%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .mup-inner-wide {
+        max-width: min(1180px, 94vw);
+    }
+}
+
+/* --- Evitar desbordes en cabeceras de tarjeta --- */
+.mup-card-header-plain > div:last-child {
+    min-width: 0;
+}
+
+/* --- Pantallas muy grandes: legibilidad sin bandas vacías excesivas --- */
+@media (min-width: 2200px) {
+    .mup-container {
+        max-width: 2000px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* --- Mobile-first: compactación y apilado --- */
+@media (max-width: 639px) {
+    .mup-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mup-form-group.span-2 {
+        grid-column: span 1;
+    }
+
+    .mup-management-row {
+        grid-template-columns: 1fr;
+    }
+
+    .mup-content-scroll {
+        padding: 16px 12px 28px;
+    }
+
+    .mup-card-header-plain {
+        padding: 16px 14px;
+    }
+
+    .mup-card-header-soft {
+        padding: 16px 14px;
+    }
+
+    .mup-card-body {
+        padding: 16px 14px 20px;
+    }
+
+    .mup-drawer-header,
+    .mup-drawer-body {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .mup-drawer-body {
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .mup-drawer-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        padding: 16px 18px;
+        gap: 10px;
+    }
+
+    .mup-drawer-footer .mup-btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 991px) {
+    .mup-management-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .mup-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px 14px 18px;
+        gap: 16px;
+    }
+
+    .mup-page-title h1 {
+        font-size: 22px;
+        word-break: break-word;
+    }
+
+    .mup-page-title p {
+        font-size: 14px;
+    }
+
+    .mup-topbar-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .mup-topbar-actions .mup-btn {
+        flex: 1 1 auto;
+        min-height: 48px;
+        justify-content: center;
+    }
+
+    .mup-tab {
+        min-width: 104px;
+        height: 46px;
+        padding: 0 14px;
+        font-size: 14px;
+    }
+
+    .mup-data-table th,
+    .mup-data-table td {
+        padding: 12px 10px;
+        font-size: 13px;
+    }
+
+    .mup-data-table th {
+        font-size: 10px;
+    }
+}
+
+/* --- TV / 4K: tipografía escala con viewport sin pixelar UI vectorial --- */
+@media (min-width: 2560px) {
+    .mup-container {
+        font-size: 1.05rem;
+    }
+
+    .mup-page-title h1 {
+        font-size: 1.75rem;
+    }
+
+    .mup-input,
+    .mup-btn {
+        font-size: 1rem;
+        min-height: 48px;
+    }
+}
+
+/* --- Contenedor principal del layout: menos padding solo con MUP --- */
+@media (max-width: 639px) {
+    body main:has(.mup-container) {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
 }

@@ -3,24 +3,32 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+@php
+    $usuariosCsv = $usuarios->map(fn ($u) => [
+        'id' => $u->id,
+        'name' => $u->name ?? '',
+        'username' => $u->username ?? '',
+        'email' => $u->email ?? '',
+        'ndocper' => $u->persona?->ndocper ?? '',
+        'perfil' => $u->persona?->perfil?->nompef ?? '',
+        'actper' => $u->persona?->actper ?? '',
+        'empresa' => $u->empresa?->razsoem ?? 'Particular',
+    ]);
+@endphp
 
-<div class="mup-container" x-data="mupEditor()">
+<div class="mup-container" x-data="mupEditor()" x-cloak>
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
             <p>Gestión de entidades, perfiles del sistema y permisos administrativos</p>
         </div>
-        <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab">Propietario</a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab active">Usuario</a>
-        </div>
+        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'usuarios'])
     </header>
 
     <script>
         function mupEditor() {
             return {
+                usuariosExport: @json($usuariosCsv),
                 searchQuery: '',
                 viewModal: false,
                 deleteModal: false,
@@ -73,42 +81,49 @@
                     const parts = name.trim().split(' ');
                     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
                     return name.substring(0, 2).toUpperCase();
-                }
+                },
+
+                filteredUsuariosExport() {
+                    if (!this.searchQuery) return this.usuariosExport;
+                    const q = this.searchQuery.toLowerCase();
+                    const s = (v) => (v ?? '').toString().toLowerCase();
+                    return this.usuariosExport.filter((u) =>
+                        s(u.name).includes(q) ||
+                        s(u.username).includes(q) ||
+                        s(u.email).includes(q) ||
+                        s(u.ndocper).includes(q) ||
+                        s(u.perfil).includes(q) ||
+                        s(u.empresa).includes(q)
+                    );
+                },
+
+                exportCsv() {
+                    const cols = ['id', 'name', 'username', 'email', 'ndocper', 'perfil', 'actper', 'empresa'];
+                    const list = this.filteredUsuariosExport();
+                    const esc = (v) => {
+                        if (v === null || v === undefined) return '';
+                        const str = String(v);
+                        if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+                        return str;
+                    };
+                    let csv = cols.join(',') + '\n';
+                    for (const u of list) {
+                        csv += cols.map((c) => esc(u[c])).join(',') + '\n';
+                    }
+                    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'usuarios_mup_' + new Date().toISOString().slice(0, 10) + '.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                },
             };
         }
     </script>
 
     <div class="mup-content-scroll">
-        {{-- ALERTAS GLOBALES --}}
-        @if(session('success') || session('error') || $errors->any())
-        <div class="px-2 pt-4">
-            @if(session('success'))
-                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
-                    <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
-                    <p class="text-sm text-red-700 font-medium">{{ session('error') }}</p>
-                </div>
-            @endif
-            @if($errors->any())
-                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4 rounded-r-md shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <iconify-icon icon="lucide:alert-triangle" class="text-orange-500 text-xl"></iconify-icon>
-                        <p class="text-sm text-orange-700 font-bold">Por favor corrige los siguientes errores:</p>
-                    </div>
-                    <ul class="list-disc list-inside text-xs text-orange-600 space-y-1 ml-8">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-        </div>
-        @endif
+        @include('admin.mup.partials.flash')
 
         {{-- SECCIÓN: Listado de Usuarios --}}
         <section class="mup-card">
@@ -118,22 +133,32 @@
                     <div class="mup-card-title text-gray-800">Listado de usuarios del sistema</div>
                     <div class="mup-card-subtitle">Filtra por rol, estado o documento y exporta el listado correspondiente.</div>
                 </div>
-                <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
                     <div class="export-group">
-                        <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
-                        <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
-                        <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                        <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado (respeta el filtro de búsqueda)">
+                            <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
+                        </button>
+                        <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                            <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
+                        </button>
+                        <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                            <iconify-icon icon="lucide:file"></iconify-icon> PDF
+                        </button>
                     </div>
-                    <div class="relative">
-                        <input type="text" x-model="searchQuery" placeholder="Buscar por nombre, rol o documento..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                    <div class="mup-toolbar-search relative">
+                        <input type="text" x-model="searchQuery" placeholder="Buscar por nombre, rol o documento..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
                         <div class="absolute left-3 top-2.5 text-gray-400">
                             <iconify-icon icon="lucide:search"></iconify-icon>
                         </div>
                     </div>
-                    <button @click="openCreate()" class="mup-btn mup-btn-primary h-10">
+                    <button type="button" @click="openCreate()" class="mup-btn mup-btn-primary h-10">
                         <iconify-icon icon="lucide:plus"></iconify-icon>
                         Nuevo usuario
                     </button>
+                    <a href="{{ route('admin.mup.perfil.nuevo') }}" class="mup-btn mup-btn-outline h-10 no-underline" title="Crear un rol y su matriz de permisos">
+                        <iconify-icon icon="lucide:shield-plus"></iconify-icon>
+                        Nuevo perfil
+                    </a>
                 </div>
             </div>
 
@@ -249,7 +274,7 @@
             </div>
 
             {{-- FOOTER DE TABLA --}}
-            <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+            <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
                 <span>{{ count($usuarios) }} usuario(s) registrado(s)</span>
                 <span>Última actualización: {{ now()->format('d/m/Y H:i') }}</span>
             </div>
@@ -291,7 +316,7 @@
                             <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
                             <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Pérez" required value="{{ old('nombre_completo') }}">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Tipo doc. <span class="mup-required">*</span></label>
                                 <select name="tdocper" class="mup-input" required>
@@ -305,7 +330,7 @@
                                 <input type="number" name="ndocper" class="mup-input" placeholder="12345678" required value="{{ old('ndocper') }}">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Correo <span class="mup-required">*</span></label>
                                 <input type="email" name="emaper" class="mup-input" placeholder="correo@ejemplo.com" required value="{{ old('emaper') }}">
@@ -327,7 +352,7 @@
                             <label class="mup-label">Nombre de usuario <span class="mup-required">*</span></label>
                             <input type="text" name="username" class="mup-input" placeholder="Ej. juan.perez" required value="{{ old('username') }}">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Contraseña <span class="mup-required">*</span></label>
                                 <div class="relative">
@@ -358,7 +383,7 @@
                         Rol y asignación
                     </div>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
                                 <select name="idpef" class="mup-input" required>
@@ -432,7 +457,7 @@
                             <label class="mup-label">Nombre completo <span class="mup-required">*</span></label>
                             <input type="text" name="nombre_completo" class="mup-input" required :value="selectedUser?.name">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Tipo doc. <span class="mup-required">*</span></label>
                                 <select name="tdocper" class="mup-input" required :value="selectedUser?.tdocper">
@@ -446,7 +471,7 @@
                                 <input type="number" name="ndocper" class="mup-input" required :value="selectedUser?.ndocper">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Correo <span class="mup-required">*</span></label>
                                 <input type="email" name="emaper" class="mup-input" required :value="selectedUser?.email">
@@ -464,7 +489,7 @@
                         Acceso al sistema
                     </div>
                     <div class="space-y-4 mb-8">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nombre de usuario <span class="mup-required">*</span></label>
                                 <input type="text" name="username" class="mup-input" required :value="selectedUser?.username">
@@ -477,7 +502,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Nueva contraseña</label>
                                 <div class="relative">
@@ -508,7 +533,7 @@
                         Rol y asignación
                     </div>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
                                 <select name="idpef" class="mup-input" required :value="selectedUser?.idpef">
@@ -549,7 +574,7 @@
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" @click.away="viewModal = false">
-            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <div class="p-4 sm:p-6 border-b flex justify-between items-start sm:items-center gap-3 bg-gray-50">
                 <div class="flex items-center gap-3">
                     <div class="mup-avatar" style="width:44px;height:44px;font-size:16px;" x-text="getInitials(selectedUser?.name)"></div>
                     <div>
@@ -561,8 +586,8 @@
                     <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
                 </button>
             </div>
-            <div class="p-8 space-y-6">
-                <div class="grid grid-cols-2 gap-6">
+            <div class="p-4 sm:p-8 space-y-4 sm:space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                         <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Completo</span>
                         <p class="font-medium text-gray-800" x-text="selectedUser?.name"></p>

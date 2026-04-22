@@ -4,21 +4,17 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
-<div class="mup-container" x-data="conductorManager()">
+<div class="mup-container" x-data="conductorManager()" x-cloak>
     <header class="mup-topbar">
         <div class="mup-page-title">
             <h1>MUP - Módulo de Usuarios y Perfiles</h1>
             <p>Gestión de conductores, licencias y estados operativos del CDA.</p>
         </div>
-        <div class="mup-tabs">
-            <a href="{{ route('admin.mup.conductores.index') }}" class="mup-tab active">Conductor</a>
-            <a href="{{ route('admin.mup.propietarios.index') }}" class="mup-tab">Propietario</a>
-            <a href="{{ route('admin.mup.empresas.index') }}" class="mup-tab">Empresas</a>
-            <a href="{{ route('admin.mup.usuarios.index') }}" class="mup-tab">Usuario</a>
-        </div>
+        @include('admin.mup.partials.nav-tabs', ['mupActive' => 'conductores'])
     </header>
 
     <div class="mup-content-scroll">
+        @include('admin.mup.partials.flash')
         <div class="space-y-6 pb-12">
             
             {{-- SECCIÓN: Listado de Conductores --}}
@@ -26,16 +22,22 @@
                 <div class="mup-card-header-plain" style="flex-wrap: wrap;">
                     <div>
                         <div class="mup-card-title text-gray-800">Listado Maestro de Conductores</div>
-                        <div class="mup-card-subtitle">Consulta, edita y exporta el listado de conductores registrados.</div>
+                        <div class="mup-card-subtitle">Incluye conductores por perfil y los asignados en vehículos del sistema. Los datos son los mismos en todo el CDA.</div>
                     </div>
-                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
+                    <div class="flex items-center gap-3 flex-wrap w-full md:w-auto min-w-0">
                         <div class="export-group">
-                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
-                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
-                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                            <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado filtrado (datos actuales)">
+                                <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
+                            </button>
+                            <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                                <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
+                            </button>
+                            <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                                <iconify-icon icon="lucide:file"></iconify-icon> PDF
+                            </button>
                         </div>
-                        <div class="relative">
-                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o licencia..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
+                        <div class="mup-toolbar-search relative">
+                            <input type="text" x-model="search" placeholder="Buscar por nombre, documento o licencia..." class="mup-search-field mup-search-input-grow pl-10 pr-4 py-2 text-sm bg-white">
                             <div class="absolute left-3 top-2.5 text-gray-400">
                                 <iconify-icon icon="lucide:search"></iconify-icon>
                             </div>
@@ -43,7 +45,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-6 pb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 sm:px-6 pb-4">
                     <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
                         <div class="text-[11px] text-gray-500 uppercase tracking-wider">Total</div>
                         <div class="text-xl font-bold text-gray-800" x-text="conductores.length"></div>
@@ -126,7 +128,7 @@
                     </table>
                 </div>
 
-                <div class="px-6 py-4 border-t flex justify-between items-center text-xs text-gray-400">
+                <div class="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400">
                     <div x-text="filteredConductores().length + ' conductor(es) registrado(s)'"></div>
                     <div>Última actualización: {{ date('d/m/Y H:i') }}</div>
                 </div>
@@ -141,6 +143,7 @@
                     <div class="mup-card-body">
                         <form action="{{ route('admin.mup.conductores.store') }}" method="POST" id="createForm">
                             @csrf
+                            <input type="hidden" name="_mup_conductor_form" value="create">
                             <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
                                 <span>Información Identitaria</span>
                                 <div class="flex-1 h-px bg-gray-100"></div>
@@ -149,27 +152,27 @@
                             <div class="mup-form-grid">
                                 <div class="mup-form-group span-2">
                                     <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
-                                    <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Carlos Alberto Soto" required>
+                                    <input type="text" name="nombre_completo" value="{{ old('nombre_completo') }}" class="mup-input" placeholder="Ej. Carlos Alberto Soto" required>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
                                     <select name="tdocper" class="mup-input" required>
                                         @foreach($tiposDoc as $tipo)
-                                            <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                                            <option value="{{ $tipo->idval }}" @selected(old('tdocper') == $tipo->idval)>{{ $tipo->nomval }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Identificación <span class="mup-required">*</span></label>
-                                    <input type="number" name="ndocper" class="mup-input" placeholder="Sin puntos ni comas" required>
+                                    <input type="number" name="ndocper" value="{{ old('ndocper') }}" class="mup-input" placeholder="Sin puntos ni comas" required>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Correo Electrónico <span class="mup-required">*</span></label>
-                                    <input type="email" name="emaper" class="mup-input" placeholder="ejemplo@email.com" required>
+                                    <input type="email" name="emaper" value="{{ old('emaper') }}" class="mup-input" placeholder="ejemplo@email.com" required>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Celular / Teléfono</label>
-                                    <input type="text" name="telper" class="mup-input" placeholder="300 000 0000">
+                                    <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="300 000 0000">
                                 </div>
                             </div>
 
@@ -185,23 +188,23 @@
                                     <select name="catcon" class="mup-input">
                                         <option value="">— Sin licencia —</option>
                                         @foreach($licenciaCategorias as $cat)
-                                            <option value="{{ $cat }}">{{ $cat }}</option>
+                                            <option value="{{ $cat }}" @selected(old('catcon') === $cat)>{{ $cat }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Nro de Licencia</label>
-                                    <input type="text" name="nliccon" class="mup-input" placeholder="Nro de pase">
+                                    <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="mup-input" placeholder="Nro de pase">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Vencimiento Licencia</label>
-                                    <input type="date" name="fvencon" class="mup-input">
+                                    <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="mup-input">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Estado Inicial</label>
                                     <select name="actper" class="mup-input" required>
-                                        <option value="1">Disponible / Activo</option>
-                                        <option value="0">Fuera de Servicio / Inactivo</option>
+                                        <option value="1" @selected(old('actper', '1') == '1')>Disponible / Activo</option>
+                                        <option value="0" @selected((string) old('actper') === '0')>Fuera de Servicio / Inactivo</option>
                                     </select>
                                 </div>
                             </div>
@@ -221,7 +224,7 @@
     </div>
 
     {{-- MODAL DE EDICIÓN --}}
-    <div x-show="editing" 
+    <div x-show="editing" x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
@@ -230,8 +233,8 @@
          x-transition:leave-end="opacity-0 scale-95"
          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
         
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden" @click.away="closeModal()">
-            <div class="p-8 bg-[#0d3b5a] text-white flex justify-between items-center bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]">
+        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[min(100dvh,900px)] overflow-hidden flex flex-col m-3 sm:m-4" @click.away="closeModal()">
+            <div class="p-4 sm:p-8 bg-[#0d3b5a] text-white flex justify-between items-start sm:items-center gap-3 bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73] shrink-0">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/10 rounded-2xl">
                         <iconify-icon icon="lucide:pencil-line" class="text-2xl"></iconify-icon>
@@ -246,12 +249,12 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-8">
+            <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0">
                 @csrf
                 @method('PUT')
                 
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="col-span-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="col-span-1 sm:col-span-2">
                         <label class="mup-label">Nombre Completo</label>
                         <input type="text" name="nombre_completo" x-model="currentCon.nombre_completo" class="mup-input" required>
                     </div>
@@ -290,9 +293,9 @@
                     <input type="hidden" name="tdocper" x-model="currentCon.tdocper">
                 </div>
 
-                <div class="mt-10 flex gap-4">
-                    <button type="button" @click="closeModal()" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                    <button type="submit" class="flex-1 py-4 bg-[#0d3b5a] text-white font-bold rounded-2xl shadow-xl shadow-[#0d3b5a]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <div class="mt-8 sm:mt-10 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
+                    <button type="button" @click="closeModal()" class="flex-1 min-h-[48px] py-3 sm:py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-xl sm:rounded-2xl transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 min-h-[48px] py-3 sm:py-4 bg-[#0d3b5a] text-white font-bold rounded-xl sm:rounded-2xl shadow-xl shadow-[#0d3b5a]/20 active:scale-[0.98] transition-all">
                         Actualizar Cambios
                     </button>
                 </div>
@@ -301,8 +304,8 @@
     </div>
 
     {{-- MODAL ELIMINAR --}}
-    <div x-show="deleting" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center" @click.away="deleting = false">
+    <div x-show="deleting" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0d3b5a]/40 backdrop-blur-sm">
+        <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-[calc(100%-1.5rem)] text-center" @click.away="deleting = false">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <iconify-icon icon="lucide:alert-triangle" style="font-size: 40px;"></iconify-icon>
             </div>
@@ -335,7 +338,31 @@ function conductorManager() {
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         
         init() {
-            // Pre-procesamiento de datos si es necesario
+            @if($errors->any() && old('_mup_conductor_form') === 'create')
+            document.getElementById('createForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            @endif
+        },
+
+        exportCsv() {
+            const cols = ['idper', 'nomper', 'apeper', 'ndocper', 'tdocper', 'emaper', 'telper', 'actper', 'catcon', 'nliccon', 'fvencon'];
+            const list = this.filteredConductores();
+            const esc = (v) => {
+                if (v === null || v === undefined) return '';
+                const s = String(v);
+                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            };
+            let csv = cols.join(',') + '\n';
+            for (const c of list) {
+                csv += cols.map((col) => esc(c[col])).join(',') + '\n';
+            }
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'conductores_mup_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         },
 
         filteredConductores() {
@@ -346,17 +373,21 @@ function conductorManager() {
                 (c.apeper && c.apeper.toLowerCase().includes(q)) ||
                 c.ndocper.toString().includes(q) ||
                 (c.nliccon && c.nliccon.toLowerCase().includes(q)) ||
-                (c.catcon && String(c.catcon).toLowerCase().includes(q))
+                (c.catcon && String(c.catcon).toLowerCase().includes(q)) ||
+                (c.emaper && c.emaper.toLowerCase().includes(q))
             );
         },
 
         editConductor(con) {
+            const fven = con.fvencon ? String(con.fvencon).slice(0, 10) : '';
             this.currentCon = { 
                 ...con, 
                 nombre_completo: con.nomper + ' ' + (con.apeper || ''),
+                tdocper: con.tdocper != null ? String(con.tdocper) : '',
+                actper: con.actper != null ? String(con.actper) : '1',
                 catcon: con.catcon || '',
                 nliccon: con.nliccon || '',
-                fvencon: con.fvencon || '',
+                fvencon: fven,
             };
             this.editing = true;
         },
@@ -372,7 +403,9 @@ function conductorManager() {
         },
 
         getDocType(id) {
-            return this.tiposDoc[id] || 'N/A';
+            if (id === null || id === undefined || id === '') return 'N/A';
+            const key = String(id);
+            return this.tiposDoc[key] || this.tiposDoc[id] || 'N/A';
         },
 
         formatDate(dateStr) {
