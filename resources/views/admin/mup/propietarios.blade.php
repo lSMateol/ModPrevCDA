@@ -75,7 +75,7 @@
                                 <th>Propietario</th>
                                 <th>Identificación</th>
                                 <th>Localización</th>
-                                <th>Estado</th>
+                                <th class="text-center">Estado</th>
                                 <th class="text-center" style="text-align: center;">Acciones</th>
                             </tr>
                         </thead>
@@ -103,7 +103,7 @@
                                             <span class="text-[10px] text-gray-400 truncate max-w-[150px]" x-text="p.dirper || 'Sin dirección'"></span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <span class="mup-state-badge" :class="p.actper ? 'mup-state-active' : 'mup-state-inactive'">
                                             <div class="w-2 h-2 rounded-full bg-current"></div>
                                             <span x-text="p.actper ? 'Activo' : 'Inactivo'"></span>

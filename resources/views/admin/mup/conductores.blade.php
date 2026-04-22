@@ -72,7 +72,7 @@
                                 <th>Conductor</th>
                                 <th>Identificación</th>
                                 <th>Licencia / Vencimiento</th>
-                                <th>Estado</th>
+                                <th class="text-center">Estado</th>
                                 <th class="text-center" style="text-align: center;">Acciones</th>
                             </tr>
                         </thead>
@@ -101,7 +101,7 @@
                                             <span class="text-[10px] text-gray-400" x-text="formatDate(con.fvencon)"></span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <span class="mup-state-badge" :class="con.actper ? 'mup-state-active' : 'mup-state-inactive'">
                                             <div class="w-2 h-2 rounded-full bg-current"></div>
                                             <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>

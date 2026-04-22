@@ -62,7 +62,7 @@
                             <th>NIT Fiscal</th>
                             <th>Email Corporativo</th>
                             <th class="text-center">Estado</th>
-                            <th class="text-right">Acciones</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,8 +94,8 @@
                                         Activo
                                     </span>
                                 </td>
-                                <td class="text-right">
-                                    <div class="flex justify-end gap-2">
+                                <td class="text-center">
+                                    <div class="flex justify-center gap-2">
                                         <button @click="openView(e)" class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
                                             <iconify-icon icon="lucide:eye"></iconify-icon>
                                         </button>
