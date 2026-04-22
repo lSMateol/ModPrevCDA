@@ -491,7 +491,7 @@ class MupController extends Controller
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
             'actper' => 'required|in:0,1',
-            'dirper' => 'nullable|string|max:100',
+            'dirper' => 'nullable|string|max:150',
             'ciuper' => 'nullable|string|max:50',
         ], $this->rulesLicenciaTriada($request)), [
             'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
@@ -547,7 +547,7 @@ class MupController extends Controller
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
             'actper' => 'required|in:0,1',
-            'dirper' => 'nullable|string|max:100',
+            'dirper' => 'nullable|string|max:150',
             'ciuper' => 'nullable|string|max:50',
         ], $this->rulesLicenciaTriada($request)), [
             'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
@@ -555,6 +555,11 @@ class MupController extends Controller
 
         try {
             DB::beginTransaction();
+
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
+            if ((int) $persona->idpef !== (int) $perfilPropietario->idpef) {
+                abort(404);
+            }
 
             $parts = explode(' ', $request->nombre_completo, 2);
             $nomper = $parts[0];
@@ -579,7 +584,7 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el propietario'));
+            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el propietario'))->withInput();
         }
     }
 
@@ -591,6 +596,11 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
             $persona = Persona::findOrFail($id);
+
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
+            if ((int) $persona->idpef !== (int) $perfilPropietario->idpef) {
+                abort(404);
+            }
             
             // Clean linked records if any
             User::where('idper', $id)->delete();

@@ -19,6 +19,36 @@
     </header>
 
     <div class="mup-content-scroll">
+        @if(session('success') || session('error') || $errors->any())
+        <div class="px-2 pt-4">
+            @if(session('success'))
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
+                    <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl"></iconify-icon>
+                    <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded-r-md shadow-sm flex items-center gap-3">
+                    <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                    <p class="text-sm text-red-700 font-medium">{{ session('error') }}</p>
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4 rounded-r-md shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <iconify-icon icon="lucide:alert-triangle" class="text-orange-500 text-xl"></iconify-icon>
+                        <p class="text-sm text-orange-700 font-bold">Por favor corrija los siguientes errores:</p>
+                    </div>
+                    <ul class="list-disc list-inside text-xs text-orange-600 space-y-1 ml-8">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+        @endif
+
         <div class="space-y-6 pb-12">
             <section class="mup-card">
                 <div class="mup-card-header-plain" style="flex-wrap: wrap;">
@@ -28,9 +58,15 @@
                     </div>
                     <div class="flex items-center gap-3 flex-wrap w-full md:w-auto">
                         <div class="export-group">
-                            <button class="export-btn csv"><iconify-icon icon="lucide:file-text"></iconify-icon> CSV</button>
-                            <button class="export-btn excel"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel</button>
-                            <button class="export-btn pdf"><iconify-icon icon="lucide:file"></iconify-icon> PDF</button>
+                            <button type="button" class="export-btn csv" @click="exportCsv()" title="Descargar listado visible (datos de la base de datos)">
+                                <iconify-icon icon="lucide:file-text"></iconify-icon> CSV
+                            </button>
+                            <button type="button" class="export-btn excel opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                                <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Excel
+                            </button>
+                            <button type="button" class="export-btn pdf opacity-50 cursor-not-allowed" disabled title="Disponible próximamente">
+                                <iconify-icon icon="lucide:file"></iconify-icon> PDF
+                            </button>
                         </div>
                         <div class="relative">
                             <input type="text" x-model="search" placeholder="Buscar por nombre, documento o ciudad..." class="pl-10 pr-4 py-2 border rounded-md text-sm w-72 bg-gray-50">
@@ -145,6 +181,7 @@
         <div class="mup-drawer" @click.away="createDrawer = false">
             <form action="{{ route('admin.mup.propietarios.store') }}" method="POST" class="flex flex-col h-full">
                 @csrf
+                <input type="hidden" name="_propietario_form" value="create">
                 <div class="mup-drawer-header">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-[#0d3b5a] text-white flex items-center justify-center">
@@ -168,20 +205,20 @@
                     <div class="space-y-4 mb-8">
                         <div class="mup-form-group">
                             <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
-                            <input type="text" name="nombre_completo" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
+                            <input type="text" name="nombre_completo" value="{{ old('nombre_completo') }}" class="mup-input" placeholder="Ej. Juan Manuel Galán" required>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
                                 <select name="tdocper" class="mup-input" required>
                                     @foreach($tiposDoc as $tipo)
-                                        <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                                        <option value="{{ $tipo->idval }}" @selected(old('tdocper') == $tipo->idval)>{{ $tipo->nomval }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">No. Documento <span class="mup-required">*</span></label>
-                                <input type="number" name="ndocper" class="mup-input" placeholder="12345678" required>
+                                <input type="number" name="ndocper" value="{{ old('ndocper') }}" class="mup-input" placeholder="12345678" required>
                             </div>
                         </div>
                     </div>
@@ -194,20 +231,20 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Ciudad</label>
-                                <input type="text" name="ciuper" class="mup-input" placeholder="Cali">
+                                <input type="text" name="ciuper" value="{{ old('ciuper') }}" class="mup-input" placeholder="Cali">
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Teléfono</label>
-                                <input type="text" name="telper" class="mup-input" placeholder="3001234567">
+                                <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="3001234567">
                             </div>
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Dirección</label>
-                            <input type="text" name="dirper" class="mup-input" placeholder="Calle 10 # 5-20">
+                            <input type="text" name="dirper" value="{{ old('dirper') }}" maxlength="150" class="mup-input" placeholder="Calle 10 # 5-20">
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">E-mail <span class="mup-required">*</span></label>
-                            <input type="email" name="emaper" class="mup-input" placeholder="propietario@email.com" required>
+                            <input type="email" name="emaper" value="{{ old('emaper') }}" class="mup-input" placeholder="propietario@email.com" required>
                         </div>
                     </div>
 
@@ -223,25 +260,25 @@
                                 <select name="catcon" class="mup-input">
                                     <option value="">— Sin licencia —</option>
                                     @foreach($licenciaCategorias as $cat)
-                                        <option value="{{ $cat }}">{{ $cat }}</option>
+                                        <option value="{{ $cat }}" @selected(old('catcon') === $cat)>{{ $cat }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">No. Licencia</label>
-                                <input type="text" name="nliccon" class="mup-input" placeholder="NRO-123">
+                                <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="mup-input" placeholder="NRO-123">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
                                 <label class="mup-label">Vencimiento</label>
-                                <input type="date" name="fvencon" class="mup-input">
+                                <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="mup-input">
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Estado Inicial</label>
                                 <select name="actper" class="mup-input" required>
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
+                                    <option value="1" @selected(old('actper', '1') == '1')>Activo</option>
+                                    <option value="0" @selected((string) old('actper') === '0')>Inactivo</option>
                                 </select>
                             </div>
                         </div>
@@ -267,6 +304,7 @@
             <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex flex-col h-full">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_propietario_form" value="edit">
                 <div class="mup-drawer-header">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center">
@@ -325,7 +363,7 @@
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">Dirección</label>
-                            <input type="text" name="dirper" x-model="currentProp.dirper" class="mup-input">
+                            <input type="text" name="dirper" x-model="currentProp.dirper" maxlength="150" class="mup-input">
                         </div>
                         <div class="mup-form-group">
                             <label class="mup-label">E-mail <span class="mup-required">*</span></label>
@@ -432,7 +470,7 @@
                     </div>
                     <div class="text-right">
                         <div class="text-[9px] text-gray-400 font-bold">Vencimiento</div>
-                        <div class="text-[11px] font-black text-gray-700" x-text="currentProp.fvencon"></div>
+                        <div class="text-[11px] font-black text-gray-700" x-text="formatDateDisplay(currentProp.fvencon)"></div>
                     </div>
                 </div>
 
@@ -479,6 +517,12 @@ function propietarioManager() {
         propietarios: @json($propietarios),
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
 
+        init() {
+            @if($errors->any() && old('_propietario_form') === 'create')
+            this.createDrawer = true;
+            @endif
+        },
+
         filteredPropietarios() {
             if (!this.search) return this.propietarios;
             const q = this.search.toLowerCase();
@@ -486,12 +530,38 @@ function propietarioManager() {
                 p.nomper.toLowerCase().includes(q) || 
                 (p.apeper && p.apeper.toLowerCase().includes(q)) ||
                 p.ndocper.toString().includes(q) ||
-                (p.ciuper && p.ciuper.toLowerCase().includes(q))
+                (p.ciuper && p.ciuper.toLowerCase().includes(q)) ||
+                (p.dirper && p.dirper.toLowerCase().includes(q)) ||
+                (p.emaper && p.emaper.toLowerCase().includes(q)) ||
+                (p.nliccon && String(p.nliccon).toLowerCase().includes(q)) ||
+                (p.catcon && String(p.catcon).toLowerCase().includes(q))
             );
         },
 
         openCreateDrawer() {
             this.createDrawer = true;
+        },
+
+        exportCsv() {
+            const cols = ['idper', 'nomper', 'apeper', 'ndocper', 'tdocper', 'emaper', 'telper', 'ciuper', 'dirper', 'actper', 'catcon', 'nliccon', 'fvencon'];
+            const list = this.filteredPropietarios();
+            const esc = (v) => {
+                if (v === null || v === undefined) return '';
+                const s = String(v);
+                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            };
+            let csv = cols.join(',') + '\n';
+            for (const p of list) {
+                csv += cols.map((c) => esc(p[c])).join(',') + '\n';
+            }
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'propietarios_mup_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         },
 
         viewDetail(p) {
@@ -500,12 +570,15 @@ function propietarioManager() {
         },
 
         editPropietario(p) {
+            const fven = p.fvencon ? String(p.fvencon).slice(0, 10) : '';
             this.currentProp = { 
                 ...p, 
                 nombre_completo: p.nomper + ' ' + (p.apeper || ''),
+                tdocper: p.tdocper != null ? String(p.tdocper) : '',
+                actper: p.actper != null ? String(p.actper) : '1',
                 catcon: p.catcon || '',
                 nliccon: p.nliccon || '',
-                fvencon: p.fvencon || '',
+                fvencon: fven,
             };
             this.editDrawer = true;
         },
@@ -516,7 +589,17 @@ function propietarioManager() {
         },
 
         getDocType(id) {
-            return this.tiposDoc[id] || 'N/A';
+            if (id === null || id === undefined || id === '') return 'N/A';
+            const key = String(id);
+            return this.tiposDoc[key] || this.tiposDoc[id] || 'N/A';
+        },
+
+        formatDateDisplay(dateStr) {
+            if (!dateStr) return '—';
+            const d = String(dateStr).slice(0, 10);
+            if (!d || d.length < 10) return '—';
+            const [y, m, day] = d.split('-');
+            return `${day}/${m}/${y}`;
         },
 
         formatLicenseLine(p) {
