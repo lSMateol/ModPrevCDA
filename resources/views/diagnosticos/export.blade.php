@@ -54,8 +54,8 @@
             height: auto;
         }
         .order-info {
-            text-align: right;
-            margin-bottom: 8px;
+            text-align: left;
+            margin-top: 2px;
         }
         .order-info strong {
             font-size: 10pt;
@@ -209,6 +209,9 @@
         <header>
             <div class="header-left">
                 <h1>INSPECCION PREVENTIVA</h1>
+                <div class="order-info">
+                    <strong>SIDAUTO</strong> - <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
+                </div>
             </div>
             <div class="header-right">
                 <div class="business-info">
@@ -222,10 +225,7 @@
             </div>
         </header>
 
-        <div class="order-info">
-            <strong>SIDAUTO</strong><br>
-            <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
-        </div>
+
 
         @php
             $paramValues = $diagnostico->parametros->pluck('valor', 'parametro.nompar')->toArray();

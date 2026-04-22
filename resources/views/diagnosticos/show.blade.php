@@ -9,22 +9,109 @@
         return $p->parametro->tippar->nomtip;
     });
 
-    // Determinar estado general
-    $allCumple = true;
+    // Determinar estado general mediante causales de rechazo
+    $fallasTipoA = 0;
+    $fallasTipoB = 0;
+
     foreach($diagnostico->parametros as $p) {
         $param = $p->parametro;
         $val = $p->valor;
+        $esSeccionDefectos = str_contains(strtoupper($param->tippar->nomtip ?? ''), 'DEFECTOS');
         
         if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-            // Validación numérica por rango
-            if ($val < $param->rini || $val > $param->rfin) $allCumple = false;
+            // Validación numérica por rango (se considera defecto Tipo A)
+            if ($val < $param->rini || $val > $param->rfin) $fallasTipoA++;
         } elseif ($param->control == 'radio') {
-            // Validación de radio buttons (si/no/funciona/...)
-            if (in_array($val, ['no', 'no_funciona'])) $allCumple = false;
+            // Validación de radio buttons
+            if ($esSeccionDefectos) {
+                if (str_contains(strtolower($param->nompar), 'criterios')) {
+                    if ($val == 'no') $fallasTipoA++;
+                } else {
+                    if ($val == 'si') $fallasTipoA++;
+                }
+            } else {
+                if (in_array($val, ['no', 'no_funciona'])) $fallasTipoA++;
+            }
+        } elseif ($param->nompar == 'desc_inspeccion') {
+            // Conteo de defectos visuales (Tipo A y Tipo B)
+            $data = @json_decode($val, true);
+            $lista = is_array($data) ? ($data['list'] ?? $data) : [];
+            foreach ($lista as $def) {
+                if (($def['tipo'] ?? '') == 'Tipo A') $fallasTipoA++;
+                elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
+            }
         } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
-            // Si hay un defecto seleccionado en la inspección visual, no cumple
-            if (!empty($val)) $allCumple = false;
+            // Por seguridad, si quedan restos antiguos, cuentan como A
+            if (!empty($val)) $fallasTipoA++;
         }
+    }
+
+    $vehiculo = $diagnostico->vehiculo;
+    $tipoServicio = $vehiculo->tipo_servicio; // 1=Particular, 2=Publico
+    $tipoVehiculoStr = strtolower(optional(\App\Models\Valor::find($vehiculo->tipoveh))->nomval ?? '');
+    if (empty($tipoVehiculoStr) && is_string($vehiculo->tipoveh)) {
+        $tipoVehiculoStr = strtolower($vehiculo->tipoveh);
+    }
+
+    $causalesRechazo = [];
+    
+    // 1. si tiene almenos un defecto tipo A
+    if ($fallasTipoA > 0) {
+        $causalesRechazo[] = "Se encuentra al menos un defecto Tipo A ($fallasTipoA en total).";
+    }
+    
+    if (str_contains($tipoVehiculoStr, 'motocicleta') || str_contains($tipoVehiculoStr, 'motocileta')) {
+        // 4. si tipo de vehiculo es motocicletas y tiene 5 o mas fallas (Tipo B)
+        if ($fallasTipoB >= 5) {
+            $causalesRechazo[] = "La cantidad de defectos Tipo B es igual o superior a 5 para vehículos tipo motocicletas (Tiene $fallasTipoB).";
+        }
+    } elseif (str_contains($tipoVehiculoStr, 'motocarro')) {
+        // 5. si tipo de vehiculo es motocarros y tiene 7 o mas fallas (Tipo B)
+        if ($fallasTipoB >= 7) {
+            $causalesRechazo[] = "La cantidad de defectos Tipo B es igual o superior a 7 para vehículos tipo motocarros (Tiene $fallasTipoB).";
+        }
+    } else {
+        // 2. si tipo de servicio es particular y tiene 10 o mas fallas
+        if ($tipoServicio == 1 && $fallasTipoB >= 10) {
+            $causalesRechazo[] = "La cantidad de defectos Tipo B es igual o superior a 10 para vehículos particulares (Tiene $fallasTipoB).";
+        } 
+        // 3. si tipo de servicio es publico y tiene 5 o mas fallas
+        elseif ($tipoServicio == 2 && $fallasTipoB >= 5) {
+            $causalesRechazo[] = "La cantidad de defectos Tipo B es igual o superior a 5 para vehículos públicos (Tiene $fallasTipoB).";
+        }
+    }
+
+    $allCumple = count($causalesRechazo) === 0;
+
+    // Verificar campos requeridos
+    $answeredParams = $diagnostico->parametros->filter(function($p) {
+        return !is_null($p->valor) && $p->valor !== '';
+    })->pluck('parametro.nompar')->toArray();
+
+    $requiredParamsDict = [
+        'luz_izquierda' => 'Luz Izquierda',
+        'luz_derecha' => 'Luz Derecha',
+        'temp_c' => 'Temp C (V. Diesel)',
+        'rpm' => 'RPM (V. Diesel)',
+        'ciclo1' => 'Ciclo 1 (V. Diesel)',
+        'ciclo2' => 'Ciclo 2 (V. Diesel)',
+        'ciclo3' => 'Ciclo 3 (V. Diesel)',
+        'ciclo4' => 'Ciclo 4 (V. Diesel)',
+        'resultado_diesel' => 'Resultado Diesel',
+        'dilusion_gasolina' => 'Dilución Gasolina (Defectos)',
+        'Criterios_de_validacion' => 'Criterios de Validación (Defectos)'
+    ];
+
+    $missingFields = [];
+    foreach($requiredParamsDict as $key => $label) {
+        if(!in_array($key, $answeredParams)) {
+            $missingFields[] = $label;
+        }
+    }
+
+    $fotosCount = $diagnostico->fotos->count();
+    if ($fotosCount < 2) {
+        $missingFields[] = 'Evidencia Fotográfica (Se requieren al menos 2 fotos. Actual: ' . $fotosCount . ')';
     }
 @endphp
 
@@ -305,37 +392,67 @@
             <div class="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10">
                 <h3 class="font-headline font-black text-[#001834] text-lg mb-4 flex items-center gap-3">
                     <span class="material-symbols-outlined text-sm bg-primary-fixed-dim p-1.5 rounded-lg text-[#001834]">rate_review</span>
-                    Observaciones Generales
+                    Observaciones Generales y Causal de Rechazo
                 </h3>
-                <p class="text-sm font-body leading-relaxed text-on-surface-variant">
-                    @if(!$allCumple)
-                        Se han detectado desviaciones significativas en las pruebas técnicas, específicamente en los parámetros marcados como "No Cumple". Se recomienda revisión mecánica inmediata del vehículo {{ $diagnostico->vehiculo->placaveh }}.
-                    @else
-                        El vehículo cumple satisfactoriamente con todos los parámetros técnicos evaluados en esta inspección preventiva.
-                    @endif
-                </p>
+                @if(!$allCumple)
+                    <div class="space-y-3">
+                        <p class="text-sm font-black text-red-700 uppercase tracking-widest">CAUSAL DE RECHAZO:</p>
+                        <ul class="list-disc list-inside text-sm text-red-600 font-bold space-y-2 pl-2">
+                            @foreach($causalesRechazo as $causal)
+                                <li>{{ $causal }}</li>
+                            @endforeach
+                        </ul>
+                        <p class="text-sm font-semibold leading-relaxed text-on-surface-variant mt-4 pt-4 border-t border-red-100">
+                            Se recomienda revisión mecánica inmediata del vehículo {{ $diagnostico->vehiculo->placaveh }}.
+                        </p>
+                    </div>
+                @else
+                    <p class="text-sm font-semibold leading-relaxed text-emerald-700 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                        El vehículo cumple satisfactoriamente con todos los parámetros técnicos evaluados y no presenta ninguna de las causales de rechazo establecidas en esta inspección.
+                    </p>
+                @endif
             </div>
         </div>
     </div>
 
     <!-- Bottom Actions -->
     <div class="mt-12 space-y-4 px-2 sm:px-0" x-data="{ editingStatus: false }">
-        <!-- Main Decision Buttons (Priority on Mobile) -->
-        <div x-show="editingStatus || {{ $diagnostico->aprobado }} == 0" class="flex gap-3 w-full">
-            <form action="{{ route($prefix . '.diagnosticos.reject', $diagnostico->iddia) }}" method="POST" class="flex-1">
-                @csrf
-                <button type="submit" class="w-full bg-[#ba1a1a] text-white py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-red-200 flex items-center justify-center gap-2 hover:bg-red-700 transition-all">
-                    RECHAZAR <span class="material-symbols-outlined text-sm">cancel</span>
-                </button>
-            </form>
+        @if(count($missingFields) > 0)
+            <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-2xl shadow-sm mb-6">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-red-600">warning</span>
+                    <h3 class="text-sm font-black text-red-800 uppercase tracking-widest">Información Incompleta</h3>
+                </div>
+                <p class="text-xs text-red-600 mt-2 font-bold">No se puede aprobar o rechazar el diagnóstico porque faltan los siguientes campos obligatorios:</p>
+                <ul class="list-disc list-inside text-xs text-red-600 mt-2 font-bold opacity-80">
+                    @foreach($missingFields as $field)
+                        <li>{{ $field }}</li>
+                    @endforeach
+                </ul>
+                <div class="mt-4">
+                    <a href="{{ route($prefix . '.diagnosticos.edit', $diagnostico->iddia) }}" class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm">
+                        <span class="material-symbols-outlined text-sm">edit</span> Completar Información
+                    </a>
+                </div>
+            </div>
+        @else
+            <!-- Main Decision Buttons (Priority on Mobile) -->
+            <div x-show="editingStatus || {{ $diagnostico->aprobado === null ? 'true' : ($diagnostico->aprobado == 0 ? 'true' : 'false') }}" class="flex gap-3 w-full">
+                <form action="{{ route($prefix . '.diagnosticos.reject', $diagnostico->iddia) }}" method="POST" class="flex-1">
+                    @csrf
+                    <button type="submit" class="w-full bg-[#ba1a1a] text-white py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-red-200 flex items-center justify-center gap-2 hover:bg-red-700 transition-all">
+                        RECHAZAR <span class="material-symbols-outlined text-sm">cancel</span>
+                    </button>
+                </form>
 
-            <form action="{{ route($prefix . '.diagnosticos.approve', $diagnostico->iddia) }}" method="POST" class="flex-1">
-                @csrf
-                <button type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
-                    APROBAR <span class="material-symbols-outlined text-sm">verified</span>
-                </button>
-            </form>
-        </div>
+                <form action="{{ route($prefix . '.diagnosticos.approve', $diagnostico->iddia) }}" method="POST" class="flex-1">
+                    @csrf
+                    <button type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
+                        APROBAR <span class="material-symbols-outlined text-sm">verified</span>
+                    </button>
+                </form>
+            </div>
+        @endif
 
         <!-- Status & Secondary Actions Container -->
         <div class="pt-2 border-t border-gray-100/50">

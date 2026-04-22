@@ -27,7 +27,7 @@
         </div>
     </header>
 
-    <form method="POST" action="{{ route($prefix . '.diagnosticos.update', $diagnostico->iddia) }}" class="space-y-10">
+    <form id="diagnostico-form" method="POST" action="{{ route($prefix . '.diagnosticos.update', $diagnostico->iddia) }}" class="space-y-10">
         @csrf
         @method('PUT')
 
@@ -73,7 +73,7 @@
             @if(str_contains(strtoupper($tipo), 'VISUAL'))
                 <!-- Especial para Inspección Visual (Multifila) -->
                 @php
-                    $descInspeccion = $paramValues['desc_inspeccion'] ?? '';
+                    $descInspeccion = old('desc_inspeccion', $paramValues['desc_inspeccion'] ?? '');
                     $dataDecoded = @json_decode($descInspeccion, true);
                     $listaDefectos = is_array($dataDecoded) ? ($dataDecoded['list'] ?? $dataDecoded) : []; // Retrocompatibilidad
                     $generalObs = is_array($dataDecoded) ? ($dataDecoded['obs'] ?? '') : '';
@@ -125,7 +125,7 @@
                     </div>
 
                     <!-- Campo oculto para cumplir con el validador actual -->
-                    <input type="hidden" name="desc_inspeccion" id="desc_inspeccion_json" value="{{ $descInspeccion }}">
+                    <input type="hidden" name="desc_inspeccion" id="desc_inspeccion_json" value="{{ old('desc_inspeccion', $descInspeccion) }}">
                 </div>
             @else
                 <!-- Parámetros en Grid -->
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnAdd = document.getElementById('add-defecto-visual');
     const wrapper = document.getElementById('wrapper-defectos-visuales');
     const tpl = document.getElementById('tpl-defecto-row');
-    const form = document.querySelector('form');
+    const form = document.getElementById('diagnostico-form');
     const hiddenJson = document.getElementById('desc_inspeccion_json');
 
     if(btnAdd && wrapper && tpl) {
@@ -313,10 +313,6 @@ function fillDieselPass() {
     setVal('ciclo4', c4);
     setVal('resultado_diesel', promedio);
     
-    // Criterios de validación (debe ser SI para aprobar)
-    const radioSi = document.querySelector('input[name="Criterios_de_validacion"][value="si"]');
-    if(radioSi) radioSi.checked = true;
-
     console.log("Valores Diesel generados cumpliendo restricciones estrictas.");
 }
 </script>

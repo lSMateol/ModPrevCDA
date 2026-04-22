@@ -43,7 +43,7 @@ class DiagnosticoController extends Controller
             $query->where('aprobado', $request->aprobado);
         }
 
-        $diagnosticos = $query->orderBy('fecdia', 'desc')->paginate(15);
+        $diagnosticos = $query->orderBy('iddia', 'desc')->paginate(15);
 
         // Métricas del día
         $hoy = \Carbon\Carbon::today();
@@ -51,8 +51,9 @@ class DiagnosticoController extends Controller
         $rechazados  = Diag::whereDate('fecdia', $hoy)->where('aprobado', 0)->count();
         $pendientes  = Diag::whereDate('fecdia', $hoy)->whereNull('aprobado')->count();
         
-        $totalTerminados = $completados + $rechazados;
-        $efectividad = $totalTerminados > 0 ? round(($completados / $totalTerminados) * 100) : 0;
+        // Según tu requerimiento: calcular efectividad relacionando solo completados y pendientes
+        $totalValidos = $completados + $pendientes;
+        $efectividad = $totalValidos > 0 ? round(($completados / $totalValidos) * 100) : 0;
 
         $empresas = Empresa::all();
 
@@ -124,17 +125,32 @@ class DiagnosticoController extends Controller
     {
         $diagnostico = Diag::findOrFail($id);
         $parametros = Param::where('actpar', 1)->get();
+        
+        $requiredParamsList = [
+            'luz_izquierda', 'luz_derecha',
+            'temp_c', 'rpm', 'ciclo1', 'ciclo2', 'ciclo3', 'ciclo4', 'resultado_diesel',
+            'dilusion_gasolina', 'Criterios_de_validacion'
+        ];
+
         $rules = [];
+        $messages = [];
         foreach ($parametros as $param) {
-            $regla = 'nullable';
+            $esRequerido = in_array($param->nompar, $requiredParamsList);
+            $regla = $esRequerido ? 'required' : 'nullable';
+
             if ($param->control === 'number' && !is_null($param->rini) && !is_null($param->rfin)) {
                 $regla .= "|numeric|between:{$param->rini},{$param->rfin}";
             } elseif ($param->control === 'radio') {
                 $regla .= "|in:si,no,na,funciona,no_funciona";
             }
             $rules[$param->nompar] = $regla;
+            
+            if ($esRequerido) {
+                $label = str_replace('_', ' ', $param->nompar);
+                $messages[$param->nompar . '.required'] = "El campo {$label} es obligatorio.";
+            }
         }
-        $request->validate($rules);
+        $request->validate($rules, $messages);
 
         $persona = Auth::user()->persona;
         DB::transaction(function () use ($request, $diagnostico, $persona, $parametros) {
@@ -149,34 +165,58 @@ class DiagnosticoController extends Controller
             }
 
             // Calcular aprobación automática al guardar
-            $allCumple = true;
-            $diagnosticoFresh = $diagnostico->fresh('parametros.parametro.tippar');
+            $fallasTipoA = 0;
+            $fallasTipoB = 0;
+            $diagnosticoFresh = $diagnostico->fresh('parametros.parametro.tippar', 'vehiculo');
             
             foreach($diagnosticoFresh->parametros as $p) {
                 $pMeta = $p->parametro;
                 $v = $p->valor;
                 
                 // Lógica especial para la sección de DEFECTOS
-                $esSeccionDefectos = str_contains(strtoupper($pMeta->tippar->nomtip), 'DEFECTOS');
+                $esSeccionDefectos = str_contains(strtoupper($pMeta->tippar->nomtip ?? ''), 'DEFECTOS');
 
                 if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
-                    if ($v < $pMeta->rini || $v > $pMeta->rfin) $allCumple = false;
+                    if ($v < $pMeta->rini || $v > $pMeta->rfin) $fallasTipoA++;
                 } elseif ($pMeta->control == 'radio') {
                     if ($esSeccionDefectos) {
-                        // En defectos (ej: Dilución): SI = Existe el defecto (Malo), NO = Bueno
-                        // Excepción: "Criterios de validación" debe ser SI para cumplir
                         if (str_contains(strtolower($pMeta->nompar), 'criterios')) {
-                            if ($v == 'no') $allCumple = false;
+                            if ($v == 'no') $fallasTipoA++;
                         } else {
-                            if ($v == 'si') $allCumple = false;
+                            if ($v == 'si') $fallasTipoA++;
                         }
                     } else {
-                        // En otros (ej: Luces): SI = Bueno (Funciona), NO = Malo
-                        if (in_array($v, ['no', 'no_funciona'])) $allCumple = false;
+                        if (in_array($v, ['no', 'no_funciona'])) $fallasTipoA++;
+                    }
+                } elseif ($pMeta->nompar == 'desc_inspeccion') {
+                    $data = @json_decode($v, true);
+                    $lista = is_array($data) ? ($data['list'] ?? $data) : [];
+                    foreach ($lista as $def) {
+                        if (($def['tipo'] ?? '') == 'Tipo A') $fallasTipoA++;
+                        elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
                     }
                 } elseif (in_array($pMeta->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
-                    if (!empty($v)) $allCumple = false;
+                    if (!empty($v)) $fallasTipoA++;
                 }
+            }
+
+            $allCumple = true;
+            $vehiculo = $diagnosticoFresh->vehiculo;
+            $tipoServicio = $vehiculo->tipo_servicio;
+            $tipoVehiculoStr = strtolower(optional(\App\Models\Valor::find($vehiculo->tipoveh))->nomval ?? '');
+            if (empty($tipoVehiculoStr) && is_string($vehiculo->tipoveh)) {
+                $tipoVehiculoStr = strtolower($vehiculo->tipoveh);
+            }
+
+            if ($fallasTipoA > 0) {
+                $allCumple = false;
+            } elseif (str_contains($tipoVehiculoStr, 'motocicleta') || str_contains($tipoVehiculoStr, 'motocileta')) {
+                if ($fallasTipoB >= 5) $allCumple = false;
+            } elseif (str_contains($tipoVehiculoStr, 'motocarro')) {
+                if ($fallasTipoB >= 7) $allCumple = false;
+            } else {
+                if ($tipoServicio == 1 && $fallasTipoB >= 10) $allCumple = false;
+                elseif ($tipoServicio == 2 && $fallasTipoB >= 5) $allCumple = false;
             }
 
             $diagnostico->update(['aprobado' => $allCumple ? 1 : 0]);
