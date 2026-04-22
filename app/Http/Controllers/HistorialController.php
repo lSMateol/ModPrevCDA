@@ -90,21 +90,28 @@ class HistorialController extends Controller
             $query->whereDate('fecdia', '<=', $request->fecha_fin);
         }
 
-        // Filtro por estado
+        // REGLA ESTRICTA PARA EL REPORTE: SOLO Aprobados y No Aprobados.
+        // Se excluyen completamente Pendientes y Reasignados.
+        $query->where(function($q) {
+            $q->where('aprobado', 1) // Aprobados
+              ->orWhere(function($sub) { // No Aprobados (Rechazados definitivos)
+                  $sub->where('aprobado', 0)->whereDoesntHave('rechazo', function($r) {
+                      $r->where('estadorec', 'Reasignado');
+                  });
+              });
+        });
+
+        // Filtro adicional por estado si se especificó en la vista
         if ($request->filled('estado')) {
             $estado = $request->estado;
             if ($estado === 'aprobado') {
                 $query->where('aprobado', 1);
             } elseif ($estado === 'no_aprobado') {
-                $query->where('aprobado', 0)->whereDoesntHave('rechazo', function($q){
-                    $q->where('estadorec', 'Reasignado');
-                });
-            } elseif ($estado === 'reasignado') {
-                $query->where('aprobado', 0)->whereHas('rechazo', function($q) {
-                    $q->where('estadorec', 'Reasignado');
-                });
-            } elseif ($estado === 'pendiente') {
-                $query->whereNull('aprobado');
+                $query->where('aprobado', 0);
+            } elseif ($estado === 'reasignado' || $estado === 'pendiente') {
+                // Si el usuario filtró por algo que no se permite en el reporte,
+                // forzamos a que no devuelva nada
+                $query->whereRaw('1 = 0');
             }
         }
 

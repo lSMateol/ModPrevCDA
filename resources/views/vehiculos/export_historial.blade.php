@@ -168,16 +168,16 @@
                                 </ul>
                             @endif
                             
+                            @if($diag->aprobado == 0 && $diag->rechazo && $diag->rechazo->motivo)
+                                <div style="margin-top: 6px; margin-bottom: 6px; font-size: 9.5px; background-color: #fef2f2; border-left: 2px solid #ef4444; padding: 5px 8px; color: #7f1d1d; border-radius: 3px;">
+                                    <strong>MOTIVO DE RECHAZO:</strong> {{ $diag->rechazo->motivo }}
+                                </div>
+                            @endif
+                            
                             @if($diag->aprobado == 1)
                                 <span class="badge badge-success">APROBADO</span>
                             @elseif($diag->aprobado == 0 && $diag->aprobado !== null)
-                                @if($diag->rechazo && $diag->rechazo->estadorec === 'Reasignado')
-                                    <span class="badge badge-warning">REASIGNADO</span>
-                                @else
-                                    <span class="badge badge-danger">NO APROBADO</span>
-                                @endif
-                            @else
-                                <span class="badge badge-muted">PENDIENTE</span>
+                                <span class="badge badge-danger">NO APROBADO</span>
                             @endif
                             
                             @if($diag->vehiculo && !$empresa)
