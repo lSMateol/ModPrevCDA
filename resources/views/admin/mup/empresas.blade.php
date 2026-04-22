@@ -241,7 +241,7 @@
                                                     <p class="text-xs font-bold text-gray-700 mt-1 uppercase" x-text="veh.marveh + ' ' + (veh.modveh || '')"></p>
                                                 </div>
                                                 <div class="ml-auto">
-                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Ver Detalle Vehículo">
+                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Gestionar Vehículo">
                                                         <iconify-icon icon="lucide:arrow-up-right" class="text-lg"></iconify-icon>
                                                     </a>
                                                 </div>
