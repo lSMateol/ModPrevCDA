@@ -72,8 +72,8 @@
                                 <th>Conductor</th>
                                 <th>Identificación</th>
                                 <th>Licencia / Vencimiento</th>
-                                <th class="text-center">Estado</th>
-                                <th class="text-center" style="text-align: center;">Acciones</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,14 +101,14 @@
                                             <span class="text-[10px] text-gray-400" x-text="formatDate(con.fvencon)"></span>
                                         </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         <span class="mup-state-badge" :class="con.actper ? 'mup-state-active' : 'mup-state-inactive'">
                                             <div class="w-2 h-2 rounded-full bg-current"></div>
                                             <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
                                         </span>
                                     </td>
-                                    <td class="text-center">
-                                        <div class="flex justify-center gap-1">
+                                    <td>
+                                        <div class="flex justify-start gap-1">
                                             <button @click="editConductor(con)" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Editar Conductor">
                                                 <iconify-icon icon="lucide:pencil"></iconify-icon>
                                             </button>

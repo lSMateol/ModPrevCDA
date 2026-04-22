@@ -174,8 +174,8 @@
                             <th>Documento</th>
                             <th>Correo</th>
                             <th>Rol</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-center">Acciones</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,13 +203,13 @@
                                     {{ $user->persona->perfil->nompef ?? 'Sin Rol' }}
                                 </span>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 <span class="mup-state-badge {{ ($user->persona->actper ?? 1) ? 'mup-state-active' : 'mup-state-inactive' }}">
                                     <div class="w-2 h-2 rounded-full bg-current"></div>
                                     {{ ($user->persona->actper ?? 1) ? 'Activo' : 'Inactivo' }}
                                 </span>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 @php
                                     $viewPayload = [
                                         'id' => $user->id,
@@ -242,7 +242,7 @@
                                         'name' => $user->name,
                                     ];
                                 @endphp
-                                <div class="flex justify-center gap-2">
+                                <div class="flex justify-start gap-2">
                                     <button @click='openView(@json($viewPayload))' class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
                                         <iconify-icon icon="lucide:eye"></iconify-icon>
                                     </button>

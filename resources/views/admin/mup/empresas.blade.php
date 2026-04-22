@@ -61,8 +61,8 @@
                             <th>Empresa</th>
                             <th>NIT Fiscal</th>
                             <th>Email Corporativo</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-center">Acciones</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -88,14 +88,14 @@
                                         <span x-text="e.telem"></span>
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <span class="mup-state-badge mup-state-active">
                                         <div class="w-2 h-2 rounded-full bg-current"></div>
                                         Activo
                                     </span>
                                 </td>
-                                <td class="text-center">
-                                    <div class="flex justify-center gap-2">
+                                <td>
+                                    <div class="flex justify-start gap-2">
                                         <button @click="openView(e)" class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition" title="Ver detalle">
                                             <iconify-icon icon="lucide:eye"></iconify-icon>
                                         </button>
