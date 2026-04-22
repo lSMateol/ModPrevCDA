@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->string('nomper', 50); //nombre de la persona
             $table->string('apeper', 50); //apellido de la persona
             $table->string('dirper', 150)->nullable(); //direccion de la persona
+            $table->string('ciuper', 50)->nullable(); //ciudad / texto de localización (MUP propietarios)
             $table->string('telper', 10); //telefono de la persona
             $table->unsignedBigInteger('codubi'); //codigo de la ubicacion de la persona
             $table->unsignedBigInteger('idpef')->nullable(); //codigo del perfil de la persona

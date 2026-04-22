@@ -987,9 +987,18 @@ class MupController extends Controller
             return 'No se pudo ' . $accion . ': uno de los campos ingresados excede la longitud máxima permitida. Revisa los datos e intenta nuevamente.';
         }
 
+        // Columna ausente en BD (p. ej. ciuper no migrada)
+        if (str_contains($msg, 'Unknown column') && str_contains($msg, 'ciuper')) {
+            return 'No se pudo ' . $accion . ': la base de datos no tiene la columna de ciudad (ciuper). Ejecute en el servidor: php artisan migrate';
+        }
+
+        if (str_contains($msg, 'Unknown column')) {
+            return 'No se pudo ' . $accion . ': la estructura de la base de datos no coincide con la aplicación. Ejecute php artisan migrate y vuelva a intentar.';
+        }
+
         // Restricción de clave foránea
-        if (str_contains($msg, 'foreign key constraint')) {
-            return 'No se pudo ' . $accion . ': este registro tiene datos vinculados en otras secciones del sistema.';
+        if (str_contains($msg, 'foreign key constraint') || str_contains($msg, 'Cannot add or update a child row')) {
+            return 'No se pudo ' . $accion . ': verifique que el tipo de documento exista y que el código de ubicación (ciudad) sea válido en el sistema.';
         }
 
         // Error de conexión
