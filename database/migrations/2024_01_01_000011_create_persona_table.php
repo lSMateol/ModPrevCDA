@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('idemp')->nullable(); //codigo de la empresa a la que pertenece la persona
             $table->string('nliccon', 20)->nullable(); //numero de licencia de conducir de la persona
             $table->date('fvencon')->nullable(); //fecha de vencimiento de la licencia de conducir de la persona
-            $table->unsignedBigInteger('catcon')->nullable(); //categoria de la licencia de conducir de la persona
+            $table->string('catcon', 5)->nullable(); //categoria de la licencia (A1, B2, C3, etc.)
             $table->tinyInteger('actper'); //estado de la persona (1: activo, 0: inactivo)
 
             $table->foreign('idpef')->references('idpef')->on('perfil');

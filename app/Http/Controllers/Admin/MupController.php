@@ -9,9 +9,11 @@ use App\Models\Valor;
 use App\Models\Pagina;
 use App\Models\User;
 use App\Models\Empresa;
+use App\Support\LicenciaConduccion;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -19,15 +21,58 @@ use Illuminate\Support\Facades\Hash;
 class MupController extends Controller
 {
     /**
+     * Validación: licencia (catcon, nliccon, fvencon) todo null o los tres informados.
+     */
+    protected function rulesLicenciaTriada(Request $request): array
+    {
+        $licenciaPresente = $request->filled('catcon')
+            || $request->filled('nliccon')
+            || $request->filled('fvencon');
+
+        return [
+            'catcon' => [
+                'nullable',
+                'string',
+                'max:5',
+                Rule::requiredIf($licenciaPresente),
+                Rule::in(LicenciaConduccion::CATEGORIAS),
+            ],
+            'nliccon' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::requiredIf($licenciaPresente),
+            ],
+            'fvencon' => [
+                'nullable',
+                'date',
+                Rule::requiredIf($licenciaPresente),
+            ],
+        ];
+    }
+
+    protected function normalizedLicencia(Request $request): array
+    {
+        if (!$request->filled('catcon') && !$request->filled('nliccon') && !$request->filled('fvencon')) {
+            return ['catcon' => null, 'nliccon' => null, 'fvencon' => null];
+        }
+
+        return [
+            'catcon' => $request->catcon,
+            'nliccon' => $request->nliccon,
+            'fvencon' => $request->fvencon,
+        ];
+    }
+
+    /**
      * Display the Conductores view.
      */
     public function conductores()
     {
-        // 1. Asegurar que el perfil 'Conductor' existe (ID 6 o similar si no está)
-        // En este sistema, según PerfilSeeder, llegan hasta el 5. Usaremos el 6 para Conductor si no existe.
+        // PerfilSeeder: Conductor = idpef 7
         $perfilConductor = Perfil::firstOrCreate(
             ['nompef' => 'Conductor'],
-            ['idpef' => 6, 'pagpri' => null]
+            ['idpef' => 7, 'pagpri' => null]
         );
 
         // 2. Obtener listado de conductores
@@ -35,11 +80,11 @@ class MupController extends Controller
             ->orderBy('idper', 'desc')
             ->get();
 
-        // 3. Obtener datos para los combos (Tipos de documento y Categorías)
+        // 3. Tipos de documento y categorías fijas de licencia (texto)
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
-        $categorias = Valor::where('iddom', 5)->where('actval', 1)->get();
+        $licenciaCategorias = LicenciaConduccion::CATEGORIAS;
 
-        return view('admin.mup.conductores', compact('conductores', 'tiposDoc', 'categorias'));
+        return view('admin.mup.conductores', compact('conductores', 'tiposDoc', 'licenciaCategorias'));
     }
 
     /**
@@ -47,19 +92,17 @@ class MupController extends Controller
      */
     public function storeConductor(Request $request)
     {
-        $request->validate([
+        $request->validate(array_merge([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper',
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
-            'catcon' => 'required|exists:valor,idval',
-            'nliccon' => 'required|string|max:20',
-            'fvencon' => 'required|date',
             'actper' => 'required|in:0,1',
-        ], [
+        ], $this->rulesLicenciaTriada($request)), [
             'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
             'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
         ]);
 
         try {
@@ -70,22 +113,21 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 6]);
+            $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 7, 'pagpri' => null]);
 
-            Persona::create([
+            $lic = $this->normalizedLicencia($request);
+
+            Persona::create(array_merge([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
                 'ndocper' => $request->ndocper,
                 'emaper' => $request->emaper,
                 'telper' => $request->telper ?? '',
-                'catcon' => $request->catcon,
-                'nliccon' => $request->nliccon,
-                'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
                 'idpef' => $perfilConductor->idpef,
                 'codubi' => 1, // Default
-            ]);
+            ], $lic));
 
             DB::commit();
             return redirect()->back()->with('success', 'Conductor registrado exitosamente.');
@@ -103,16 +145,15 @@ class MupController extends Controller
     {
         $persona = Persona::findOrFail($id);
 
-        $request->validate([
+        $request->validate(array_merge([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
-            'catcon' => 'required|exists:valor,idval',
-            'nliccon' => 'required|string|max:20',
-            'fvencon' => 'required|date',
             'actper' => 'required|in:0,1',
+        ], $this->rulesLicenciaTriada($request)), [
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
         ]);
 
         try {
@@ -122,18 +163,17 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $persona->update([
+            $lic = $this->normalizedLicencia($request);
+
+            $persona->update(array_merge([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
                 'ndocper' => $request->ndocper,
                 'emaper' => $request->emaper,
                 'telper' => $request->telper ?? '',
-                'catcon' => $request->catcon,
-                'nliccon' => $request->nliccon,
-                'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
-            ]);
+            ], $lic));
 
             DB::commit();
             return redirect()->back()->with('success', 'Conductor actualizado correctamente.');
@@ -420,9 +460,10 @@ class MupController extends Controller
     public function propietarios()
     {
         // 1. Asegurar que el perfil 'Propietario' existe respetando IDs reales de BD
+        // PerfilSeeder: Propietario = idpef 6
         $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Propietario'],
-            ['pagpri' => null] 
+            ['idpef' => 6, 'pagpri' => null]
         );
 
         // 2. Obtener listado de propietarios
@@ -433,10 +474,9 @@ class MupController extends Controller
         // 3. Obtener datos para combos respetando estructura real
         // Tipos de documento activos para nuevos registros
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
-        // Categorías: incluir todas para poder renderizar correctamente históricos existentes
-        $categorias = Valor::where('iddom', 5)->orderBy('nomval')->get();
+        $licenciaCategorias = LicenciaConduccion::CATEGORIAS;
 
-        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'categorias'));
+        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'licenciaCategorias'));
     }
 
     /**
@@ -444,21 +484,19 @@ class MupController extends Controller
      */
     public function storePropietario(Request $request)
     {
-        $request->validate([
+        $request->validate(array_merge([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper',
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
-            'catcon' => 'required|exists:valor,idval',
-            'nliccon' => 'required|string|max:20',
-            'fvencon' => 'required|date',
             'actper' => 'required|in:0,1',
             'dirper' => 'nullable|string|max:100',
             'ciuper' => 'nullable|string|max:50',
-        ], [
+        ], $this->rulesLicenciaTriada($request)), [
             'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
             'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
         ]);
 
         try {
@@ -468,24 +506,23 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['pagpri' => null]);
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
 
-            Persona::create([
+            $lic = $this->normalizedLicencia($request);
+
+            Persona::create(array_merge([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
                 'ndocper' => $request->ndocper,
                 'emaper' => $request->emaper,
                 'telper' => $request->telper ?? '',
-                'catcon' => $request->catcon,
-                'nliccon' => $request->nliccon,
-                'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
                 'dirper' => $request->dirper,
                 'ciuper' => $request->ciuper,
                 'idpef' => $perfilPropietario->idpef,
                 'codubi' => 1,
-            ]);
+            ], $lic));
 
             DB::commit();
             return redirect()->back()->with('success', 'Propietario registrado exitosamente.');
@@ -503,18 +540,17 @@ class MupController extends Controller
     {
         $persona = Persona::findOrFail($id);
 
-        $request->validate([
+        $request->validate(array_merge([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:10',
-            'catcon' => 'required|exists:valor,idval',
-            'nliccon' => 'required|string|max:20',
-            'fvencon' => 'required|date',
             'actper' => 'required|in:0,1',
             'dirper' => 'nullable|string|max:100',
             'ciuper' => 'nullable|string|max:50',
+        ], $this->rulesLicenciaTriada($request)), [
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
         ]);
 
         try {
@@ -524,20 +560,19 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            $persona->update([
+            $lic = $this->normalizedLicencia($request);
+
+            $persona->update(array_merge([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
                 'tdocper' => $request->tdocper,
                 'ndocper' => $request->ndocper,
                 'emaper' => $request->emaper,
                 'telper' => $request->telper ?? '',
-                'catcon' => $request->catcon,
-                'nliccon' => $request->nliccon,
-                'fvencon' => $request->fvencon,
                 'actper' => $request->actper,
                 'dirper' => $request->dirper,
                 'ciuper' => $request->ciuper,
-            ]);
+            ], $lic));
 
             DB::commit();
             return redirect()->back()->with('success', 'Propietario actualizado correctamente.');

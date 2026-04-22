@@ -215,25 +215,27 @@
                         <iconify-icon icon="lucide:award" class="text-sm"></iconify-icon>
                         Datos de Licencia y Estado
                     </div>
+                    <p class="text-[11px] text-gray-500 mb-3">La licencia es opcional. Si indica categoría, número o vencimiento, debe completar los tres campos.</p>
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
-                                <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
-                                <select name="catcon" class="mup-input" required>
-                                    @foreach($categorias as $cat)
-                                        <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                                <label class="mup-label">Cat. Licencia</label>
+                                <select name="catcon" class="mup-input">
+                                    <option value="">— Sin licencia —</option>
+                                    @foreach($licenciaCategorias as $cat)
+                                        <option value="{{ $cat }}">{{ $cat }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="mup-form-group">
-                                <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
-                                <input type="text" name="nliccon" class="mup-input" placeholder="NRO-123" required>
+                                <label class="mup-label">No. Licencia</label>
+                                <input type="text" name="nliccon" class="mup-input" placeholder="NRO-123">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
-                                <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
-                                <input type="date" name="fvencon" class="mup-input" required>
+                                <label class="mup-label">Vencimiento</label>
+                                <input type="date" name="fvencon" class="mup-input">
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Estado Inicial</label>
@@ -336,24 +338,26 @@
                         Datos de Licencia y Estado
                     </div>
                     <div class="space-y-4">
+                        <p class="text-[11px] text-gray-500">Si indica categoría, número o vencimiento, complete los tres campos o deje todos vacíos.</p>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
-                                <label class="mup-label">Cat. Licencia <span class="mup-required">*</span></label>
-                                <select name="catcon" x-model="currentProp.catcon" class="mup-input" required>
-                                    @foreach($categorias as $cat)
-                                        <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                                <label class="mup-label">Cat. Licencia</label>
+                                <select name="catcon" x-model="currentProp.catcon" class="mup-input">
+                                    <option value="">— Sin licencia —</option>
+                                    @foreach($licenciaCategorias as $cat)
+                                        <option value="{{ $cat }}">{{ $cat }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="mup-form-group">
-                                <label class="mup-label">No. Licencia <span class="mup-required">*</span></label>
-                                <input type="text" name="nliccon" x-model="currentProp.nliccon" class="mup-input" required>
+                                <label class="mup-label">No. Licencia</label>
+                                <input type="text" name="nliccon" x-model="currentProp.nliccon" class="mup-input">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="mup-form-group">
-                                <label class="mup-label">Vencimiento <span class="mup-required">*</span></label>
-                                <input type="date" name="fvencon" x-model="currentProp.fvencon" class="mup-input" required>
+                                <label class="mup-label">Vencimiento</label>
+                                <input type="date" name="fvencon" x-model="currentProp.fvencon" class="mup-input">
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Estado</label>
@@ -424,7 +428,7 @@
                     </div>
                     <div class="flex-1">
                         <div class="text-[10px] text-blue-600 font-black uppercase tracking-widest">Licencia de Conducción</div>
-                        <div class="text-sm font-bold text-[#0d3b5a]" x-text="'Cat. ' + getCatName(currentProp.catcon) + ' - #' + currentProp.nliccon"></div>
+                        <div class="text-sm font-bold text-[#0d3b5a]" x-text="formatLicenseLine(currentProp)"></div>
                     </div>
                     <div class="text-right">
                         <div class="text-[9px] text-gray-400 font-bold">Vencimiento</div>
@@ -474,7 +478,6 @@ function propietarioManager() {
         currentProp: {},
         propietarios: @json($propietarios),
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
-        categorias: @json($categorias->pluck('nomval', 'idval')),
 
         filteredPropietarios() {
             if (!this.search) return this.propietarios;
@@ -499,7 +502,10 @@ function propietarioManager() {
         editPropietario(p) {
             this.currentProp = { 
                 ...p, 
-                nombre_completo: p.nomper + ' ' + (p.apeper || '') 
+                nombre_completo: p.nomper + ' ' + (p.apeper || ''),
+                catcon: p.catcon || '',
+                nliccon: p.nliccon || '',
+                fvencon: p.fvencon || '',
             };
             this.editDrawer = true;
         },
@@ -513,8 +519,12 @@ function propietarioManager() {
             return this.tiposDoc[id] || 'N/A';
         },
 
-        getCatName(id) {
-            return this.categorias[id] || 'N/A';
+        formatLicenseLine(p) {
+            if (!p) return '';
+            if (p.catcon && p.nliccon && p.fvencon) {
+                return 'Cat. ' + p.catcon + ' — #' + p.nliccon;
+            }
+            return 'Sin licencia registrada';
         },
 
         numberFormat(num) {

@@ -90,6 +90,7 @@
                                     </td>
                                     <td>
                                         <div class="flex flex-col">
+                                            <span class="text-[10px] font-black text-gray-500 uppercase" x-text="con.catcon ? ('Cat. ' + con.catcon) : '—'"></span>
                                             <span class="text-[11px] font-bold text-[#0d3b5a]" x-text="con.nliccon || 'N/A'"></span>
                                             <span class="text-[10px] text-gray-400" x-text="formatDate(con.fvencon)"></span>
                                         </div>
@@ -176,24 +177,25 @@
                                 <span>Capacidad Operativa</span>
                                 <div class="flex-1 h-px bg-gray-100"></div>
                             </div>
+                            <p class="text-[11px] text-gray-500 mb-4">Licencia opcional: si completa uno de categoría, número o vencimiento, debe indicar los tres.</p>
 
                             <div class="mup-form-grid">
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Categoría Licencia <span class="mup-required">*</span></label>
-                                    <select name="catcon" class="mup-input" required>
-                                        <option value="">Seleccione...</option>
-                                        @foreach($categorias as $cat)
-                                            <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                                    <label class="mup-label">Categoría Licencia</label>
+                                    <select name="catcon" class="mup-input">
+                                        <option value="">— Sin licencia —</option>
+                                        @foreach($licenciaCategorias as $cat)
+                                            <option value="{{ $cat }}">{{ $cat }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Nro de Licencia <span class="mup-required">*</span></label>
-                                    <input type="text" name="nliccon" class="mup-input" placeholder="Nro de pase" required>
+                                    <label class="mup-label">Nro de Licencia</label>
+                                    <input type="text" name="nliccon" class="mup-input" placeholder="Nro de pase">
                                 </div>
                                 <div class="mup-form-group">
-                                    <label class="mup-label">Vencimiento Licencia <span class="mup-required">*</span></label>
-                                    <input type="date" name="fvencon" class="mup-input" required>
+                                    <label class="mup-label">Vencimiento Licencia</label>
+                                    <input type="date" name="fvencon" class="mup-input">
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Estado Inicial</label>
@@ -244,7 +246,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-8">
+            <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-8">
                 @csrf
                 @method('PUT')
                 
@@ -263,17 +265,18 @@
                     </div>
                     <div>
                         <label class="mup-label">Licencia</label>
-                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="mup-input" required>
+                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="mup-input">
                     </div>
                     <div>
                         <label class="mup-label">Vencimiento</label>
-                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="mup-input" required>
+                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="mup-input">
                     </div>
                     <div>
                         <label class="mup-label">Categoría</label>
-                        <select name="catcon" x-model="currentCon.catcon" class="mup-input" required>
-                            @foreach($categorias as $cat)
-                                <option value="{{ $cat->idval }}">{{ $cat->nomval }}</option>
+                        <select name="catcon" x-model="currentCon.catcon" class="mup-input">
+                            <option value="">— Sin licencia —</option>
+                            @foreach($licenciaCategorias as $cat)
+                                <option value="{{ $cat }}">{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -310,7 +313,7 @@
             
             <div class="flex gap-3">
                 <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
-                <form :action="'{{ url('entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
+                <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>
@@ -342,14 +345,18 @@ function conductorManager() {
                 c.nomper.toLowerCase().includes(q) || 
                 (c.apeper && c.apeper.toLowerCase().includes(q)) ||
                 c.ndocper.toString().includes(q) ||
-                (c.nliccon && c.nliccon.toLowerCase().includes(q))
+                (c.nliccon && c.nliccon.toLowerCase().includes(q)) ||
+                (c.catcon && String(c.catcon).toLowerCase().includes(q))
             );
         },
 
         editConductor(con) {
             this.currentCon = { 
                 ...con, 
-                nombre_completo: con.nomper + ' ' + (con.apeper || '') 
+                nombre_completo: con.nomper + ' ' + (con.apeper || ''),
+                catcon: con.catcon || '',
+                nliccon: con.nliccon || '',
+                fvencon: con.fvencon || '',
             };
             this.editing = true;
         },
