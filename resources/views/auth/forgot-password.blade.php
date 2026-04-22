@@ -1,140 +1,209 @@
 <!DOCTYPE html>
-<html class="light" lang="es">
+<html lang="es" x-data="{ loading: false, loaded: false, isFocus: false }" x-init="setTimeout(() => loaded = true, 100)">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Recuperación de Contraseña - RASTRILLANTAS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
+    <title>Recuperar Acceso - CDA Rastrillantas</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts & Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
-                    "colors": {
-                        "secondary-fixed-dim": "#a7c9f8", "on-primary-fixed": "#271900", "on-primary-container": "#c08a00", "outline": "#73777f", "secondary": "#3f608a", "on-secondary": "#ffffff", "on-surface-variant": "#43474e", "on-tertiary-fixed": "#001c3b", "background": "#f7fafc", "surface-container-highest": "#e0e3e5", "on-primary-fixed-variant": "#5e4200", "surface-bright": "#f7fafc", "surface-tint": "#7c5800", "primary-container": "#3c2900", "on-primary": "#ffffff", "inverse-on-surface": "#eef1f3", "surface-container-low": "#f1f4f6", "surface-container-high": "#e5e9eb", "secondary-container": "#adcefe", "surface-container-lowest": "#ffffff", "surface": "#f7fafc", "primary-fixed": "#ffdea8", "primary-fixed-dim": "#ffba20", "tertiary-container": "#002c59", "tertiary-fixed": "#d5e3ff", "tertiary": "#001834", "on-secondary-fixed": "#001c38", "inverse-primary": "#ffba20", "surface-variant": "#e0e3e5", "tertiary-fixed-dim": "#a7c8ff", "on-error-container": "#93000a", "on-surface": "#181c1e", "secondary-fixed": "#d3e4ff", "outline-variant": "#c3c6cf", "on-tertiary-container": "#6b95d4", "on-secondary-container": "#365881", "error-container": "#ffdad6", "on-tertiary": "#ffffff", "error": "#ba1a1a", "surface-container": "#ebeef0", "on-error": "#ffffff", "on-secondary-fixed-variant": "#254870", "inverse-surface": "#2d3133", "primary": "#221500", "on-background": "#181c1e", "surface-dim": "#d7dadc", "on-tertiary-fixed-variant": "#124782"
+                    colors: {
+                        primary: '#001834',
+                        accent: '#3b82f6',
+                        success: '#10b981',
                     },
-                    "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
-                    "fontFamily": { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] }
-                },
-            },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        headline: ['Manrope', 'sans-serif'],
+                    },
+                    animation: {
+                        'breathing': 'breathing 8s ease-in-out infinite',
+                        'shimmer': 'shimmer 2s infinite linear',
+                    },
+                    keyframes: {
+                        breathing: {
+                            '0%, 100%': { opacity: 0.15, transform: 'scale(1)' },
+                            '50%': { opacity: 0.35, transform: 'scale(1.1)' }
+                        },
+                        shimmer: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        }
+                    }
+                }
+            }
         }
     </script>
+
     <style>
-        .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24 }
-        .bg-workshop { background-image: linear-gradient(rgba(0, 24, 52, 0.85), rgba(0, 24, 52, 0.85)), url('{{ asset(config("assets.auth.backgrounds.recovery")) }}'); background-size: cover; background-position: center }
-        .tonal-shift { background-color: #f1f4f6 }
-        body { min-height: max(884px, 100dvh); }
+        [x-cloak] { display: none !important; }
+        
+        body { background-color: #001834; }
+
+        .grain-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        /* Scanner Effect */
+        .btn-scanner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-25deg);
+        }
+        .btn-scanner:hover::after {
+            animation: shimmer 1.5s infinite;
+        }
+
+        .card-tilt {
+            transition: transform 0.2s ease-out;
+        }
     </style>
 </head>
-<body class="font-body bg-background text-on-surface flex flex-col min-h-screen">
-    <!-- TopAppBar -->
-    <header class="fixed top-0 w-full z-50 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-xl flex items-center justify-between px-6 h-16">
-        <div class="flex items-center">
-            <span class="material-symbols-outlined text-yellow-500 mr-4">arrow_back</span>
-            <span class="font-manrope font-bold tracking-tight text-xl font-black text-slate-900 dark:text-white tracking-widest uppercase">RASTRILLANTAS</span>
-        </div>
-        <div class="hidden md:block">
-            <p class="font-headline text-xs font-extrabold tracking-[0.2em] text-on-surface-variant uppercase">Modulo Preventivo</p>
-        </div>
-    </header>
+<body class="font-sans text-slate-200 antialiased min-h-screen flex items-center justify-center p-6 overflow-hidden">
 
-    <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center pt-16 bg-workshop relative overflow-hidden">
-        <!-- Decorative Glass Elements -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary-fixed-dim/10 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-tertiary-container/30 rounded-full blur-3xl"></div>
-        <div class="relative w-full max-w-lg px-6 py-12">
-            <!-- Central Identity -->
-            <div class="flex flex-col items-center mb-10">
-                <img alt="Logo CDA Rastrillantas" class="h-24 w-auto mb-6 object-contain" decoding="async" src="{{ asset(config('assets.logos.main')) }}"/>
-                <h1 class="font-headline text-2xl font-extrabold text-white text-center tracking-tight">CDA Rastrillantas LTDA</h1>
-                <p class="font-label text-[10px] uppercase tracking-[0.3em] text-primary-fixed-dim mt-2 font-bold">Modulo Preventivo</p>
-            </div>
+    <!-- Capa de Grano Cinemático -->
+    <div class="grain-overlay"></div>
 
-            <!-- Recovery Card -->
-            <div class="bg-surface-container-lowest/95 backdrop-blur-xl rounded-xl shadow-2xl p-8 md:p-10 border border-white/10">
-                <div class="mb-8">
-                    <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Recuperar Contraseña</h2>
-                    <p class="text-on-surface-variant text-sm">Ingresa los datos solicitados para validar tu identidad y restablecer tu acceso.</p>
+    <!-- Background Image with Focus Tunneling -->
+    <div class="fixed inset-0 z-0 transition-all duration-1000"
+         :class="isFocus ? 'scale-105 blur-md opacity-40' : 'scale-100 blur-0 opacity-60'">
+        <img src="{{ asset(config('assets.auth.backgrounds.recovery')) }}" 
+             class="w-full h-full object-cover" alt="Fondo Rastrillantas">
+        <div class="absolute inset-0 bg-gradient-to-tr from-[#001834] via-[#001834]/80 to-transparent"></div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="relative z-10 w-full max-w-lg"
+          x-data="{ tiltX: 0, tiltY: 0 }"
+          @mousemove="tiltX = ($event.clientX / window.innerWidth - 0.5) * 15; tiltY = ($event.clientY / window.innerHeight - 0.5) * 15"
+          :style="`transform: perspective(1000px) rotateX(${-tiltY}deg) rotateY(${tiltX}deg)`">
+        
+        <div class="glass-card rounded-[3rem] p-8 md:p-14 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative overflow-hidden card-tilt transition-all duration-700"
+             :class="loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+            
+            <!-- Logo con Breathing Aura -->
+            <div class="flex flex-col items-center text-center mb-12">
+                <div class="relative group mb-8">
+                    <!-- Aura Animada -->
+                    <div class="absolute -inset-4 bg-blue-500 rounded-full blur-2xl opacity-20 animate-breathing"></div>
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    
+                    <div class="relative bg-white p-5 rounded-[2rem] shadow-2xl border border-white/20 transform group-hover:scale-105 transition-transform duration-500">
+                        <img src="{{ asset(config('assets.logos.main')) }}" alt="Logo Rastrillantas" class="h-16 w-auto object-contain">
+                    </div>
                 </div>
                 
-                @if (session('status'))
-                    <div class="mb-4 font-body text-sm text-green-600 dark:text-green-400">
-                        {{ session('status') }}
-                    </div>
-                @endif
-
-                <form method="POST" action="{{ route('password.email') }}" class="space-y-8">
-                    @csrf
-                    <!-- Section 1: Email -->
-                    <div class="space-y-2">
-                        <label class="font-label text-[11px] font-bold uppercase tracking-wider text-on-surface-variant ml-1">Correo Electrónico</label>
-                        <div class="relative group">
-                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">mail</span>
-                            <input name="email" value="{{ old('email') }}" type="email" required autofocus class="w-full pl-10 pr-4 py-3 bg-surface-container-high border-b-2 border-outline-variant focus:border-primary-fixed-dim focus:ring-0 transition-all text-sm outline-none" placeholder="ejemplo@rastrillantas.com"/>
-                        </div>
-                        @error('email')
-                        <div class="flex items-center gap-2 mt-2 px-1">
-                            <span class="material-symbols-outlined text-error text-[18px]">error</span>
-                            <p class="text-error text-xs font-medium">{{ $message }}</p>
-                        </div>
-                        @enderror
-                    </div>
-
-                    <!-- Section 2: Security Questions (Ignored by default breeze but kept for design) -->
-                    <div class="space-y-6 pt-2">
-                        <div class="flex items-center gap-2 border-l-4 border-primary-fixed-dim pl-4">
-                            <h3 class="font-headline text-sm font-bold uppercase tracking-tight text-tertiary">Preguntas Clave</h3>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="space-y-2">
-                                <label class="font-label text-[11px] font-bold uppercase tracking-wider text-on-surface-variant ml-1">Seleccionar Pregunta</label>
-                                <div class="relative">
-                                    <select name="security_question" class="w-full px-4 py-3 bg-surface-container-high border-b-2 border-outline-variant focus:border-primary-fixed-dim focus:ring-0 appearance-none text-sm outline-none cursor-pointer">
-                                        <option disabled="" selected="" value="">Escoge una pregunta de seguridad...</option>
-                                        <option>¿Cuál es el nombre de tu primera mascota?</option>
-                                        <option>¿Cuál es la ciudad de nacimiento de tu madre?</option>
-                                        <option>¿Cuál fue el modelo de tu primer vehículo?</option>
-                                        <option>¿Nombre de tu escuela primaria?</option>
-                                    </select>
-                                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="font-label text-[11px] font-bold uppercase tracking-wider text-on-surface-variant ml-1">Tu Respuesta</label>
-                                <input name="security_answer" type="text" class="w-full px-4 py-3 bg-surface-container-high border-b-2 border-outline-variant focus:border-primary-fixed-dim focus:ring-0 transition-all text-sm outline-none" placeholder="Escribe tu respuesta aquí"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Main Action -->
-                    <button type="submit" class="w-full py-4 bg-primary-fixed-dim text-on-primary-fixed font-headline font-bold text-sm rounded-lg hover:brightness-105 transition-all shadow-lg shadow-primary-fixed-dim/20 uppercase tracking-widest mt-4">
-                        Validar Respuestas
-                    </button>
-
-                    <!-- Navigation Link -->
-                    <div class="text-center pt-4">
-                        <a href="{{ route('login') }}" class="inline-flex items-center gap-2 text-secondary font-semibold text-sm hover:text-primary transition-colors">
-                            <span class="material-symbols-outlined text-base">arrow_back</span> Volver al Inicio de Sesión
-                        </a>
-                    </div>
-                </form>
+                <h1 class="text-3xl font-headline font-black text-white tracking-tight leading-none">Recuperar Acceso</h1>
+                <p class="text-slate-400 text-xs mt-4 font-bold uppercase tracking-[2px]">Seguridad de Diagnóstico</p>
             </div>
+
+            <!-- Success Message State -->
+            @if (session('status'))
+                <div class="mb-10 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex flex-col items-center text-center gap-4 text-emerald-400 animate-pulse-slow transition-all duration-700">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+                        <iconify-icon icon="lucide:mail-check" class="text-3xl"></iconify-icon>
+                    </div>
+                    <p class="text-xs font-black uppercase tracking-widest leading-relaxed">
+                        {{ session('status') }}
+                    </p>
+                    <p class="text-[10px] text-slate-500 font-bold">Por favor revisa tu bandeja de entrada.</p>
+                </div>
+            @else
+                <p class="text-slate-500 text-[10px] font-bold text-center uppercase tracking-widest mb-10 max-w-xs mx-auto">
+                    Ingresa tu correo institucional para validar tu identidad.
+                </p>
+            @endif
+
+            <form method="POST" action="{{ route('password.email') }}" class="space-y-8" @submit="loading = true">
+                @csrf
+
+                <!-- Input Email -->
+                <div class="space-y-3" @focusin="isFocus = true" @focusout="isFocus = false">
+                    <label for="email" class="block text-[10px] font-black text-slate-500 uppercase tracking-[2px] ml-2">
+                        Correo Institucional
+                    </label>
+                    <div class="relative input-glow transition-all duration-500 rounded-3xl group overflow-hidden bg-white/5 border border-white/10">
+                        <input type="email" name="email" id="email" value="{{ old('email') }}" required autofocus
+                            class="w-full bg-transparent px-8 py-5 text-white font-bold outline-none placeholder-slate-700 transition-all text-sm"
+                            placeholder="usuario@rastrillantas.com">
+                        <div class="absolute right-8 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                            <iconify-icon icon="lucide:shield-check" class="text-2xl transition-transform group-focus-within:rotate-12"></iconify-icon>
+                        </div>
+                    </div>
+                    @error('email')
+                        <p class="text-red-400 text-[10px] font-black uppercase tracking-widest px-4 mt-3 flex items-center gap-2">
+                            <iconify-icon icon="lucide:shield-alert" class="text-xl"></iconify-icon>
+                            {{ $message }}
+                        </p>
+                    @enderror
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-4">
+                    <button type="submit" 
+                        :disabled="loading"
+                        class="relative overflow-hidden w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-6 rounded-[2rem] font-black text-xs uppercase tracking-[3px] shadow-[0_20px_40px_-10px_rgba(59,130,246,0.3)] transform active:scale-[0.98] transition-all flex items-center justify-center gap-4 group btn-scanner">
+                        
+                        <span x-show="!loading" class="flex items-center gap-3">
+                            Validar Acceso
+                            <iconify-icon icon="lucide:key-round" class="text-xl group-hover:rotate-45 transition-transform duration-500"></iconify-icon>
+                        </span>
+                        
+                        <span x-show="loading" class="flex items-center gap-3" x-cloak>
+                            <iconify-icon icon="lucide:loader-2" class="text-2xl animate-spin"></iconify-icon>
+                            Iniciando Protocolo...
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Footer Links -->
+                <div class="flex flex-col items-center gap-8 pt-8">
+                    <a href="{{ route('login') }}" class="group flex items-center gap-3 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[3px]">
+                        <iconify-icon icon="lucide:arrow-left" class="text-lg group-hover:-translate-x-2 transition-transform duration-500"></iconify-icon>
+                        Regresar al Portal
+                    </a>
+                    
+                    <div class="flex items-center gap-3 w-full">
+                        <div class="h-px flex-1 bg-white/5"></div>
+                        <span class="text-[8px] text-slate-700 font-black uppercase tracking-[5px]">Safe Access</span>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </div>
+                </div>
+            </form>
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="w-full mt-auto py-8 bg-slate-900 dark:bg-black flex flex-col md:flex-row items-center justify-between px-10 gap-4">
-        <div class="flex items-center gap-2">
-            <span class="text-yellow-500 font-bold font-inter text-[10px] uppercase tracking-wider">© 2024 CDA RASTRILLANTAS LTDA</span>
-        </div>
-        <div class="flex gap-6">
-            <a class="font-inter text-[10px] uppercase tracking-wider text-slate-400 hover:text-yellow-400 transition-all opacity-80 hover:opacity-100" href="#">POLÍTICAS DE PRIVACIDAD</a>
-            <a class="font-inter text-[10px] uppercase tracking-wider text-slate-400 hover:text-yellow-400 transition-all opacity-80 hover:opacity-100" href="#">TÉRMINOS DE USO</a>
-            <a class="font-inter text-[10px] uppercase tracking-wider text-slate-400 hover:text-yellow-400 transition-all opacity-80 hover:opacity-100" href="#">SOPORTE</a>
-        </div>
-    </footer>
 </body>
 </html>

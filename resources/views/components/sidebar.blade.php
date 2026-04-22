@@ -119,15 +119,19 @@
                 <div x-show="(openMenu === 'gestion') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="space-y-1 mt-1">
                     <a href="{{ url($prefix . '/vehiculos') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'bg-blue-400' : '' }}"></div>
-                        Listado General
+                        Vehículos
                     </a>
                     <a href="{{ url($prefix . '/vehiculos-empresa') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos-empresa*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/vehiculos-empresa*') ? 'bg-blue-400' : '' }}"></div>
-                        Flotas Empresa
+                        Vehículos Empresa
                     </a>
                     <a href="{{ url($prefix . '/historial') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/historial*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/historial*') ? 'bg-blue-400' : '' }}"></div>
-                        Historial
+                        Historial Mantenimiento
+                    </a>
+                    <a href="{{ url($prefix . '/marcas') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/marcas*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/marcas*') ? 'bg-blue-400' : '' }}"></div>
+                        Marca
                     </a>
                 </div>
             </div>
