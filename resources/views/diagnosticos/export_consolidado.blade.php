@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inspección Preventiva - {{ $diagnostico->vehiculo->placaveh }}</title>
+    <title>Reporte Consolidado de Flota - {{ $empresa->razsoem }}</title>
     @include('diagnosticos.partials.report_styles')
 </head>
 <body>
@@ -25,7 +25,13 @@
         @endfor
     </div>
 
-    @include('diagnosticos.partials.report_body', ['diagnostico' => $diagnostico])
+    @foreach($diagnosticos as $diagnostico)
+        @include('diagnosticos.partials.report_body', ['diagnostico' => $diagnostico])
+        
+        @if(!$loop->last)
+            <div style="page-break-after: always;"></div>
+        @endif
+    @endforeach
 
 </body>
 </html>
