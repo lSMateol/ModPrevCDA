@@ -107,6 +107,24 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
     Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
 
+    // Gestión de Catálogos (Dominios y Parámetros)
+    Route::get('/catalogos', [\App\Http\Controllers\Admin\CatalogoController::class, 'index'])->name('catalogos.index');
+    Route::post('/catalogos/dominio', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeDominio'])->name('catalogos.dominio.store');
+    Route::put('/catalogos/dominio/{iddom}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateDominio'])->name('catalogos.dominio.update');
+    Route::delete('/catalogos/dominio/{iddom}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyDominio'])->name('catalogos.dominio.destroy');
+    
+    Route::post('/catalogos/valor', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeValor'])->name('catalogos.valor.store');
+    Route::put('/catalogos/valor/{idval}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateValor'])->name('catalogos.valor.update');
+    Route::delete('/catalogos/valor/{idval}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyValor'])->name('catalogos.valor.destroy');
+
+    Route::post('/catalogos/tippar', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeTippar'])->name('catalogos.tippar.store');
+    Route::put('/catalogos/tippar/{idtip}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateTippar'])->name('catalogos.tippar.update');
+    Route::delete('/catalogos/tippar/{idtip}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyTippar'])->name('catalogos.tippar.destroy');
+
+    Route::post('/catalogos/param', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeParam'])->name('catalogos.param.store');
+    Route::put('/catalogos/param/{idpar}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateParam'])->name('catalogos.param.update');
+    Route::delete('/catalogos/param/{idpar}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyParam'])->name('catalogos.param.destroy');
+
     // Aquí irán tus rutas de usuarios, roles y configuración global
 });
 

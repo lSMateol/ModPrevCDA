@@ -32,6 +32,12 @@
                         {{ __('Marcas') }}
                     </x-nav-link>
 
+                    @if(auth()->user()->hasRole('Administrador'))
+                    <x-nav-link :href="route('admin.catalogos.index')" :active="request()->routeIs('admin.catalogos.*')">
+                        {{ __('Catálogos') }}
+                    </x-nav-link>
+                    @endif
+
                     @if(auth()->user()->hasRole('Empresa'))
                     <x-nav-link :href="route($rolePrefix . 'vehiculos-empresa.index') . '?view=perfil'" :active="request()->routeIs($rolePrefix . 'vehiculos-empresa.index') && request('view') == 'perfil'">
                         {{ __('Mi Perfil') }}
@@ -114,6 +120,12 @@
             <x-responsive-nav-link :href="route($rolePrefix . 'marcas.index')" :active="request()->routeIs($rolePrefix . 'marcas.index')">
                 {{ __('Marcas') }}
             </x-responsive-nav-link>
+
+            @if(auth()->user()->hasRole('Administrador'))
+            <x-responsive-nav-link :href="route('admin.catalogos.index')" :active="request()->routeIs('admin.catalogos.*')">
+                {{ __('Catálogos') }}
+            </x-responsive-nav-link>
+            @endif
 
             @if(auth()->user()->hasRole('Empresa'))
             <x-responsive-nav-link :href="route($rolePrefix . 'vehiculos-empresa.index') . '?view=perfil'" :active="request()->routeIs($rolePrefix . 'vehiculos-empresa.index') && request('view') == 'perfil'">

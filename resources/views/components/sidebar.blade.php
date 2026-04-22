@@ -138,22 +138,22 @@
                     <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'config' ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="openMenu === 'config'" x-collapse class="ml-5 pl-4 border-l border-gray-700/50 space-y-1 mt-1 bg-[#0f2a4a]/50 rounded-r-md relative">
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ route('admin.catalogos.index', ['tab' => 'parametros']) }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('admin.catalogos.index') && request('tab') == 'parametros' ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-list text-[8px] mr-2"></i>
                         Tipo de Parámetro
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ route('admin.catalogos.index', ['tab' => 'parametros']) }}" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-table text-[8px] mr-2"></i>
                         Parámetro
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ route('admin.catalogos.index', ['tab' => 'dominios']) }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('admin.catalogos.index') && request('tab') == 'dominios' ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-globe text-[8px] mr-2"></i>
                         Dominio
                     </a>
-                    <a href="#" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
+                    <a href="{{ route('admin.catalogos.index', ['tab' => 'dominios']) }}" class="relative flex items-center py-2 text-[10px] text-gray-400 hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-hashtag text-[8px] mr-2"></i>
                         Valor
