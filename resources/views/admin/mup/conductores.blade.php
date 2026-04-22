@@ -69,7 +69,7 @@
                                 <th>Identificación</th>
                                 <th>Licencia / Vencimiento</th>
                                 <th>Estado</th>
-                                <th class="text-right">Acciones</th>
+                                <th class="text-center" style="text-align: center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -103,8 +103,8 @@
                                             <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
                                         </span>
                                     </td>
-                                    <td class="text-right">
-                                        <div class="flex justify-end gap-1">
+                                    <td class="text-center">
+                                        <div class="flex justify-center gap-1">
                                             <button @click="editConductor(con)" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Editar Conductor">
                                                 <iconify-icon icon="lucide:pencil"></iconify-icon>
                                             </button>
