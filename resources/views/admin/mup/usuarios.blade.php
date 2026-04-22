@@ -21,6 +21,7 @@
             'actper' => $u->persona->actper ?? 1,
             'nompef' => $u->persona->perfil->nompef ?? 'Sin Rol',
             'idpef' => $u->persona->idpef ?? '',
+            'nomdoc' => $u->persona->tipoDocumento->nomval ?? 'C.C.',
         ];
     });
 @endphp
@@ -111,7 +112,7 @@
                                     <iconify-icon icon="lucide:user" class="text-gray-400 text-[10px]"></iconify-icon>
                                     <span class="text-[11px] font-bold text-gray-500 truncate" x-text="u.username"></span>
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                    <span class="text-[11px] font-bold text-gray-400" x-text="u.ndocper"></span>
+                                    <span class="text-[11px] font-bold text-gray-400" x-text="u.nomdoc + ': ' + u.ndocper"></span>
                                 </div>
                             </div>
                         </div>
@@ -467,6 +468,7 @@ function usuariosManager() {
         selectedId: null,
         selectedUser: null,
         usuarios: @json($usuariosData),
+        tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         password: '',
         password_confirmation: '',
         
@@ -502,6 +504,12 @@ function usuariosManager() {
                 (u.nompef || '').toLowerCase().includes(q) ||
                 (u.ndocper || '').toString().includes(q)
             );
+        },
+
+        getDocType(id) {
+            if (id === null || id === undefined || id === '') return 'N/A';
+            const key = String(id);
+            return this.tiposDoc[key] || this.tiposDoc[id] || 'N/A';
         },
 
         exportCsv() {

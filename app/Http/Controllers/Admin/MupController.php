@@ -24,26 +24,28 @@ class MupController extends Controller
     /**
      * Validación: licencia (catcon, nliccon, fvencon) todo null o los tres informados.
      */
-    protected function rulesLicenciaTriada(Request $request): array
+    protected function rulesLicenciaTriada(Request $request, $mandatory = false): array
     {
         $licenciaPresente = $request->filled('catcon')
             || $request->filled('nliccon')
             || $request->filled('fvencon');
 
+        $rule = ($mandatory || $licenciaPresente) ? 'required' : 'nullable';
+
         return [
             'catcon' => [
-                'required',
+                $rule,
                 'string',
                 'max:5',
                 Rule::in(LicenciaConduccion::CATEGORIAS),
             ],
             'nliccon' => [
-                'required',
+                $rule,
                 'string',
                 'max:20',
             ],
             'fvencon' => [
-                'required',
+                $rule,
                 'date',
             ],
         ];
@@ -98,7 +100,7 @@ class MupController extends Controller
         $ids = $this->personaIdsConductorGlobal($perfilConductor);
         $conductores = $ids === []
             ? collect()
-            : Persona::with(['vehiculosConducidos', 'vehiculosPropios'])
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'tipoDocumento'])
                 ->whereIn('idper', $ids)
                 ->orderBy('idper', 'desc')
                 ->get();
@@ -122,7 +124,7 @@ class MupController extends Controller
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
-        ], $this->rulesLicenciaTriada($request)), [
+        ], $this->rulesLicenciaTriada($request, true)), [
             'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
             'emaper.email' => 'El formato del correo electrónico no es válido.',
             'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
@@ -180,7 +182,7 @@ class MupController extends Controller
             'emaper' => 'required|email|max:60',
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
-        ], $this->rulesLicenciaTriada($request)), [
+        ], $this->rulesLicenciaTriada($request, true)), [
             'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
         ]);
 
@@ -393,7 +395,7 @@ class MupController extends Controller
     public function usuarios()
     {
         // 1. Listado de usuarios con su perfil y persona vinculada
-        $usuarios = User::with('persona.perfil', 'empresa')
+        $usuarios = User::with('persona.perfil', 'persona.tipoDocumento', 'empresa')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -514,7 +516,7 @@ class MupController extends Controller
         $ids = $this->personaIdsPropietarioGlobal($perfil);
         $propietarios = $ids === []
             ? collect()
-            : Persona::with(['vehiculosConducidos', 'vehiculosPropios'])
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'tipoDocumento'])
                 ->whereIn('idper', $ids)
                 ->orderBy('idper', 'desc')
                 ->get();

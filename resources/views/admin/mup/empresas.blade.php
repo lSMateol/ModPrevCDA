@@ -169,7 +169,7 @@
                                             <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-blue-500 shadow-sm">
                                                 <iconify-icon icon="lucide:map-pin"></iconify-icon>
                                             </div>
-                                            <p class="text-sm font-black text-[#001834]" x-text="selectedEmpresa.direm || 'No especificada'"></p>
+                                            <p class="text-sm font-black text-[#001834]" x-text="(selectedEmpresa.ciudeem ? selectedEmpresa.ciudeem + ' - ' : '') + (selectedEmpresa.direm || 'No especificada')"></p>
                                         </div>
                                     </div>
                                 </div>
