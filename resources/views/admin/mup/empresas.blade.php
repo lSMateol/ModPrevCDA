@@ -460,6 +460,7 @@
 function empresaManager() {
     return {
         search: '',
+        mupBase: '{{ $mupBase }}',
         createDrawer: false,
         editDrawer: false,
         deleteModal: false,

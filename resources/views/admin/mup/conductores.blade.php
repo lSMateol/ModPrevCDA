@@ -507,6 +507,7 @@
 function conductorManager() {
     return {
         search: '',
+        mupBase: '{{ $mupBase }}',
         editing: false,
         deleting: false,
         showCreateModal: false,

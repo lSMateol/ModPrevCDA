@@ -530,6 +530,7 @@
 function propietarioManager() {
     return {
         search: '',
+        mupBase: '{{ $mupBase }}',
         editing: false,
         deleteModal: false,
         showCreateModal: false,
