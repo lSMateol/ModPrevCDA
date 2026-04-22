@@ -3,6 +3,10 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+@php
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+@endphp
 
 <div class="mup-container" x-data="propietarioManager()" x-cloak>
     <header class="mup-topbar">
@@ -146,7 +150,7 @@
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="createDrawer = false">
-            <form action="{{ route('admin.mup.propietarios.store') }}" method="POST" class="flex flex-col h-full">
+            <form action="{{ route($mupPrefix . '.propietarios.store') }}" method="POST" class="flex flex-col h-full">
                 @csrf
                 <input type="hidden" name="_propietario_form" value="create">
                 <div class="mup-drawer-header">
@@ -202,7 +206,7 @@
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Teléfono</label>
-                                <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="3001234567">
+                                <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="3001234567" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
                             </div>
                         </div>
                         <div class="mup-form-group">
@@ -268,7 +272,7 @@
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="editDrawer = false">
-            <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex flex-col h-full">
+            <form :action="'{{ url($mupBase . '/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex flex-col h-full">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_propietario_form" value="edit">
@@ -325,7 +329,7 @@
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Teléfono</label>
-                                <input type="text" name="telper" x-model="currentProp.telper" class="mup-input">
+                                <input type="text" name="telper" x-model="currentProp.telper" class="mup-input" placeholder="3001234567" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
                             </div>
                         </div>
                         <div class="mup-form-group">
@@ -462,7 +466,7 @@
             </p>
             <div class="flex gap-3">
                 <button @click="deleteModal = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">Cancelar</button>
-                <form :action="'{{ url('admin/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
+                <form :action="'{{ url($mupBase . '/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>

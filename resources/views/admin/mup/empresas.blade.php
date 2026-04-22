@@ -3,6 +3,10 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+@php
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+@endphp
 
 <div class="mup-container" x-data="empresaManager()" x-cloak>
     <header class="mup-topbar">
@@ -124,7 +128,7 @@
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="createDrawer = false">
-            <form action="{{ route('admin.mup.empresas.store') }}" method="POST" class="flex flex-col h-full">
+            <form action="{{ route($mupPrefix . '.empresas.store') }}" method="POST" class="flex flex-col h-full">
                 @csrf
                 {{-- HEADER --}}
                 <div class="mup-drawer-header">
@@ -183,7 +187,7 @@
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Teléfono <span class="mup-required">*</span></label>
-                                <input type="text" name="telem" class="mup-input" placeholder="604 123 4567" required>
+                                <input type="text" name="telem" class="mup-input" placeholder="6041234567" required inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
                             </div>
                         </div>
                         <div class="mup-form-group">
@@ -248,7 +252,7 @@
         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="editDrawer = false">
-            <form :action="'{{ url('admin/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="flex flex-col h-full">
+            <form :action="'{{ url($mupBase . '/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="flex flex-col h-full">
                 @csrf
                 @method('PUT')
                 {{-- HEADER --}}
@@ -308,7 +312,7 @@
                             </div>
                             <div class="mup-form-group">
                                 <label class="mup-label">Teléfono <span class="mup-required">*</span></label>
-                                <input type="text" name="telem" x-model="currentEmp.telem" class="mup-input" required>
+                                <input type="text" name="telem" x-model="currentEmp.telem" class="mup-input" required inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
                             </div>
                         </div>
                         <div class="mup-form-group">
@@ -382,7 +386,7 @@
                     Esta acción eliminará permanentemente a <strong x-text="currentEmp.razsoem"></strong> y revocará todos los accesos vinculados.
                 </p>
                 <div class="flex flex-col gap-2">
-                    <form :action="'{{ url('admin/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST">
+                    <form :action="'{{ url($mupBase . '/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Eliminar permanentemente</button>

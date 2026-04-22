@@ -3,6 +3,10 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+@php
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+@endphp
 
 <div class="mup-container" x-data="conductorManager()" x-cloak>
     <header class="mup-topbar">
@@ -141,7 +145,7 @@
                         <div class="mup-card-subtitle">Ingresa la información básica, contacto y datos de licencia.</div>
                     </div>
                     <div class="mup-card-body">
-                        <form action="{{ route('admin.mup.conductores.store') }}" method="POST" id="createForm">
+                        <form action="{{ route($mupPrefix . '.conductores.store') }}" method="POST" id="createForm">
                             @csrf
                             <input type="hidden" name="_mup_conductor_form" value="create">
                             <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
@@ -172,7 +176,7 @@
                                 </div>
                                 <div class="mup-form-group">
                                     <label class="mup-label">Celular / Teléfono</label>
-                                    <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="300 000 0000">
+                                    <input type="text" name="telper" value="{{ old('telper') }}" class="mup-input" placeholder="3001234567" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="20">
                                 </div>
                             </div>
 
@@ -249,33 +253,50 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0">
+            <form :action="'{{ url($mupBase . '/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0">
                 @csrf
                 @method('PUT')
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {{-- Sección: Información Identitaria --}}
+                <div class="text-[11px] font-black text-[#0d3b5a]/40 mb-4 uppercase tracking-[0.2em] flex items-center gap-3">
+                    <span>Información Identitaria</span>
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="mup-label">Nombre Completo</label>
+                        <label class="mup-label">Nombre Completo <span class="mup-required">*</span></label>
                         <input type="text" name="nombre_completo" x-model="currentCon.nombre_completo" class="mup-input" required>
                     </div>
                     <div>
-                        <label class="mup-label">Identificación</label>
+                        <label class="mup-label">Tipo Documento <span class="mup-required">*</span></label>
+                        <select name="tdocper" x-model="currentCon.tdocper" class="mup-input" required>
+                            @foreach($tiposDoc as $tipo)
+                                <option value="{{ $tipo->idval }}">{{ $tipo->nomval }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mup-label">Identificación <span class="mup-required">*</span></label>
                         <input type="number" name="ndocper" x-model="currentCon.ndocper" class="mup-input" required>
                     </div>
                     <div>
-                        <label class="mup-label">Email</label>
+                        <label class="mup-label">Correo Electrónico <span class="mup-required">*</span></label>
                         <input type="email" name="emaper" x-model="currentCon.emaper" class="mup-input" required>
                     </div>
                     <div>
-                        <label class="mup-label">Licencia</label>
-                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="mup-input">
+                        <label class="mup-label">Celular / Teléfono</label>
+                        <input type="text" name="telper" x-model="currentCon.telper" class="mup-input" placeholder="300 000 0000" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
+                </div>
+
+                {{-- Sección: Capacidad Operativa --}}
+                <div class="text-[11px] font-black text-[#0d3b5a]/40 mt-8 mb-4 uppercase tracking-[0.2em] flex items-center gap-3">
+                    <span>Capacidad Operativa</span>
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                     <div>
-                        <label class="mup-label">Vencimiento</label>
-                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="mup-input">
-                    </div>
-                    <div>
-                        <label class="mup-label">Categoría</label>
+                        <label class="mup-label">Categoría Licencia</label>
                         <select name="catcon" x-model="currentCon.catcon" class="mup-input">
                             <option value="">— Sin licencia —</option>
                             @foreach($licenciaCategorias as $cat)
@@ -284,13 +305,20 @@
                         </select>
                     </div>
                     <div>
-                        <label class="mup-label">Estado</label>
+                        <label class="mup-label">Nro de Licencia</label>
+                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="mup-input">
+                    </div>
+                    <div>
+                        <label class="mup-label">Vencimiento Licencia</label>
+                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="mup-input">
+                    </div>
+                    <div>
+                        <label class="mup-label">Estado <span class="mup-required">*</span></label>
                         <select name="actper" x-model="currentCon.actper" class="mup-input" required>
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
+                            <option value="1">Disponible / Activo</option>
+                            <option value="0">Fuera de Servicio / Inactivo</option>
                         </select>
                     </div>
-                    <input type="hidden" name="tdocper" x-model="currentCon.tdocper">
                 </div>
 
                 <div class="mt-8 sm:mt-10 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
@@ -316,7 +344,7 @@
             
             <div class="flex gap-3">
                 <button @click="deleting = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-all">No, volver</button>
-                <form :action="'{{ url('admin/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
+                <form :action="'{{ url($mupBase . '/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200">Sí, eliminar</button>

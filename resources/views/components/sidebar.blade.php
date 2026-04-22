@@ -106,7 +106,7 @@
             @endhasanyrole
 
             {{-- 3. ENTIDADES --}}
-            @role('Administrador')
+            @hasanyrole('Administrador|Digitador')
             <div class="space-y-1">
                 <button @click="openMenu = (openMenu === 'entidades' ? null : 'entidades')" 
                         class="w-full flex items-center justify-between py-2 px-3 hover:bg-white/5 rounded-md group transition text-left">
@@ -117,14 +117,20 @@
                     <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="openMenu === 'entidades' ? 'rotate-180' : ''"></i>
                 </button>
                 <div x-show="openMenu === 'entidades'" x-collapse class="ml-4 pl-4 border-l border-gray-700/50 space-y-0.5 mt-1 relative">
-                    <a href="{{ route('admin.mup.usuarios.index') }}" class="relative flex items-center py-2 text-[10px] {{ Request::routeIs('admin.mup.*') ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
+                    @php
+                        $mupRoute = auth()->user()->hasRole('Administrador')
+                            ? route('admin.mup.usuarios.index')
+                            : route('digitador.mup.usuarios.index');
+                        $mupActive = Request::routeIs('admin.mup.*') || Request::routeIs('digitador.mup.*');
+                    @endphp
+                    <a href="{{ $mupRoute }}" class="relative flex items-center py-2 text-[10px] {{ $mupActive ? 'text-white font-bold bg-white/10 rounded-md px-2' : 'text-gray-400' }} hover:text-white transition">
                         <span class="absolute -left-4 w-3 h-px bg-gray-700/50"></span>
                         <i class="fa-solid fa-building-user text-[8px] mr-2"></i>
-                        UMP
+                        MUP
                     </a>
                 </div>
             </div>
-            @endrole
+            @endhasanyrole
 
             {{-- 4. CONFIGURACIÓN GLOBAL --}}
             @role('Administrador')

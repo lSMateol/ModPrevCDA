@@ -120,7 +120,7 @@ class MupController extends Controller
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper',
             'emaper' => 'required|email|max:60',
-            'telper' => 'nullable|string|max:10',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
         ], $this->rulesLicenciaTriada($request)), [
             'ndocper.unique' => 'Ya existe una persona registrada con este número de documento.',
@@ -178,7 +178,7 @@ class MupController extends Controller
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
             'emaper' => 'required|email|max:60',
-            'telper' => 'nullable|string|max:10',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
         ], $this->rulesLicenciaTriada($request)), [
             'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
@@ -428,11 +428,19 @@ class MupController extends Controller
             'tdocper' => 'required',
             'ndocper' => 'required|numeric|unique:persona,ndocper',
             'emaper' => 'required|email|unique:persona,emaper',
-            'telper' => 'nullable|string',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
-            'idpef' => 'required|exists:perfil,idpef',
-            'idemp' => 'nullable|exists:empresa,idemp',
+            'idpef' => [
+                'required',
+                'exists:perfil,idpef',
+                function ($attribute, $value, $fail) {
+                    $perfil = Perfil::find($value);
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero'])) {
+                        $fail('El perfil seleccionado no es válido para este módulo.');
+                    }
+                }
+            ],
         ], [
             'ndocper.unique' => 'Ya existe un usuario con este número de documento.',
             'emaper.unique' => 'Ya existe un usuario con este correo electrónico.',
@@ -526,7 +534,7 @@ class MupController extends Controller
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper',
             'emaper' => 'required|email|max:60',
-            'telper' => 'nullable|string|max:10',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
             'dirper' => 'nullable|string|max:150',
             'ciuper' => 'nullable|string|max:50',
@@ -582,7 +590,7 @@ class MupController extends Controller
             'tdocper' => 'required|exists:valor,idval',
             'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
             'emaper' => 'required|email|max:60',
-            'telper' => 'nullable|string|max:10',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'actper' => 'required|in:0,1',
             'dirper' => 'nullable|string|max:150',
             'ciuper' => 'nullable|string|max:50',
@@ -685,7 +693,7 @@ class MupController extends Controller
             'direm' => 'nullable|string|max:100',
             'ciudeem' => 'nullable|string|max:50',
             'nomger' => 'required|string|max:100',
-            'telem' => 'required|string|max:20',
+            'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
             'emaem' => 'required|email|max:60',
             'username' => 'required|string|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
@@ -752,7 +760,7 @@ class MupController extends Controller
             'abremp' => 'nullable|string|max:10',
             'direm' => 'nullable|string|max:100',
             'nomger' => 'required|string|max:100',
-            'telem' => 'required|string|max:20',
+            'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
             'emaem' => 'required|email|max:60',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|min:6|confirmed',
@@ -862,11 +870,19 @@ class MupController extends Controller
             'tdocper' => 'required',
             'ndocper' => 'required|numeric|unique:persona,ndocper,' . $user->idper . ',idper',
             'emaper' => 'required|email|unique:persona,emaper,' . $user->idper . ',idper',
-            'telper' => 'nullable|string',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
-            'idpef' => 'required|exists:perfil,idpef',
-            'idemp' => 'nullable|exists:empresa,idemp',
+            'idpef' => [
+                'required',
+                'exists:perfil,idpef',
+                function ($attribute, $value, $fail) {
+                    $perfil = Perfil::find($value);
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero'])) {
+                        $fail('El perfil seleccionado no es válido para este módulo.');
+                    }
+                }
+            ],
             'actper' => 'required|in:0,1',
         ]);
 

@@ -4,6 +4,10 @@
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 @php
+    $mupBase = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+    $mupPrefix = $mupBase . '.mup';
+@endphp
+@php
     $usuariosCsv = $usuarios->map(fn ($u) => [
         'id' => $u->id,
         'name' => $u->name ?? '',
@@ -92,13 +96,12 @@
                         s(u.username).includes(q) ||
                         s(u.email).includes(q) ||
                         s(u.ndocper).includes(q) ||
-                        s(u.perfil).includes(q) ||
-                        s(u.empresa).includes(q)
+                        s(u.perfil).includes(q)
                     );
                 },
 
                 exportCsv() {
-                    const cols = ['id', 'name', 'username', 'email', 'ndocper', 'perfil', 'actper', 'empresa'];
+                    const cols = ['id', 'name', 'username', 'email', 'ndocper', 'perfil', 'actper'];
                     const list = this.filteredUsuariosExport();
                     const esc = (v) => {
                         if (v === null || v === undefined) return '';
@@ -155,7 +158,7 @@
                         <iconify-icon icon="lucide:plus"></iconify-icon>
                         Nuevo usuario
                     </button>
-                    <a href="{{ route('admin.mup.perfil.nuevo') }}" class="mup-btn mup-btn-outline h-10 no-underline" title="Crear un rol y su matriz de permisos">
+                    <a href="{{ route($mupPrefix . '.perfil.nuevo') }}" class="mup-btn mup-btn-outline h-10 no-underline" title="Crear un rol y su matriz de permisos">
                         <iconify-icon icon="lucide:shield-plus"></iconify-icon>
                         Nuevo perfil
                     </a>
@@ -286,7 +289,7 @@
     {{-- ═══════════════════════════════════════════════════ --}}
     <div x-show="createDrawer" class="mup-drawer-overlay" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="createDrawer = false">
-            <form action="{{ route('admin.mup.usuarios.store') }}" method="POST" class="flex flex-col h-full">
+            <form action="{{ route($mupPrefix . '.usuarios.store') }}" method="POST" class="flex flex-col h-full">
                 @csrf
                 {{-- HEADER --}}
                 <div class="mup-drawer-header">
@@ -383,28 +386,17 @@
                         Rol y asignación
                     </div>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
-                                <select name="idpef" class="mup-input" required>
-                                    @foreach($perfiles as $perf)
-                                        <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Empresa asociada</label>
-                                <select name="idemp" class="mup-input">
-                                    <option value="">Sin empresa</option>
-                                    @foreach($empresas as $emp)
-                                        <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
+                            <select name="idpef" class="mup-input" required>
+                                @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
+                                    <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="p-3 bg-amber-50 rounded-lg flex items-center gap-3 text-amber-700 text-xs">
                             <iconify-icon icon="lucide:info" class="text-amber-500"></iconify-icon>
-                            <span>Este formulario aplica para perfiles distintos a conductor, propietario y empresas.</span>
+                            <span>Los usuarios corresponden únicamente a empleados del CDA. Para empresas, conductores o propietarios use las pestañas correspondientes.</span>
                         </div>
                     </div>
                 </div>
@@ -426,7 +418,7 @@
     {{-- ═══════════════════════════════════════════════════ --}}
     <div x-show="editDrawer" class="mup-drawer-overlay" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         <div class="mup-drawer" @click.away="editDrawer = false">
-            <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex flex-col h-full">
+            <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex flex-col h-full">
                 @csrf
                 @method('PUT')
                 {{-- HEADER --}}
@@ -533,24 +525,13 @@
                         Rol y asignación
                     </div>
                     <div class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="mup-form-group">
-                                <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
-                                <select name="idpef" class="mup-input" required :value="selectedUser?.idpef">
-                                    @foreach($perfiles as $perf)
-                                        <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mup-form-group">
-                                <label class="mup-label">Empresa asociada</label>
-                                <select name="idemp" class="mup-input" :value="selectedUser?.idemp">
-                                    <option value="">Sin empresa</option>
-                                    @foreach($empresas as $emp)
-                                        <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                        <div class="mup-form-group">
+                            <label class="mup-label">Rol / perfil <span class="mup-required">*</span></label>
+                            <select name="idpef" class="mup-input" required :value="selectedUser?.idpef">
+                                @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
+                                    <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -609,8 +590,8 @@
                         <p class="font-medium text-blue-600" x-text="selectedUser?.nompef"></p>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Empresa</span>
-                        <p class="font-medium text-gray-800" x-text="selectedUser?.empresa"></p>
+                        <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</span>
+                        <p class="font-medium" :class="selectedUser?.actper ? 'text-green-600' : 'text-gray-400'" x-text="selectedUser?.actper ? 'Activo' : 'Inactivo'"></p>
                     </div>
                 </div>
                 <div class="pt-4 flex justify-end">
@@ -636,7 +617,7 @@
                     Estás a punto de eliminar permanentemente a <strong x-text="selectedUser?.name"></strong>. Esta acción no se puede deshacer y eliminará todos sus accesos vinculados.
                 </p>
                 <div class="flex flex-col gap-2">
-                    <form :action="'{{ url('admin/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST">
+                    <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition">Eliminar permanentemente</button>

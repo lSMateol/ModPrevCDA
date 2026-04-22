@@ -157,6 +157,33 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
     Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
+
+    // Módulo MUP (Entidades) para Digitador
+    Route::prefix('entidades/mup')->name('mup.')->group(function () {
+        Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores.index');
+        Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+        Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
+        Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
+
+        Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios.index');
+        Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
+        Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
+        Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
+
+        Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios.index');
+        Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+        Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
+        Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
+
+        Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas.index');
+        Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
+        Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
+        Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
+
+        Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
+        Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+        Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
+    });
 });
 
 // RUTAS EMPRESA (Restringido + Control de Rutas)
