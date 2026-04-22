@@ -504,6 +504,20 @@
         @media (max-width: 1024px) {
             .vemp-module .details-section { grid-template-columns: 1fr; }
             .vemp-module .form-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+            .vemp-module .vtabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+            .vemp-module .vtabs::-webkit-scrollbar { height: 4px; }
+            .vemp-module .vtabs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        }
+        @media (max-width: 640px) {
+            .vemp-module .form-grid { grid-template-columns: 1fr !important; }
+            .vemp-module .form-group.col-span-2 { grid-column: span 1 !important; }
+            .vemp-module .page-header-container { flex-direction: column; gap: 16px; }
+            .vemp-module .filters-container { flex-direction: column; align-items: stretch; }
+            .vemp-module .filters-container > div { width: 100%; max-width: 100% !important; }
+            .vemp-module .filters-container select, .vemp-module .filters-container button { width: 100%; flex: 1; min-width: 120px; }
+            .vemp-module .details-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+            .vemp-module .details-header .vbtn { width: 100%; justify-content: center; }
+            .vemp-module .diag-summary { flex-direction: column; align-items: center; text-align: center; }
         }
     </style>
 
@@ -515,9 +529,9 @@
         {{-- ═══════════════════════════════════════ --}}
         <div x-show="activeView === 'vehiculos'">
             {{-- PAGE HEADER --}}
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+            <div class="page-header-container" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
                 <div>
-                    <h1 class="page-title">Vehículos por Empresa</h1>
+                    <h1 class="page-title">Flotas por Empresa</h1>
                     <p class="page-subtitle">Flota vinculada a entidades corporativas — solo vehículos con empresa asignada</p>
                 </div>
             </div>
@@ -525,7 +539,7 @@
         {{-- ═══════════════════════════════════════ --}}
         {{-- FILTERS BAR                             --}}
         {{-- ═══════════════════════════════════════ --}}
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div class="filters-container" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
             <div style="position: relative; flex: 1; max-width: 400px; min-width: 200px;">
                 <i class="fa-solid fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6b7280; font-size: 14px;"></i>
                 <input x-model="search" type="text" placeholder="Buscar por placa, N° interno o NIT..." style="width: 100%; height: 40px; padding-left: 38px; padding-right: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;" />
@@ -607,15 +621,17 @@
         <div class="details-section" x-show="selectedVehiculo" x-cloak id="vehiculo-detalles">
 
             {{-- ── LEFT: Detail Card ── --}}
-            <div class="vcard" style="display: flex; flex-direction: column;">
+            <div class="vcard" style="display: flex; flex-direction: column; min-width: 0;">
                 <div style="padding-top: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
+                    <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
                         <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Detalle del Vínculo</h3>
-                        @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                        <button class="vbtn vbtn-edit" @click="openEditEmpresa()" x-show="!editandoEmpresa">
-                            <i class="fa-solid fa-pen"></i> Editar vínculo
-                        </button>
-                        @endif
+                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
+                            @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
+                            <button class="vbtn vbtn-edit" @click="openEditEmpresa()" x-show="!editandoEmpresa">
+                                <i class="fa-solid fa-pen"></i> Editar vínculo
+                            </button>
+                            @endif
+                        </div>
                     </div>
                     <div class="vtabs">
                         <button class="vtab" :class="{'active': selectedTab === 'vinculo'}" @click="selectedTab = 'vinculo'">Vínculo y Vehículo</button>

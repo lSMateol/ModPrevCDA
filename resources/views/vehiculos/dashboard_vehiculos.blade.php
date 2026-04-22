@@ -274,17 +274,34 @@
         .vehiculo-module .show-more-bar button { background: none; border: none; color: #0b3a5a; font-weight: 600; font-size: 13px; cursor: pointer; padding: 6px 16px; border-radius: 6px; transition: 0.2s; }
         .vehiculo-module .show-more-bar button:hover { background: #eff6ff; }
 
+        /* Responsive adjustments */
         @media (max-width: 1024px) {
             .vehiculo-module .details-section { grid-template-columns: 1fr; }
             .vehiculo-module .form-grid { grid-template-columns: repeat(2, 1fr); }
+            .vehiculo-module .vtabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+            .vehiculo-module .vtabs::-webkit-scrollbar { height: 4px; }
+            .vehiculo-module .vtabs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        }
+        @media (max-width: 640px) {
+            .vehiculo-module .form-grid { grid-template-columns: 1fr; }
+            .vehiculo-module .form-group[style*="grid-column: span 2;"] { grid-column: span 1 !important; }
+            .vehiculo-module .page-header-container { flex-direction: column; gap: 16px; }
+            .vehiculo-module .page-header-container .vbtn { width: 100%; justify-content: center; }
+            .vehiculo-module .filters-container { flex-direction: column; align-items: stretch; }
+            .vehiculo-module .filters-container > div { width: 100%; max-width: 100% !important; }
+            .vehiculo-module .filters-container select, .vehiculo-module .filters-container button { width: 100%; flex: 1; min-width: 120px; }
+            .vehiculo-module .relation-item { flex-direction: column; text-align: center; gap: 8px; align-items: center; }
+            .vehiculo-module .relation-connector { margin: 0 auto; height: 20px; width: 2px; }
+            .vehiculo-module .details-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+            .vehiculo-module .details-header .vbtn { width: 100%; justify-content: center; }
         }
     </style>
 
     <div class="vehiculo-module">
         <!-- Page Header -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+        <div class="page-header-container" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
             <div>
-                <h1 class="page-title">Vehículos</h1>
+                <h1 class="page-title">Listado General de Vehículos</h1>
                 <p class="page-subtitle">Gestión de activos vehiculares del CDA</p>
             </div>
             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
@@ -296,7 +313,7 @@
         </div>
 
         <!-- Filters Bar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div class="filters-container" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
             <div style="position: relative; flex: 1; max-width: 360px; min-width: 200px;">
                 <i class="fa-solid fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6b7280; font-size: 14px;"></i>
                 <input x-model="search" type="text" placeholder="Buscar por placa, no. interno..." style="width: 100%; height: 40px; padding-left: 38px; padding-right: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none;" />
@@ -399,11 +416,11 @@
         <!-- Master/Detail Bottom Section -->
         <div class="details-section" x-show="selectedVehiculo" x-cloak id="vehiculo-detalles">
             <!-- Form Panel -->
-            <div class="vcard" style="display: flex; flex-direction: column;">
+            <div class="vcard" style="display: flex; flex-direction: column; min-width: 0;">
                 <div style="padding-top: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
+                    <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
                         <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Detalle del Vehículo</h3>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
                             {{-- Botón Editar (solo Admin/Digitador, solo en modo consulta) --}}
                             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                             <button class="vbtn vbtn-edit" x-show="!editMode" @click="toggleEdit()">

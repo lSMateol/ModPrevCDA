@@ -68,13 +68,22 @@
             #historial-wrapper .icon-btn:hover { background-color: #f3f4f6; color: #111827; }
             #historial-wrapper .show-more-bar { padding: 12px; text-align: center; border-top: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; font-size: 13px; font-weight: 500; color: #4b5563; transition: 0.2s; }
             #historial-wrapper .show-more-bar:hover { background: #f3f4f6; color: #111827; }
-            #historial-wrapper .company-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #0b3a5a; background-color: #e0f2fe; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+            #historial-wrapper .company-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #0b3a5a; background-color: #e0f2fe; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; }
+            
+            @media (max-width: 640px) {
+                #historial-wrapper .main-content { padding: 16px 20px; }
+                #historial-wrapper .page-header { flex-direction: column; gap: 16px; align-items: stretch; }
+                #historial-wrapper .header-actions { flex-direction: column; width: 100%; }
+                #historial-wrapper .header-actions .btn { width: 100%; justify-content: center; }
+                #historial-wrapper .filters-grid { flex-direction: column; align-items: stretch; }
+                #historial-wrapper .input-group { width: 100%; flex: none !important; }
+            }
         </style>
 
         <main class="main-content">
             <div class="page-header">
                 <div>
-                    <h1 class="page-title">Historial Mantenimiento</h1>
+                    <h1 class="page-title">Historial de Mantenimiento</h1>
                     <p class="page-subtitle">Registro y seguimiento de mantenimientos preventivos realizados dentro de las instalaciones</p>
                 </div>
                 <div class="header-actions">
