@@ -351,21 +351,21 @@
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría</label>
-                        <select name="catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none">
-                            <option value="">— Sin licencia —</option>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría <span class="text-orange-500">*</span></label>
+                        <select name="catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            <option value="">Seleccione categoría</option>
                             @foreach($licenciaCategorias as $cat)
                                 <option value="{{ $cat }}" @selected(old('catcon') === $cat)>{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia</label>
-                        <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Nro de pase">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia <span class="text-orange-500">*</span></label>
+                        <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Nro de pase" required>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento</label>
-                        <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento <span class="text-orange-500">*</span></label>
+                        <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado Operativo <span class="text-orange-500">*</span></label>
@@ -437,21 +437,21 @@
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría</label>
-                        <select name="catcon" x-model="currentCon.catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none">
-                            <option value="">— Sin licencia —</option>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Categoría <span class="text-orange-500">*</span></label>
+                        <select name="catcon" x-model="currentCon.catcon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
+                            <option value="">Seleccione categoría</option>
                             @foreach($licenciaCategorias as $cat)
                                 <option value="{{ $cat }}">{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia</label>
-                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nro de Licencia <span class="text-orange-500">*</span></label>
+                        <input type="text" name="nliccon" x-model="currentCon.nliccon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento</label>
-                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento <span class="text-orange-500">*</span></label>
+                        <input type="date" name="fvencon" x-model="currentCon.fvencon" class="w-full bg-gray-50 border-2 border-transparent focus:border-orange-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado Operativo <span class="text-orange-500">*</span></label>
