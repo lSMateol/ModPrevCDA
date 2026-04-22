@@ -98,8 +98,8 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span :class="con.actper ? 'mup-badge-active' : 'mup-badge-inactive'">
-                                            <div class="w-1 h-1 rounded-full bg-current"></div>
+                                        <span class="mup-state-badge" :class="con.actper ? 'mup-state-active' : 'mup-state-inactive'">
+                                            <div class="w-2 h-2 rounded-full bg-current"></div>
                                             <span x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
                                         </span>
                                     </td>
