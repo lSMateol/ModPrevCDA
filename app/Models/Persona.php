@@ -23,6 +23,11 @@ class Persona extends Model
         return $this->belongsTo(Perfil::class, 'idpef', 'idpef');
     }
 
+    public function tipoDocumento()
+    {
+        return $this->belongsTo(Valor::class, 'tdocper', 'idval');
+    }
+
     public function ubicacion()
     {
         return $this->belongsTo(Ubica::class, 'codubi', 'codubi');

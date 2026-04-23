@@ -150,14 +150,31 @@ class VehiculoController extends Controller
      */
     public function destroy($id)
     {
-        $vehiculo = Vehiculo::withCount(['diagnosticos', 'documentos'])->findOrFail($id);
+        $vehiculo = Vehiculo::withCount(['diagnosticos'])->findOrFail($id);
 
+        // Validar integridad relacional (Diagnósticos y Documentos)
         if ($vehiculo->diagnosticos_count > 0 || $vehiculo->documentos_count > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos o documentos de respaldo asociados, lo cual afectaría la trazabilidad del sistema.'
+                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos asociados.'
             ], 422);
         }
+
+        // Validar vínculos activos con MUP (Propietario, Conductor, Empresa)
+        if ($vehiculo->prop || $vehiculo->cond || $vehiculo->idemp) {
+            $vinculos = [];
+            if ($vehiculo->prop) $vinculos[] = 'Propietario';
+            if ($vehiculo->cond) $vinculos[] = 'Conductor';
+            if ($vehiculo->idemp) $vinculos[] = 'Empresa';
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar el vehículo porque tiene vínculos activos con: ' . implode(', ', $vinculos) . '. Debe desvincular estas entidades antes de proceder.'
+            ], 422);
+        }
+
+        // Limpiar la tabla pivote proveh para evitar errores de restricción de llave foránea
+        $vehiculo->personas()->detach();
 
         $vehiculo->delete();
 
@@ -262,6 +279,8 @@ class VehiculoController extends Controller
             'prop'         => 'required|integer|exists:persona,idper',
             'cond'         => 'required|integer|exists:persona,idper',
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
+        ], [
+            'placaveh.unique' => 'Ya existe un vehículo con esta placa.',
         ]);
     }
 }

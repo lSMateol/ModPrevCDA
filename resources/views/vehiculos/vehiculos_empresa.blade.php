@@ -624,7 +624,7 @@
             <div class="vcard" style="display: flex; flex-direction: column; min-width: 0;">
                 <div style="padding-top: 24px;">
                     <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 24px; margin-bottom: 16px;">
-                        <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0;">Detalle del Vínculo</h3>
+                        <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0; white-space: nowrap;">Detalle del Vínculo</h3>
                         <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
                             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                             <button class="vbtn vbtn-edit" @click="openEditEmpresa()" x-show="!editandoEmpresa">
