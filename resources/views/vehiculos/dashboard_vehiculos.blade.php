@@ -15,7 +15,8 @@
         vinculoMode: false,
         vinculoSaving: false,
         vinculoForm: { prop: '', cond: '', idemp: '' },
-        personas: {{ $personas->toJson() }},
+        propietarios: {{ $propietarios->toJson() }},
+        conductores: {{ $conductores->toJson() }},
         allEmpresas: {{ $empresasFiltro->toJson() }},
         allMarcas: {{ $marcas->toJson() }},
         allClases: {{ $clasesFiltro->toJson() }},
@@ -327,7 +328,7 @@
                 </thead>
                 <tbody>
                     <template x-for="vehiculo in displayedVehiculos" :key="vehiculo.idveh">
-                        <tr @click="selectedVehiculo = vehiculo; tab = 'todos'; setTimeout(() => { const el = document.getElementById('vehiculo-detalles'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
+                        <tr @click="selectedVehiculo = vehiculo; tab = 'todos'; vinculoMode = false; setTimeout(() => { const el = document.getElementById('vehiculo-detalles'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);" :class="{'active-row': selectedVehiculo && selectedVehiculo.idveh === vehiculo.idveh}">
                             <td><span style="font-weight: 500; color: #111827;" x-text="vehiculo.nordveh || 'N/A'"></span></td>
                             <td><div class="plate-badge" x-text="vehiculo.placaveh"></div></td>
                             <td x-text="vehiculo.marca?.nommarlin || 'N/A'"></td>
@@ -390,7 +391,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>No. interno</label>
-                                <input type="text" :value="selectedVehiculo.nordveh || 'N/A'" :readonly="!editMode" :class="{'editable': editMode}" />
+                                <input type="text" :value="selectedVehiculo.nordveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>No. placa</label>
@@ -599,7 +600,7 @@
                                 <label>Propietario</label>
                                 <select x-model="vinculoForm.prop" style="height: 36px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%;">
                                     <option value="">Sin asignar</option>
-                                    <template x-for="p in personas" :key="p.idper">
+                                    <template x-for="p in propietarios" :key="p.idper">
                                         <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
                                     </template>
                                 </select>
@@ -608,7 +609,7 @@
                                 <label>Conductor</label>
                                 <select x-model="vinculoForm.cond" style="height: 36px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%;">
                                     <option value="">Sin asignar</option>
-                                    <template x-for="p in personas" :key="p.idper">
+                                    <template x-for="p in conductores" :key="p.idper">
                                         <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
                                     </template>
                                 </select>

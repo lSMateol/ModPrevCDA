@@ -69,10 +69,7 @@ class MupController extends Controller
      */
     protected function personaIdsConductorGlobal(Perfil $perfilConductor): array
     {
-        $porPerfil = Persona::query()->where('idpef', $perfilConductor->idpef)->pluck('idper');
-        $porVehiculo = Vehiculo::query()->whereNotNull('cond')->distinct()->pluck('cond');
-
-        return $porPerfil->merge($porVehiculo)->unique()->filter()->values()->all();
+        return Persona::query()->where('idpef', $perfilConductor->idpef)->pluck('idper')->toArray();
     }
 
     /**
@@ -80,10 +77,7 @@ class MupController extends Controller
      */
     protected function personaIdsPropietarioGlobal(Perfil $perfilPropietario): array
     {
-        $porPerfil = Persona::query()->where('idpef', $perfilPropietario->idpef)->pluck('idper');
-        $porVehiculo = Vehiculo::query()->whereNotNull('prop')->distinct()->pluck('prop');
-
-        return $porPerfil->merge($porVehiculo)->unique()->filter()->values()->all();
+        return Persona::query()->where('idpef', $perfilPropietario->idpef)->pluck('idper')->toArray();
     }
 
     /**

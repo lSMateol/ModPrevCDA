@@ -415,7 +415,7 @@
                     <label>Propietario <span class="req">*</span></label>
                     <select name="prop" required>
                         <option value="">Seleccionar</option>
-                        @foreach($personas as $p)
+                        @foreach($propietarios as $p)
                             <option value="{{ $p->idper }}" {{ old('prop', $vehiculo->prop ?? '') == $p->idper ? 'selected' : '' }}>
                                 {{ $p->nomper }} {{ $p->apeper ?? '' }} — {{ $p->ndocper ?? '' }}
                             </option>
@@ -428,7 +428,7 @@
                     <label>Conductor asignado <span class="req">*</span></label>
                     <select name="cond" required>
                         <option value="">Seleccionar</option>
-                        @foreach($personas as $p)
+                        @foreach($conductores as $p)
                             <option value="{{ $p->idper }}" {{ old('cond', $vehiculo->cond ?? '') == $p->idper ? 'selected' : '' }}>
                                 {{ $p->nomper }} {{ $p->apeper ?? '' }} — {{ $p->ndocper ?? '' }}
                             </option>
@@ -470,7 +470,8 @@
     function vehiculoFormInit() {
         return {
             marcas: @json($marcas),
-            personas: @json($personas),
+            propietarios: @json($propietarios),
+            conductores: @json($conductores),
             
             // Marca (Línea)
             searchMarca: '{{ $vehiculo->marca->nommarlin ?? '' }}',

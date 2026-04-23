@@ -8,6 +8,7 @@ use App\Models\Persona;
 use App\Models\Marca;
 use App\Models\Valor;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class VehiculoController extends Controller
 {
@@ -37,12 +38,18 @@ class VehiculoController extends Controller
         $cargas       = Valor::where('iddom', 10)->where('actval', 1)->orderBy('nomval')->get();
         $marcas       = Marca::orderBy('idmar', 'asc')->get(['idmar', 'nommarlin', 'depmar']);
 
-        $personas = Persona::where('actper', 1)
+        $propietarios = Persona::where('actper', 1)
+            ->where('idpef', 6)
+            ->orderBy('nomper')
+            ->get(['idper', 'nomper', 'apeper', 'ndocper']);
+
+        $conductores = Persona::where('actper', 1)
+            ->where('idpef', 7)
             ->orderBy('nomper')
             ->get(['idper', 'nomper', 'apeper', 'ndocper']);
 
         return view('vehiculos.dashboard_vehiculos', compact(
-            'vehiculos', 'empresasFiltro', 'clasesFiltro', 'personas',
+            'vehiculos', 'empresasFiltro', 'clasesFiltro', 'propietarios', 'conductores',
             'combustibles', 'cargas', 'marcas'
         ));
     }
@@ -127,8 +134,8 @@ class VehiculoController extends Controller
     public function updateVinculos(Request $request, $id)
     {
         $request->validate([
-            'prop' => 'nullable|integer|exists:persona,idper',
-            'cond' => 'nullable|integer|exists:persona,idper',
+            'prop' => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
+            'cond' => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
             'idemp' => 'nullable|integer|exists:empresa,idemp',
         ]);
 
@@ -199,8 +206,8 @@ class VehiculoController extends Controller
             'crgveh'       => 'nullable|integer',
             'blinveh'      => 'nullable|in:1,2',
             'polaveh'      => 'nullable|in:1,2',
-            'prop'         => 'nullable|integer',
-            'cond'         => 'nullable|integer',
+            'prop'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
+            'cond'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
         ]);
 
         try {
@@ -238,7 +245,8 @@ class VehiculoController extends Controller
             'combustibles' => Valor::where('iddom', 2)->where('actval', 1)->orderBy('nomval')->get(),
             'tiposMotor'   => Valor::where('iddom', 9)->where('actval', 1)->orderBy('nomval')->get(),
             'cargas'       => Valor::where('iddom', 10)->where('actval', 1)->orderBy('nomval')->get(),
-            'personas'     => Persona::where('actper', 1)->orderBy('nomper')->get(['idper', 'nomper', 'apeper', 'ndocper', 'nliccon', 'fvencon', 'catcon']),
+            'propietarios' => Persona::where('actper', 1)->where('idpef', 6)->orderBy('nomper')->get(['idper', 'nomper', 'apeper', 'ndocper', 'nliccon', 'fvencon', 'catcon']),
+            'conductores'  => Persona::where('actper', 1)->where('idpef', 7)->orderBy('nomper')->get(['idper', 'nomper', 'apeper', 'ndocper', 'nliccon', 'fvencon', 'catcon']),
             'empresas'     => ($user->hasRole('Empresa') && $user->empresa)
                                 ? collect([$user->empresa])
                                 : Empresa::orderBy('razsoem')->get(),
@@ -276,8 +284,8 @@ class VehiculoController extends Controller
             'fecvene'      => 'required|date',
             'tecmecveh'    => 'required|numeric|digits_between:1,15',
             'fecvent'      => 'required|date',
-            'prop'         => 'required|integer|exists:persona,idper',
-            'cond'         => 'required|integer|exists:persona,idper',
+            'prop'         => ['required', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
+            'cond'         => ['required', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
         ], [
             'placaveh.unique' => 'Ya existe un vehículo con esta placa.',
