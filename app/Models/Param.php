@@ -12,7 +12,7 @@ class Param extends Model
 
     protected $fillable = [
         'nompar', 'idtip', 'rini', 'rfin',
-        'control', 'nomcampo', 'unipar', 'colum', 'actpar', 'can'
+        'control', 'nomcampo', 'unipar', 'colum', 'actpar', 'can', 'se_mantiene'
     ];
 
     public function tippar()

@@ -161,11 +161,19 @@
                             </div>
                         @elseif($param->control == 'number')
                             <div class="space-y-1">
-                                <label class="text-[0.65rem] font-black uppercase tracking-widest {{ $errors->has($param->nompar) ? 'text-red-700' : 'text-on-surface-variant' }} opacity-60 px-1">{{ str_replace('_', ' ', $param->nompar) }}</label>
+                                <div class="flex items-center justify-between px-1">
+                                    <label class="text-[0.65rem] font-black uppercase tracking-widest {{ $errors->has($param->nompar) ? 'text-red-700' : 'text-on-surface-variant' }} opacity-60">{{ str_replace('_', ' ', $param->nompar) }}</label>
+                                    @if($param->rini !== null || $param->rfin !== null)
+                                        <span class="text-[9px] font-black opacity-30 tracking-tighter">[{{ $param->rini }} - {{ $param->rfin }}]{{ $param->unipar }}</span>
+                                    @endif
+                                </div>
                                 <input type="number" step="any" name="{{ $param->nompar }}" 
                                     value="{{ old($param->nompar, $paramValues[$param->nompar] ?? '') }}" 
-                                    placeholder="Escribe aquí..."
-                                    class="w-full {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-300 ring-1 ring-red-300' : 'bg-surface-container-high border-none' }} rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all">
+                                    placeholder="---"
+                                    data-min="{{ $param->rini }}"
+                                    data-max="{{ $param->rfin }}"
+                                    data-mantiene="{{ $param->se_mantiene }}"
+                                    class="dynamic-param-input w-full {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-300 ring-1 ring-red-300' : 'bg-surface-container-high border-none' }} rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-bold text-[#001834] transition-all">
                                 @error($param->nompar)
                                     <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter px-1">{{ $message }}</span>
                                 @enderror
@@ -315,5 +323,31 @@ function fillDieselPass() {
     
     console.log("Valores Diesel generados cumpliendo restricciones estrictas.");
 }
+    // Validación en tiempo real para parámetros numéricos
+    document.querySelectorAll('.dynamic-param-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const val = parseFloat(this.value);
+            const min = parseFloat(this.dataset.min);
+            const max = parseFloat(this.dataset.max);
+            const mantiene = this.dataset.mantiene === "1";
+
+            if (!isNaN(val) && !isNaN(min) && !isNaN(max)) {
+                if (val < min || val > max) {
+                    this.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                    if (mantiene) {
+                        this.setCustomValidity(`Valor fuera de rango permitido (${min} - ${max})`);
+                    }
+                } else {
+                    this.classList.remove('ring-2', 'ring-red-500', 'bg-red-50');
+                    this.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50');
+                    this.setCustomValidity('');
+                }
+            } else {
+                this.classList.remove('ring-2', 'ring-red-500', 'bg-red-50', 'ring-emerald-50', 'bg-emerald-50');
+            }
+        });
+        // Disparar validación inicial para valores existentes
+        if(input.value) input.dispatchEvent(new Event('input'));
+    });
 </script>
 @endsection

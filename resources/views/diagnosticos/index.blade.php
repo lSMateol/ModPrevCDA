@@ -247,13 +247,14 @@
                     });
                     
                     const data = await res.json();
+                    allVehicles = data.vehiculos;
                     
                     const selectVehiculo = document.getElementById('idveh');
                     selectVehiculo.innerHTML = '<option value="">Seleccione vehículo</option>';
-                    data.vehiculos.forEach(v => {
+                    allVehicles.forEach(v => {
                         selectVehiculo.innerHTML += `<option value="${v.idveh}">${v.placaveh} - ${v.empresa?.razsoem || 'Sin empresa'}</option>`;
                     });
-                    
+
                     const selectInsp = document.getElementById('idinsp');
                     selectInsp.innerHTML = '<option value="">Seleccione inspector</option>';
                     data.inspectores.forEach(i => {
@@ -271,6 +272,17 @@
                     console.error('Error al cargar datos:', error);
                 }
             });
+
+            const selectVehiculo = document.getElementById('idveh');
+            if (selectVehiculo) {
+                selectVehiculo.addEventListener('change', (e) => {
+                    const veh = allVehicles.find(v => v.idveh == e.target.value);
+                    const display = document.getElementById('combu_display');
+                    if (veh && display) {
+                        display.value = veh.combustible?.nomval || 'NO DEFINIDO';
+                    }
+                });
+            }
 
             if (closeAgendar) closeAgendar.onclick = () => modalAgendar.classList.add('hidden');
             modalAgendar.onclick = (e) => { if (e.target === modalAgendar) modalAgendar.classList.add('hidden'); };

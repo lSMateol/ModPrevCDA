@@ -62,11 +62,34 @@ class DiagnosticoController extends Controller
 
     public function dataForModal()
     {
-        // Eliminar el dd() que está deteniendo la ejecución
-        $vehiculos = Vehiculo::with('empresa')->get();
+        $vehiculos = Vehiculo::with(['empresa', 'combustible'])->get();
         $inspectores = Persona::where('idpef', 4)->get(); // idpef=4 = Inspector
         $ingenieros = Persona::where('idpef', 5)->get();  // idpef=5 = Ingeniero
+        // Ya no necesitamos enviar todos los combustibles por separado al modal
         return response()->json(compact('vehiculos', 'inspectores', 'ingenieros'));
+    }
+
+    public function getParametersByCombustible($idval)
+    {
+        $config = \App\Models\TipoVehiculoConfig::with(['parameter.tippar'])
+            ->where('idval_combu', $idval)
+            ->orderBy('orden')
+            ->get();
+
+        $grouped = [];
+        foreach ($config as $item) {
+            if (!$item->parameter) continue;
+            $domainName = $item->parameter->tippar->nomtip;
+            if (!isset($grouped[$domainName])) {
+                $grouped[$domainName] = [
+                    'icon' => $item->parameter->tippar->icotip,
+                    'params' => []
+                ];
+            }
+            $grouped[$domainName]['params'][] = $item->parameter;
+        }
+
+        return response()->json($grouped);
     }
 
     public function store(Request $request)
@@ -77,6 +100,9 @@ class DiagnosticoController extends Controller
             'idinsp' => 'required|exists:persona,idper',
             'iding' => 'required|exists:persona,idper',
         ]);
+
+        $vehiculo = Vehiculo::findOrFail($request->idveh);
+        $idval_combu = $vehiculo->combuveh; // Obtenemos el combustible automáticamente del vehículo
 
         $persona = Auth::user()->persona;
         if (!$persona) {
@@ -96,10 +122,11 @@ class DiagnosticoController extends Controller
         $diagnostico = Diag::create([
             'fecdia' => now(),
             'idveh' => $request->idveh,
+            'idval_combu' => $idval_combu,
             'aprobado' => null, // Inicia como pendiente
             'idper' => $persona->idper,
             'fecvig' => now()->addYear(),
-            'kilomt' => $request->idveh ? Vehiculo::find($request->idveh)->kilomt : 0, // Fallback if needed
+            'kilomt' => $request->idveh ? $vehiculo->kilomt : 0, 
             'idinsp' => $request->idinsp,
             'iding' => $request->iding,
         ]);
@@ -111,12 +138,28 @@ class DiagnosticoController extends Controller
 
     public function edit($id)
     {
-        $diagnostico = Diag::with(['vehiculo', 'parametros.parametro'])->findOrFail($id);
+        $diagnostico = Diag::with(['vehiculo', 'parametros.parametro', 'tipoVehiculo'])->findOrFail($id);
         $paramValues = [];
         foreach ($diagnostico->parametros as $p) {
             $paramValues[$p->parametro->nompar] = $p->valor;
         }
-        $parametrosPorTipo = Param::with('tippar')->where('actpar', 1)->get()->groupBy('tippar.nomtip');
+
+        // Filtrar parámetros según la configuración del tipo de vehículo
+        $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
+        $config = \App\Models\TipoVehiculoConfig::with(['parameter.tippar'])
+            ->where('idval_combu', $idval_combu)
+            ->orderBy('orden')
+            ->get();
+
+        $parametrosPorTipo = [];
+        foreach ($config as $item) {
+            if (!$item->parameter) continue;
+            $domainName = $item->parameter->tippar->nomtip;
+            if (!isset($parametrosPorTipo[$domainName])) {
+                $parametrosPorTipo[$domainName] = collect();
+            }
+            $parametrosPorTipo[$domainName]->push($item->parameter);
+        }
 
         return view('diagnosticos.form', compact('diagnostico', 'paramValues', 'parametrosPorTipo'));
     }
@@ -124,31 +167,36 @@ class DiagnosticoController extends Controller
     public function update(Request $request, $id)
     {
         $diagnostico = Diag::findOrFail($id);
-        $parametros = Param::where('actpar', 1)->get();
         
-        $requiredParamsList = [
-            'luz_izquierda', 'luz_derecha',
-            'temp_c', 'rpm', 'ciclo1', 'ciclo2', 'ciclo3', 'ciclo4', 'resultado_diesel',
-            'dilusion_gasolina', 'Criterios_de_validacion'
-        ];
-
+        // Obtener solo los parámetros configurados para este tipo de vehículo
+        $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
+        $configIds = \App\Models\TipoVehiculoConfig::where('idval_combu', $idval_combu)->pluck('idpar');
+        $parametros = Param::whereIn('idpar', $configIds)->where('actpar', 1)->get();
+        
         $rules = [];
         $messages = [];
         foreach ($parametros as $param) {
-            $esRequerido = in_array($param->nompar, $requiredParamsList);
-            $regla = $esRequerido ? 'required' : 'nullable';
+            // El parámetro es requerido si no es opcional (se puede definir lógica aquí)
+            // Por ahora, asumimos que los que tienen rango o son radio son importantes
+            $regla = 'nullable';
 
-            if ($param->control === 'number' && !is_null($param->rini) && !is_null($param->rfin)) {
-                $regla .= "|numeric|between:{$param->rini},{$param->rfin}";
+            if ($param->control === 'number') {
+                $regla = 'required|numeric';
+                if (!is_null($param->rini) && !is_null($param->rfin)) {
+                    // Si se_mantiene es true, forzamos el rango. Si no, solo validamos que sea numérico 
+                    // (o permitimos fuera de rango pero marcamos en el cálculo de aprobación)
+                    if ($param->se_mantiene) {
+                        $regla .= "|between:{$param->rini},{$param->rfin}";
+                    }
+                }
             } elseif ($param->control === 'radio') {
-                $regla .= "|in:si,no,na,funciona,no_funciona";
+                $regla = 'required|in:si,no,na,funciona,no_funciona';
             }
-            $rules[$param->nompar] = $regla;
             
-            if ($esRequerido) {
-                $label = str_replace('_', ' ', $param->nompar);
-                $messages[$param->nompar . '.required'] = "El campo {$label} es obligatorio.";
-            }
+            $rules[$param->nompar] = $regla;
+            $label = str_replace('_', ' ', $param->nompar);
+            $messages[$param->nompar . '.required'] = "El campo {$label} es obligatorio.";
+            $messages[$param->nompar . '.between'] = "El campo {$label} debe estar entre {$param->rini} y {$param->rfin} (Requisito Crítico).";
         }
         $request->validate($rules, $messages);
 
@@ -570,6 +618,19 @@ class DiagnosticoController extends Controller
         if ($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado') {
             $prefix = $this->getPrefix();
             return redirect()->route($prefix . '.diagnosticos.index')->with('error', 'Este diagnóstico ha sido reasignado. Debe completar el nuevo proceso para exportar el formato actualizado.');
+        }
+
+        // Restricción: Requiere al menos 2 fotos de evidencia
+        $fotosCount = $diagnostico->fotos->count();
+        if ($fotosCount < 2) {
+            $faltantes = 2 - $fotosCount;
+            return response()->view('diagnosticos.export_error', [
+                'titulo' => 'No se puede exportar el reporte',
+                'mensaje' => 'Se requieren al menos <strong>2 fotos</strong> de evidencia fotográfica para generar el reporte de inspección.',
+                'detalle' => 'Actualmente este diagnóstico tiene <strong>' . $fotosCount . '</strong> foto(s). Faltan <strong>' . $faltantes . '</strong> más.',
+                'placa' => $diagnostico->vehiculo->placaveh ?? 'N/A',
+                'iddia' => $diagnostico->iddia,
+            ], 422);
         }
 
         $params = $diagnostico->parametros->groupBy(function($p) {

@@ -25,14 +25,27 @@
                 @csrf
                 
                 <!-- Vehículo -->
-                <div class="space-y-2">
-                    <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Vehículo</label>
-                    <div class="relative group">
-                        <select name="idveh" id="idveh" required class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-primary-fixed-dim focus:ring-0 rounded-t-xl px-4 py-3 appearance-none text-on-surface font-semibold text-sm transition-all group-hover:bg-surface-container-highest cursor-pointer">
-                            <option value="" disabled selected>Seleccione placa o interno</option>
-                            <option value="">Cargando...</option>
-                        </select>
-                        <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant transition-transform group-hover:translate-y-[-40%]">expand_more</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Vehículo</label>
+                        <div class="relative group">
+                            <select name="idveh" id="idveh" required class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-primary-fixed-dim focus:ring-0 rounded-t-xl px-4 py-3 appearance-none text-on-surface font-semibold text-sm transition-all group-hover:bg-surface-container-highest cursor-pointer">
+                                <option value="" disabled selected>Seleccione placa o interno</option>
+                                <option value="">Cargando...</option>
+                            </select>
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant transition-transform group-hover:translate-y-[-40%]">expand_more</span>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Vehículo (Combustible) - Automático -->
+                    <div class="space-y-2">
+                        <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Tipo de Vehículo</label>
+                        <div class="relative group">
+                            <input type="text" id="combu_display" readonly disabled 
+                                   class="w-full bg-surface-container-high/50 border-b-2 border-outline-variant/10 rounded-t-xl px-4 py-3 text-on-surface font-black text-xs uppercase tracking-widest cursor-not-allowed"
+                                   placeholder="DETECCIÓN AUTOMÁTICA">
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-30">local_gas_station</span>
+                        </div>
                     </div>
                 </div>
 

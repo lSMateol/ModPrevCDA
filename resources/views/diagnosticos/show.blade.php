@@ -88,19 +88,34 @@
         return !is_null($p->valor) && $p->valor !== '';
     })->pluck('parametro.nompar')->toArray();
 
+    $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
+    $isDiesel = str_contains($combuStr, 'DIESEL');
+
     $requiredParamsDict = [
         'luz_izquierda' => 'Luz Izquierda',
         'luz_derecha' => 'Luz Derecha',
-        'temp_c' => 'Temp C (V. Diesel)',
-        'rpm' => 'RPM (V. Diesel)',
-        'ciclo1' => 'Ciclo 1 (V. Diesel)',
-        'ciclo2' => 'Ciclo 2 (V. Diesel)',
-        'ciclo3' => 'Ciclo 3 (V. Diesel)',
-        'ciclo4' => 'Ciclo 4 (V. Diesel)',
-        'resultado_diesel' => 'Resultado Diesel',
-        'dilusion_gasolina' => 'Dilución Gasolina (Defectos)',
-        'Criterios_de_validacion' => 'Criterios de Validación (Defectos)'
+        'dilusion_gasolina' => 'Dilución Gasolina',
+        'Criterios_de_validacion' => 'Criterios de Validación'
     ];
+
+    if ($isDiesel) {
+        $requiredParamsDict['temp_c'] = 'Temp C (V. Diesel)';
+        $requiredParamsDict['rpm'] = 'RPM (V. Diesel)';
+        $requiredParamsDict['ciclo1'] = 'Ciclo 1 (V. Diesel)';
+        $requiredParamsDict['ciclo2'] = 'Ciclo 2 (V. Diesel)';
+        $requiredParamsDict['ciclo3'] = 'Ciclo 3 (V. Diesel)';
+        $requiredParamsDict['ciclo4'] = 'Ciclo 4 (V. Diesel)';
+        $requiredParamsDict['resultado_diesel'] = 'Resultado Diesel';
+    } else {
+        $requiredParamsDict['co_ralenti'] = 'CO Ralenti';
+        $requiredParamsDict['co_crucero'] = 'CO Crucero';
+        $requiredParamsDict['hc_ralenti'] = 'HC Ralenti';
+        $requiredParamsDict['hc_crucero'] = 'HC Crucero';
+        $requiredParamsDict['o2_ralenti'] = 'O2 Ralenti';
+        $requiredParamsDict['o2_crucero'] = 'O2 Crucero';
+        $requiredParamsDict['co2_ralenti'] = 'CO2 Ralenti';
+        $requiredParamsDict['co2_crucero'] = 'CO2 Crucero';
+    }
 
     $missingFields = [];
     foreach($requiredParamsDict as $key => $label) {
@@ -275,8 +290,12 @@
                                         $cumple = ($val >= $param->rini && $val <= $param->rfin);
                                     } elseif ($param->control == 'radio') {
                                         if ($esSeccionDefectos) {
-                                            if (str_contains(strtolower($param->nompar), 'criterios')) $cumple = ($val == 'si');
-                                            else $cumple = ($val == 'no' || $val == 'na');
+                                            // Lógica específica solicitada: (Dilusion_gasolina NO/NA) AND (Criterios_de_validacion SI)
+                                            $valDilusion = $params->firstWhere('parametro.nompar', 'dilusion_gasolina')->valor ?? '';
+                                            $valCriterios = $params->firstWhere('parametro.nompar', 'Criterios_de_validacion')->valor ?? '';
+                                            $dilusionOk = in_array(strtolower($valDilusion), ['no', 'na']);
+                                            $criteriosOk = strtolower($valCriterios) == 'si';
+                                            $cumple = $dilusionOk && $criteriosOk;
                                         } else {
                                             $cumple = !in_array($val, ['no', 'no_funciona']);
                                         }
@@ -287,12 +306,12 @@
                                         ? $param->rini . '-' . $param->rfin
                                         : ($param->control == 'radio' ? 'Cualit.' : 'N/A');
                                 @endphp
-                                <tr class="group hover:bg-surface-container-low/30 transition-colors">
+                                <tr class="group hover:bg-surface-container-low/30 transition-colors {{ !$cumple ? 'bg-red-50/50' : '' }}">
                                     <td class="py-4 md:py-5 pr-4">
-                                        <p class="font-bold text-sm text-[#001834]">{{ $param->nompar }}</p>
+                                        <p class="font-bold text-sm {{ !$cumple ? 'text-red-700' : 'text-[#001834]' }}">{{ str_replace('_', ' ', $param->nompar) }}</p>
                                     </td>
-                                    <td class="py-4 md:py-5 font-black text-sm text-[#001834]/80">
-                                        {{ $p->valor }} {{ $param->nompar == 'Temperatura' ? '°C' : '' }}
+                                    <td class="py-4 md:py-5 font-black text-sm {{ !$cumple ? 'text-red-900' : 'text-[#001834]/80' }}">
+                                        {{ $p->valor }} {{ $param->unipar }}
                                     </td>
                                     <td class="py-4 md:py-5 font-bold text-[10px] md:text-xs text-on-surface-variant opacity-60 hidden sm:table-cell">
                                         {{ $rango }}
@@ -336,7 +355,18 @@
                             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
                                 if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
-                                if (in_array($val, ['no', 'no_funciona'])) $sectionCumple = false;
+                                if (str_contains(strtoupper($tipo), 'DEFECTOS')) {
+                                    $valDilusion = $params->firstWhere('parametro.nompar', 'dilusion_gasolina')->valor ?? '';
+                                    $valCriterios = $params->firstWhere('parametro.nompar', 'Criterios_de_validacion')->valor ?? '';
+                                    
+                                    $dilusionOk = in_array(strtolower($valDilusion), ['no', 'na']);
+                                    $criteriosOk = strtolower($valCriterios) == 'si';
+                                    
+                                    if (!($dilusionOk && $criteriosOk)) $sectionCumple = false;
+                                    break;
+                                } else {
+                                    if (in_array($val, ['no', 'no_funciona'])) $sectionCumple = false;
+                                }
                             } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
                                 if (!empty($val)) $sectionCumple = false;
                             }

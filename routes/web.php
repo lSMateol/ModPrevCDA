@@ -37,6 +37,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
 
     // CRUD de Diagnósticos para Administrador
     Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+    Route::get('/diagnosticos/params/{idval}', [DiagnosticoController::class, 'getParametersByCombustible'])->name('diagnosticos.params-by-type');
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
     
     // Rutas de Rechazados
@@ -137,6 +138,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     
     // CRUD de Diagnósticos para Digitador
     Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+    Route::get('/diagnosticos/params/{idval}', [DiagnosticoController::class, 'getParametersByCombustible'])->name('diagnosticos.params-by-type');
     Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
 
     // Rutas de Rechazados

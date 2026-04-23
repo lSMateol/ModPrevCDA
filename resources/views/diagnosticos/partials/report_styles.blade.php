@@ -46,7 +46,7 @@
         line-height: 1.2;
     }
     .logo {
-        width: 65px;
+        width: 200px;
         height: auto;
     }
     .order-info {

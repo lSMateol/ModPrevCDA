@@ -11,7 +11,7 @@ class Diag extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'fecdia', 'idveh', 'aprobado', 'idper',
+        'fecdia', 'idveh', 'idval_combu', 'aprobado', 'idper',
         'fecvig', 'kilomt', 'idinsp', 'iding', 'iddiapar', 'dpiddia'
     ];
 
@@ -38,6 +38,11 @@ class Diag extends Model
     public function diagnosticoPadre()
     {
         return $this->belongsTo(Diag::class, 'dpiddia', 'iddia');
+    }
+
+    public function tipoVehiculo()
+    {
+        return $this->belongsTo(Valor::class, 'idval_combu', 'idval');
     }
 
     public function parametros()
