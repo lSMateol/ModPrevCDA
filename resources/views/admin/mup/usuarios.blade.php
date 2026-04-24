@@ -435,7 +435,7 @@
             </div>
             <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Usuario?</h3>
             <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
-                Se revocarán todos los permisos de <span class="text-[#001834] font-black" x-text="selectedUser?.name"></span>. Esta acción no se puede deshacer.
+                Se revocarán los permisos y se <span class="text-red-600 font-black uppercase">eliminará el perfil</span> de <span class="text-[#001834] font-black" x-text="selectedUser?.name"></span> de forma permanente.
             </p>
             
             <div class="flex gap-4">

@@ -288,10 +288,12 @@ class MupController extends Controller
                 ->orWhere('iding', $id)
                 ->count();
             
+            $rechCount = DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->count();
+            $docCount = DB::table('documento')->where('idper', $id)->count();
             $histCount = DB::table('historial')->where('idper', $id)->count();
             
-            if ($diagCount > 0 || $histCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil tiene diagnósticos registrados (como conductor, inspector o ingeniero) o historial de auditoría que debe preservarse por ley.");
+            if ($diagCount > 0 || $rechCount > 0 || $docCount > 0 || $histCount > 0) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil tiene diagnósticos, rechazos, documentos o historial de auditoría que debe preservarse por ley.");
             }
 
             // 3. Limpieza Universal de registros secundarios (No bloqueantes)
@@ -1008,10 +1010,12 @@ class MupController extends Controller
                 return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene {$vCount} vehículo(s) vinculados.");
             }
 
-            // 2. Bloqueo por Personal (Conductores/Propietarios vinculados a esta empresa)
+            // 2. Bloqueo por Personal e Historial
             $pCount = Persona::where('idemp', $id)->count();
-            if ($pCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene {$pCount} persona(s) registradas bajo su NIT.");
+            $hCount = DB::table('historial')->where('idemp', $id)->count();
+
+            if ($pCount > 0 || $hCount > 0) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene personal registrado o registros de auditoría vinculados.");
             }
 
             // 3. Limpiar usuarios de acceso
@@ -1116,25 +1120,44 @@ class MupController extends Controller
      */
     public function destroyUsuario($id)
     {
+        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $routeName = "{$rolePrefix}.mup.usuarios.index";
+
         try {
             DB::beginTransaction();
             $user = User::findOrFail($id);
             $idper = $user->idper;
 
-            // Delete User first
-            $user->delete();
+            if ($idper) {
+                // VALIDACIÓN DE SEGURIDAD (Trazabilidad CDA)
+                $diagCount = DB::table('diag')->where('idper', $idper)->orWhere('idinsp', $idper)->orWhere('iding', $idper)->count();
+                $rechCount = DB::table('rechazo')->where('idper_ant', $idper)->orWhere('idper_nvo', $idper)->count();
+                $docCount = DB::table('documento')->where('idper', $idper)->count();
+                $histCount = DB::table('historial')->where('idper', $idper)->count();
+                $vehCount = DB::table('vehiculo')->where('prop', $idper)->count();
 
-            // Delete Persona
+                if ($diagCount > 0 || $rechCount > 0 || $docCount > 0 || $histCount > 0 || $vehCount > 0) {
+                    return redirect()->route($routeName)->with('error', "No se puede eliminar: El usuario tiene procesos operativos, vehículos o registros de auditoría vinculados.");
+                }
+
+                // Limpieza de vínculos no bloqueantes
+                DB::table('proveh')->where('idper', $idper)->delete();
+                DB::table('diapar')->where('idper', $idper)->delete();
+                Vehiculo::where('cond', $idper)->update(['cond' => null]);
+            }
+
+            // Eliminar User y luego Persona
+            $user->delete();
             if ($idper) {
                 Persona::where('idper', $idper)->delete();
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Usuario eliminado permanentemente del sistema.');
+            return redirect()->route($routeName)->with('success', 'Usuario y perfil eliminados exitosamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'eliminar el usuario'));
+            return redirect()->route($routeName)->with('error', "No se pudo eliminar el usuario debido a vínculos operativos detectados.");
         }
     }
 
