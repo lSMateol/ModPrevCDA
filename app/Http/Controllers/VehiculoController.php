@@ -137,6 +137,9 @@ class VehiculoController extends Controller
             'prop' => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
             'cond' => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
             'idemp' => 'nullable|integer|exists:empresa,idemp',
+        ], [
+            'integer' => 'Debe seleccionar una opción válida.',
+            'exists' => 'El registro seleccionado no es válido o no existe.',
         ]);
 
         $vehiculo = Vehiculo::findOrFail($id);
@@ -208,6 +211,10 @@ class VehiculoController extends Controller
             'polaveh'      => 'nullable|in:1,2',
             'prop'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
             'cond'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
+        ], [
+            'integer' => 'El valor ingresado no es válido.',
+            'in' => 'La opción seleccionada no es válida.',
+            'exists' => 'La opción seleccionada no existe en el sistema.',
         ]);
 
         try {
@@ -226,7 +233,7 @@ class VehiculoController extends Controller
 
             return response()->json(['success' => true, 'vehiculo' => $vehiculo]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Ocurrió un error interno al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
@@ -275,19 +282,29 @@ class VehiculoController extends Controller
             'nchaveh'      => 'required|string|max:30',
             'blinveh'      => 'required|in:1,2',
             'polaveh'      => 'nullable|in:1,2',
-            'lictraveh'    => 'required|numeric|digits_between:1,15',
+            'lictraveh'    => 'required|numeric|digits_between:1,20',
             'fmatv'        => 'required|date',
             'fecvenr'      => 'nullable|date',
-            'soat'         => 'required|numeric|digits_between:1,15',
+            'soat'         => 'required|numeric|digits_between:1,20',
             'fecvens'      => 'required|date',
-            'extcontveh'   => 'required|numeric|digits_between:1,15',
+            'extcontveh'   => 'required|numeric|digits_between:1,20',
             'fecvene'      => 'required|date',
-            'tecmecveh'    => 'required|numeric|digits_between:1,15',
+            'tecmecveh'    => 'required|numeric|digits_between:1,20',
             'fecvent'      => 'required|date',
             'prop'         => ['required', 'integer', Rule::exists('persona', 'idper')->where('idpef', 6)],
             'cond'         => ['required', 'integer', Rule::exists('persona', 'idper')->where('idpef', 7)],
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
         ], [
+            'required' => 'Este campo es obligatorio.',
+            'string' => 'El formato debe ser texto.',
+            'max' => 'El valor no debe exceder los :max caracteres.',
+            'min' => 'El valor debe ser al menos :min.',
+            'integer' => 'El valor debe ser un número entero.',
+            'numeric' => 'Debe ingresar un valor numérico.',
+            'date' => 'Debe ingresar una fecha válida.',
+            'in' => 'La opción seleccionada no es válida.',
+            'exists' => 'La opción seleccionada no es válida en el sistema.',
+            'digits_between' => 'Debe contener entre :min y :max dígitos.',
             'placaveh.unique' => 'Ya existe un vehículo con esta placa.',
         ]);
     }

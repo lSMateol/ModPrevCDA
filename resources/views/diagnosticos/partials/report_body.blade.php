@@ -3,6 +3,8 @@
         return $p->parametro->tippar->nomtip;
     });
     $paramValues = $diagnostico->parametros->pluck('valor', 'parametro.nompar')->toArray();
+    $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
+    $isDiesel = str_contains($combuStr, 'DIESEL');
 @endphp
 
 <div class="container">
@@ -65,51 +67,51 @@
             <td class="label">País</td>
             <td class="value">COLOMBIA</td>
             <td class="label">Servicio</td>
-            <td class="value">Publico</td>
+            <td class="value">{{ $diagnostico->vehiculo->tipo_servicio == 1 ? 'Particular' : 'Público' }}</td>
         </tr>
         <tr>
             <td class="label">Clase</td>
-            <td class="value">BUSETA</td>
+            <td class="value">{{ $diagnostico->vehiculo->clase->nomval ?? 'N/A' }}</td>
             <td class="label">Marca</td>
-            <td class="value">{{ $diagnostico->vehiculo->marca->nommar ?? 'N/A' }}</td>
+            <td class="value">{{ $diagnostico->vehiculo->marca->nommarlin ?? 'N/A' }}</td>
             <td class="label">Linea</td>
-            <td class="value">NPR100P</td>
+            <td class="value">{{ $diagnostico->vehiculo->nordveh ?? 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">Modelo</td>
-            <td class="value">1998</td>
+            <td class="value">{{ $diagnostico->vehiculo->modveh ?? 'N/A' }}</td>
             <td class="label">No. licencia transito</td>
-            <td class="value">10016651055</td>
+            <td class="value">{{ $diagnostico->vehiculo->lictraveh ?? 'N/A' }}</td>
             <td class="label">Fecha Matricula</td>
-            <td class="value">1998-01-27</td>
+            <td class="value">{{ $diagnostico->vehiculo->fmatv ?? 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">Color</td>
-            <td class="value">BLANCO ROJO</td>
+            <td class="value">{{ $diagnostico->vehiculo->colveh ?? 'N/A' }}</td>
             <td class="label">Combustible</td>
-            <td class="value">DIESEL</td>
+            <td class="value">{{ $diagnostico->vehiculo->combustible->nomval ?? 'N/A' }}</td>
             <td class="label">VIN o Chasis</td>
-            <td class="value">9GCNPR65PWB443504</td>
+            <td class="value">{{ $diagnostico->vehiculo->nchaveh ?? 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">No. Motor</td>
-            <td class="value">867586</td>
+            <td class="value">{{ $diagnostico->vehiculo->nmotveh ?? 'N/A' }}</td>
             <td class="label">Tipo motor</td>
-            <td class="value">4 T</td>
+            <td class="value">{{ $diagnostico->vehiculo->tipoMotor->nomval ?? 'N/A' }}</td>
             <td class="label">Cilindraje</td>
-            <td class="value">4.500</td>
+            <td class="value">{{ $diagnostico->vehiculo->cilveh ?? 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">Kilometraje</td>
             <td class="value">{{ $diagnostico->kilomt }}</td>
             <td class="label">Numero de sillas</td>
-            <td class="value">28</td>
+            <td class="value">{{ $diagnostico->vehiculo->capveh ?? 'N/A' }}</td>
             <td class="label">Vidrios polarizados</td>
             <td class="value">SI( ) NO( X )</td>
         </tr>
         <tr>
             <td class="label">Blindaje:</td>
-            <td class="value" colspan="5">SI( ) NO( X )</td>
+            <td class="value" colspan="5">SI( {{ $diagnostico->vehiculo->blinveh == 1 ? 'X' : ' ' }} ) NO( {{ $diagnostico->vehiculo->blinveh == 2 ? 'X' : ' ' }} )</td>
         </tr>
     </table>
 
@@ -130,7 +132,7 @@
         </tr>
         <tr>
             <td class="label">RUIDO ESCAPE</td>
-            <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '1' }}</td>
+            <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '-' }}</td>
             <td class="text-center">dBA</td>
             <td class="label">LUZ IZQUIERDA (BAJA)</td>
             <td class="text-center" style="font-weight: bold;">
@@ -146,7 +148,8 @@
         </tr>
     </table>
 
-    <div class="section-title">DEFECTOS</div>
+    <!-- DEFECTOS -->
+    <div class="section-title">6. DEFECTOS</div>
     <table class="mechanized-section">
         <tr>
             <th style="width: 40%;">PARÁMETRO</th>
@@ -157,20 +160,29 @@
         </tr>
         <tr>
             <td class="label">DILUSION GASOLINA</td>
-            <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'si' ? 'X' : '' }}</td>
-            <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'no' ? 'X' : '' }}</td>
-            <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'na' ? 'X' : '' }}</td>
-            <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['dilusion_gasolina'] ?? '-') }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'si' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'no' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'na' ? 'X' : '' }}</td>
+            <td class="text-center" style="font-weight: bold;">
+                @php
+                    $dilOk = in_array(strtolower($paramValues['dilusion_gasolina'] ?? ''), ['no', 'na']);
+                    $criOk = (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si';
+                    $resDef = ($dilOk && $criOk) ? 'CUMPLE' : 'NO CUMPLE';
+                @endphp
+                {{ $resDef }}
+            </td>
         </tr>
         <tr>
-            <td class="label">CRITERIOS DE VALIDACION (MOTOR DIESEL)</td>
-            <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'si' ? 'X' : '' }}</td>
-            <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'no' ? 'X' : '' }}</td>
-            <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'na' ? 'X' : '' }}</td>
-            <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['Criterios_de_validacion'] ?? '-') }}</td>
+            <td class="label">CRITERIOS DE VALIDACION ({{ $isDiesel ? 'MOTOR DIESEL' : 'OTTO' }})</td>
+            <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'no' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
+            <td class="text-center" style="font-weight: bold;">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'CUMPLE' : 'NO CUMPLE' }}</td>
         </tr>
     </table>
 
+    @if($isDiesel)
+    <!-- 7. EMISIONES DE GASES DIESEL -->
     <div class="section-title">7. EMISIONES DE GASES - VEHICULO DIESEL</div>
     <table class="mechanized-section">
         <tr>
@@ -190,23 +202,74 @@
             <th>Unidad</th>
         </tr>
         <tr>
-            <td class="text-center">{{ $paramValues['temp_c'] ?? '75' }}</td>
-            <td class="text-center">{{ $paramValues['rpm'] ?? '4061' }}</td>
-            <td class="text-center">{{ $paramValues['ciclo1'] ?? '4.13' }}</td>
+            <td class="text-center">{{ $paramValues['temp_c'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['rpm'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['ciclo1'] ?? '-' }}</td>
             <td class="text-center">%</td>
-            <td class="text-center">{{ $paramValues['ciclo2'] ?? '2.50' }}</td>
+            <td class="text-center">{{ $paramValues['ciclo2'] ?? '-' }}</td>
             <td class="text-center">%</td>
-            <td class="text-center">{{ $paramValues['ciclo3'] ?? '2.27' }}</td>
+            <td class="text-center">{{ $paramValues['ciclo3'] ?? '-' }}</td>
             <td class="text-center">%</td>
-            <td class="text-center">{{ $paramValues['ciclo4'] ?? '2.41' }}</td>
+            <td class="text-center">{{ $paramValues['ciclo4'] ?? '-' }}</td>
             <td class="text-center">%</td>
             <td class="label">Resultado</td>
-            <td class="text-center">{{ $paramValues['resultado_diesel'] ?? '2.33' }}</td>
+            <td class="text-center">{{ $paramValues['resultado_diesel'] ?? '-' }}</td>
             <td class="text-center">35</td>
             <td class="text-center">%</td>
         </tr>
     </table>
+    @else
+    <!-- 7. EMISIONES DE GASES GASOLINA / GAS -->
+    <div class="section-title">7. EMISIONES DE GASES Y CICLO OTTO - VEHICULO GASOLINA/GAS</div>
+    <table class="mechanized-section">
+        <tr>
+            <td class="label" style="width: 25%;"><strong>TEMPERATURA GASES</strong></td>
+            <td class="text-center" style="width: 25%;"><strong>{{ $paramValues['temperatura_gases'] ?? '-' }} °C</strong></td>
+            <td class="label" style="width: 25%;"><strong>RPM GASES</strong></td>
+            <td class="text-center" style="width: 25%;"><strong>{{ $paramValues['rpm_gases'] ?? '-' }} rpm</strong></td>
+        </tr>
+    </table>
+    
+    <table class="mechanized-section" style="margin-top: -1px;">
+        <tr>
+            <th style="width: 20%;">PARÁMETRO</th>
+            <th colspan="2" style="width: 40%;">RESULTADO MEDICIÓN</th>
+            <th style="width: 40%;">VALORES DE REFERENCIA</th>
+        </tr>
+        <tr style="background: #f9f9f9;">
+            <td></td>
+            <th style="width: 20%;">RALENTÍ</th>
+            <th style="width: 20%;">CRUCERO</th>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="label"><strong>CO (%)</strong></td>
+            <td class="text-center">{{ $paramValues['co_ralenti'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['co_crucero'] ?? '-' }}</td>
+            <td class="text-center">[0.00 - 0.80]</td>
+        </tr>
+        <tr>
+            <td class="label"><strong>HC (ppm)</strong></td>
+            <td class="text-center">{{ $paramValues['hc_ralenti'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['hc_crucero'] ?? '-' }}</td>
+            <td class="text-center">[0.00 - 160.00]</td>
+        </tr>
+        <tr>
+            <td class="label"><strong>CO2 (%)</strong></td>
+            <td class="text-center">{{ $paramValues['co2_ralenti'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['co2_crucero'] ?? '-' }}</td>
+            <td class="text-center">[10.00 - 11.00]</td>
+        </tr>
+        <tr>
+            <td class="label"><strong>O2 (%)</strong></td>
+            <td class="text-center">{{ $paramValues['o2_ralenti'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['o2_crucero'] ?? '-' }}</td>
+            <td class="text-center">[0.00 - 5.00]</td>
+        </tr>
+    </table>
+    @endif
 
+    <!-- D. DEFECTOS ENCONTRADOS -->
     <div class="section-title">D. DEFECTOS ENCONTRADOS EN LA INSPECCIÓN VISUAL Y SENSORIAL</div>
     <table>
         <tr>
@@ -313,6 +376,7 @@
     </div>
     @endif
 
+    <!-- Bloque Informativo Automatizado -->
     <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
         <p style="margin: 0; font-weight: 900; color: #cc0000; font-size: 9.5pt; text-transform: uppercase;">
             REVISIÓN PREVENTIVA DE {{ $diagnostico->dpiddia ? 'REINSPECCIÓN' : 'INSPECCIÓN' }}

@@ -486,7 +486,7 @@
 
         <!-- Status & Secondary Actions Container -->
         <div class="pt-2 border-t border-gray-100/50">
-            @if($diagnostico->aprobado != 0 && !($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado'))
+            @if($diagnostico->aprobado != 0)
                 <div x-show="!editingStatus" class="flex items-center justify-between bg-emerald-50 p-1 pr-4 rounded-2xl border border-emerald-100 mb-2">
                     <div class="bg-emerald-100 text-emerald-700 px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">check_circle</span> FINALIZADO
@@ -498,7 +498,7 @@
             @endif
 
             @php
-                $canExport = !is_null($diagnostico->aprobado) && !($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado');
+                $canExport = !is_null($diagnostico->aprobado);
             @endphp
             <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diagnostico->iddia) : 'javascript:void(0)' }}" 
                target="{{ $canExport ? '_blank' : '_self' }}" 

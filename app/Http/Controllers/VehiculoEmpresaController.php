@@ -158,6 +158,9 @@ class VehiculoEmpresaController extends Controller
     {
         $request->validate([
             'idemp' => 'nullable|integer|exists:empresa,idemp',
+        ], [
+            'integer' => 'Debe ser un número entero.',
+            'exists' => 'La empresa seleccionada no es válida.',
         ]);
 
         $vehiculo = Vehiculo::findOrFail($id);
@@ -196,6 +199,10 @@ class VehiculoEmpresaController extends Controller
             'direm' => 'nullable|string|max:100',
             'telem' => 'nullable|string|max:15',
             'nomger' => 'required|string|max:100', // Agregado porque no tocar al gerente no significa no mostrarlo
+        ], [
+            'required' => 'Este campo es obligatorio.',
+            'string' => 'El formato debe ser texto.',
+            'max' => 'El valor no debe exceder los :max caracteres.',
         ]);
 
         try {
@@ -238,6 +245,11 @@ class VehiculoEmpresaController extends Controller
             'empresa_id' => 'required|integer|exists:empresa,idemp',
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date',
+        ], [
+            'required' => 'Este campo es obligatorio.',
+            'integer' => 'El formato debe ser un número entero.',
+            'exists' => 'El registro seleccionado no es válido.',
+            'date' => 'Debe ingresar una fecha válida.',
         ]);
 
         $user = auth()->user();
@@ -259,6 +271,9 @@ class VehiculoEmpresaController extends Controller
             ->with([
                 'vehiculo.empresa',
                 'vehiculo.marca',
+                'vehiculo.clase',
+                'vehiculo.combustible',
+                'vehiculo.tipoMotor',
                 'persona',
                 'inspector',
                 'ingeniero',
@@ -275,17 +290,37 @@ class VehiculoEmpresaController extends Controller
             $query->whereDate('fecdia', '<=', $request->fecha_fin);
         }
 
-        $diagnosticos = $query->latest('fecdia')->get();
+        $diagnosticosRaw = $query->latest('fecdia')->get();
 
-        // Excluir reasignados (no exportables)
-        $diagnosticos = $diagnosticos->filter(function ($d) {
-            return !($d->rechazo && $d->rechazo->estadorec === 'Reasignado');
+        $diagnosticos = $diagnosticosRaw->filter(function ($d) use (&$excluidosPorFotos) {
+            if ($d->fotos->count() < 2) {
+                $excluidosPorFotos++;
+                return false;
+            }
+            return true;
         });
 
         if ($diagnosticos->isEmpty()) {
-            $prefix = $user->hasRole('Administrador') ? 'admin' : ($user->hasRole('Digitador') ? 'digitador' : 'empresa');
-            return redirect()->route($prefix . '.vehiculos-empresa.index')
-                ->with('error', 'No hay informes exportables en el rango seleccionado.');
+            $totalEncontrados = $diagnosticosRaw->count();
+            
+            $mensaje = "No se encontraron diagnósticos exportables para <strong>{$empresa->razsoem}</strong> en el rango seleccionado.";
+            $detalle = "Se requiere que cada diagnóstico finalizado tenga al menos <strong>2 fotos</strong> de evidencia fotográfica.";
+
+            if ($totalEncontrados > 0) {
+                $detalle = "Se encontraron {$totalEncontrados} registros finalizados, pero:<br>";
+                if ($excluidosPorFotos > 0) $detalle .= "&bull; {$excluidosPorFotos} de ellos no cumplen con el mínimo de 2 fotos exigido.";
+            } else {
+                $mensaje = "No existen diagnósticos finalizados para esta empresa en las fechas seleccionadas.";
+                $detalle = "Verifique el rango de fechas o asegúrese de que los diagnósticos hayan sido guardados correctamente.";
+            }
+
+            return response()->view('diagnosticos.export_error', [
+                'titulo' => 'Reporte Consolidado No Disponible',
+                'placa' => 'EMPRESA: ' . $empresa->razsoem,
+                'iddia' => 'FLOTA',
+                'mensaje' => $mensaje,
+                'detalle' => $detalle,
+            ], 422);
         }
 
         return view('diagnosticos.export_consolidado', compact('diagnosticos', 'empresa'));

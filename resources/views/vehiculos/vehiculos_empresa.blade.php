@@ -713,6 +713,14 @@
                                         <label>Tipo de Servicio</label>
                                         <div class="field-shell" x-text="selectedVehiculo.tipo_servicio === 1 ? 'Particular' : 'Público'"></div>
                                     </div>
+                                    <div class="form-group">
+                                        <label>Color</label>
+                                        <div class="field-shell" x-text="selectedVehiculo.colveh || 'N/A'"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Cilindraje</label>
+                                        <div class="field-shell" x-text="selectedVehiculo.cilveh ? selectedVehiculo.cilveh + ' cc' : 'N/A'"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1220,13 +1228,6 @@
                                         <span class="info-item-value" x-text="selectedVehiculo.empresa.abremp || 'N/A'"></span>
                                     </div>
                                 </div>
-                                <div class="info-item">
-                                    <iconify-icon icon="lucide:user-circle" class="info-item-icon"></iconify-icon>
-                                    <div class="info-item-content">
-                                        <span class="info-item-label">Usuario de Acceso (App)</span>
-                                        <span class="info-item-value" x-text="selectedVehiculo.empresa.usuaemp || 'No configurado'"></span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1299,8 +1300,8 @@
                                                     <span class="company-name" x-text="v.clase?.nomval || 'N/A'"></span>
                                                 </div>
                                             </td>
-                                            <td x-text="v.color || 'N/A'"></td>
-                                            <td x-text="v.cilinveh || 'N/A'"></td>
+                                            <td x-text="v.colveh || 'N/A'"></td>
+                                            <td x-text="v.cilveh || 'N/A'"></td>
                                             <td><span class="status-badge" :class="getVehiculoEstadoPerfil(v.idveh).clase" x-text="getVehiculoEstadoPerfil(v.idveh).texto"></span></td>
                                             <td class="actions-cell">
                                                 <button class="icon-btn" title="Ver detalle en lista general" @click="search = v.placaveh; activeView = 'vehiculos'; selectVehiculo(v);">

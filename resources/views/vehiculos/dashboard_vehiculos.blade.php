@@ -431,7 +431,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Tipo de motor</label>
-                                <input type="text" :value="selectedVehiculo.tipo_motor?.nomval || '4 T'" readonly />
+                                <input type="text" :value="selectedVehiculo.tipo_motor?.nomval || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Categoría de carga</label>
@@ -452,10 +452,6 @@
                             <div class="form-group" style="grid-column: span 2;">
                                 <label>No. chasis</label>
                                 <input type="text" :value="selectedVehiculo.nchaveh || 'N/A'" readonly />
-                            </div>
-                            <div class="form-group">
-                                <label>Radio de acción</label>
-                                <input type="text" :value="selectedVehiculo.radaccveh || 'N/A'" readonly />
                             </div>
                             <div class="form-group">
                                 <label>Tipo de póliza</label>

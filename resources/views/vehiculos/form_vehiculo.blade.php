@@ -245,7 +245,7 @@
 
                 <div class="veh-field">
                     <label>Modelo (Año) <span class="req">*</span></label>
-                    <input type="number" name="modveh" value="{{ old('modveh', $vehiculo->modveh ?? '') }}" placeholder="Ej: 2024" min="1950" max="2035" required />
+                    <input type="number" name="modveh" value="{{ old('modveh', $vehiculo->modveh ?? '') }}" placeholder="Ej: 2024" min="1950" max="2035" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
                     @error('modveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -299,13 +299,13 @@
 
                 <div class="veh-field">
                     <label>Número de sillas <span class="req">*</span></label>
-                    <input type="number" name="capveh" value="{{ old('capveh', $vehiculo->capveh ?? '') }}" placeholder="Ej: 5" min="1" required />
+                    <input type="number" name="capveh" value="{{ old('capveh', $vehiculo->capveh ?? '') }}" placeholder="Ej: 5" min="1" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
                     @error('capveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
                     <label>Cilindraje (cc) <span class="req">*</span></label>
-                    <input type="number" name="cilveh" value="{{ old('cilveh', $vehiculo->cilveh ?? '') }}" placeholder="Ej: 1600" min="0" required />
+                    <input type="number" name="cilveh" value="{{ old('cilveh', $vehiculo->cilveh ?? '') }}" placeholder="Ej: 1600" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
                     @error('cilveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -351,7 +351,7 @@
 
                 <div class="veh-field">
                     <label>No. licencia de tránsito <span class="req">*</span></label>
-                    <input type="number" name="lictraveh" value="{{ old('lictraveh', $vehiculo->lictraveh ?? '') }}" placeholder="Solo números" required />
+                    <input type="number" name="lictraveh" value="{{ old('lictraveh', $vehiculo->lictraveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
                     @error('lictraveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -370,7 +370,7 @@
                 {{-- SOAT --}}
                 <div class="veh-field">
                     <label>Número de SOAT <span class="req">*</span></label>
-                    <input type="number" name="soat" value="{{ old('soat', $vehiculo->soat ?? '') }}" placeholder="Solo números" required />
+                    <input type="number" name="soat" value="{{ old('soat', $vehiculo->soat ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
                     @error('soat') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -383,7 +383,7 @@
                 {{-- Tecnomecánica --}}
                 <div class="veh-field">
                     <label>Certificado Tecnomecánica <span class="req">*</span></label>
-                    <input type="number" name="tecmecveh" value="{{ old('tecmecveh', $vehiculo->tecmecveh ?? '') }}" placeholder="Solo números" required />
+                    <input type="number" name="tecmecveh" value="{{ old('tecmecveh', $vehiculo->tecmecveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
                     @error('tecmecveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -396,7 +396,7 @@
                 {{-- Extracontractual --}}
                 <div class="veh-field">
                     <label>Póliza Extracontractual <span class="req">*</span></label>
-                    <input type="number" name="extcontveh" value="{{ old('extcontveh', $vehiculo->extcontveh ?? '') }}" placeholder="Solo números" required />
+                    <input type="number" name="extcontveh" value="{{ old('extcontveh', $vehiculo->extcontveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
                     @error('extcontveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
