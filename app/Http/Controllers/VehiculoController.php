@@ -160,31 +160,24 @@ class VehiculoController extends Controller
      */
     public function destroy($id)
     {
-        $vehiculo = Vehiculo::withCount(['diagnosticos'])->findOrFail($id);
+        $vehiculo = Vehiculo::withCount(['diagnosticos', 'documentos', 'personas'])->findOrFail($id);
 
-        // Validar integridad relacional (Diagnósticos y Documentos)
+        // 1. Validar integridad operativa (Diagnósticos y Documentos)
         if ($vehiculo->diagnosticos_count > 0 || $vehiculo->documentos_count > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se puede eliminar el vehículo porque tiene diagnósticos asociados.'
+                'message' => 'No se puede eliminar el vehículo porque tiene procesos operativos (diagnósticos o documentos) asociados.'
             ], 422);
         }
 
-        // Validar vínculos activos con MUP (Propietario, Conductor, Empresa)
-        if ($vehiculo->prop || $vehiculo->cond || $vehiculo->idemp) {
-            $vinculos = [];
-            if ($vehiculo->prop) $vinculos[] = 'Propietario';
-            if ($vehiculo->cond) $vinculos[] = 'Conductor';
-            if ($vehiculo->idemp) $vinculos[] = 'Empresa';
-
+        // 2. Validar vínculos activos con MUP (Propietario, Conductor, Empresa)
+        // Bloqueo estricto según requerimiento: No eliminar si tiene relaciones activas
+        if ($vehiculo->prop || $vehiculo->cond || $vehiculo->idemp || $vehiculo->personas_count > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se puede eliminar el vehículo porque tiene vínculos activos con: ' . implode(', ', $vinculos) . '. Debe desvincular estas entidades antes de proceder.'
+                'message' => 'No se puede eliminar el vehículo porque tiene vínculos activos con conductores, propietarios o empresas. Debe desvincularlos primero.'
             ], 422);
         }
-
-        // Limpiar la tabla pivote proveh para evitar errores de restricción de llave foránea
-        $vehiculo->personas()->detach();
 
         $vehiculo->delete();
 
