@@ -280,20 +280,12 @@ class MupController extends Controller
                 return redirect()->route($routeName)->with('error', "No se puede eliminar: Esta persona es propietaria de {$vPropiosCount} vehículo(s). Debe transferirlos primero.");
             }
 
-            // 2. Bloqueo por Trazabilidad Legal (Diagnósticos)
-            // Verificamos si la persona participó en algún diagnóstico como: paciente, inspector o ingeniero.
-            $diagCount = DB::table('diag')
-                ->where('idper', $id)
-                ->orWhere('idinsp', $id)
-                ->orWhere('iding', $id)
-                ->count();
-            
-            $rechCount = DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->count();
-            $docCount = DB::table('documento')->where('idper', $id)->count();
+            // 2. Bloqueo por Trazabilidad Legal CRÍTICA (Diagnósticos e Historial)
+            $diagCount = DB::table('diag')->where('idper', $id)->orWhere('idinsp', $id)->orWhere('iding', $id)->count();
             $histCount = DB::table('historial')->where('idper', $id)->count();
             
-            if ($diagCount > 0 || $rechCount > 0 || $docCount > 0 || $histCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil tiene diagnósticos, rechazos, documentos o historial de auditoría que debe preservarse por ley.");
+            if ($diagCount > 0 || $histCount > 0) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil tiene diagnósticos registrados o historial de auditoría legal que debe preservarse.");
             }
 
             // 3. Limpieza Universal de registros secundarios (No bloqueantes)
@@ -1131,16 +1123,16 @@ class MupController extends Controller
             if ($idper) {
                 // VALIDACIÓN DE SEGURIDAD (Trazabilidad CDA)
                 $diagCount = DB::table('diag')->where('idper', $idper)->orWhere('idinsp', $idper)->orWhere('iding', $idper)->count();
-                $rechCount = DB::table('rechazo')->where('idper_ant', $idper)->orWhere('idper_nvo', $idper)->count();
-                $docCount = DB::table('documento')->where('idper', $idper)->count();
                 $histCount = DB::table('historial')->where('idper', $idper)->count();
                 $vehCount = DB::table('vehiculo')->where('prop', $idper)->count();
 
-                if ($diagCount > 0 || $rechCount > 0 || $docCount > 0 || $histCount > 0 || $vehCount > 0) {
-                    return redirect()->route($routeName)->with('error', "No se puede eliminar: El usuario tiene procesos operativos, vehículos o registros de auditoría vinculados.");
+                if ($diagCount > 0 || $histCount > 0 || $vehCount > 0) {
+                    return redirect()->route($routeName)->with('error', "No se puede eliminar: El usuario tiene diagnósticos, historial de auditoría o vehículos a su nombre vinculados.");
                 }
 
-                // Limpieza de vínculos no bloqueantes
+                // Limpieza de vínculos no bloqueantes (Documentos y Rechazos incluidos)
+                DB::table('documento')->where('idper', $idper)->delete();
+                DB::table('rechazo')->where('idper_ant', $idper)->orWhere('idper_nvo', $idper)->delete();
                 DB::table('proveh')->where('idper', $idper)->delete();
                 DB::table('diapar')->where('idper', $idper)->delete();
                 Vehiculo::where('cond', $idper)->update(['cond' => null]);
