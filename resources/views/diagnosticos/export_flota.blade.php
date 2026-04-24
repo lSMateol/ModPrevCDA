@@ -260,51 +260,51 @@
                 <td class="label">País</td>
                 <td class="value">COLOMBIA</td>
                 <td class="label">Servicio</td>
-                <td class="value">Publico</td>
+                <td class="value">{{ $diagnostico->vehiculo->tipo_servicio == 1 ? 'Particular' : 'Público' }}</td>
             </tr>
             <tr>
                 <td class="label">Clase</td>
-                <td class="value">BUSETA</td>
+                <td class="value">{{ $diagnostico->vehiculo->clase->nomval ?? 'N/A' }}</td>
                 <td class="label">Marca</td>
-                <td class="value">{{ $diagnostico->vehiculo->marca->nommar ?? 'N/A' }}</td>
+                <td class="value">{{ $diagnostico->vehiculo->marca->nommarlin ?? 'N/A' }}</td>
                 <td class="label">Linea</td>
-                <td class="value">NPR100P</td>
+                <td class="value">{{ $diagnostico->vehiculo->nordveh ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label">Modelo</td>
-                <td class="value">1998</td>
+                <td class="value">{{ $diagnostico->vehiculo->modveh ?? 'N/A' }}</td>
                 <td class="label">No. licencia transito</td>
-                <td class="value">10016651055</td>
+                <td class="value">{{ $diagnostico->vehiculo->lictraveh ?? 'N/A' }}</td>
                 <td class="label">Fecha Matricula</td>
-                <td class="value">1998-01-27</td>
+                <td class="value">{{ $diagnostico->vehiculo->fmatv ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label">Color</td>
-                <td class="value">BLANCO ROJO</td>
+                <td class="value">{{ $diagnostico->vehiculo->colveh ?? 'N/A' }}</td>
                 <td class="label">Combustible</td>
-                <td class="value">DIESEL</td>
+                <td class="value">{{ $diagnostico->vehiculo->combustible->nomval ?? 'N/A' }}</td>
                 <td class="label">VIN o Chasis</td>
-                <td class="value">9GCNPR65PWB443504</td>
+                <td class="value">{{ $diagnostico->vehiculo->nchaveh ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label">No. Motor</td>
-                <td class="value">867586</td>
+                <td class="value">{{ $diagnostico->vehiculo->nmotveh ?? 'N/A' }}</td>
                 <td class="label">Tipo motor</td>
-                <td class="value">4 T</td>
+                <td class="value">{{ $diagnostico->vehiculo->tipoMotor->nomval ?? 'N/A' }}</td>
                 <td class="label">Cilindraje</td>
-                <td class="value">4.500</td>
+                <td class="value">{{ $diagnostico->vehiculo->cilveh ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="label">Kilometraje</td>
                 <td class="value">{{ $diagnostico->kilomt }}</td>
                 <td class="label">Numero de sillas</td>
-                <td class="value">28</td>
+                <td class="value">{{ $diagnostico->vehiculo->capveh ?? 'N/A' }}</td>
                 <td class="label">Vidrios polarizados</td>
                 <td class="value">SI( ) NO( X )</td>
             </tr>
             <tr>
                 <td class="label">Blindaje:</td>
-                <td class="value" colspan="5">SI( ) NO( X )</td>
+                <td class="value" colspan="5">SI( {{ $diagnostico->vehiculo->blinveh == 1 ? 'X' : ' ' }} ) NO( {{ $diagnostico->vehiculo->blinveh == 2 ? 'X' : ' ' }} )</td>
             </tr>
         </table>
 
@@ -326,7 +326,7 @@
             </tr>
             <tr>
                 <td class="label">RUIDO ESCAPE</td>
-                <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '1' }}</td>
+                <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '-' }}</td>
                 <td class="text-center">dBA</td>
                 <td class="label">LUZ IZQUIERDA (BAJA)</td>
                 <td class="text-center" style="font-weight: bold;">
@@ -388,18 +388,18 @@
                 <th>Unidad</th>
             </tr>
             <tr>
-                <td class="text-center">{{ $paramValues['temp_c'] ?? '75' }}</td>
-                <td class="text-center">{{ $paramValues['rpm'] ?? '4061' }}</td>
-                <td class="text-center">{{ $paramValues['ciclo1'] ?? '4.13' }}</td>
+                <td class="text-center">{{ $paramValues['temp_c'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['rpm'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['ciclo1'] ?? '-' }}</td>
                 <td class="text-center">%</td>
-                <td class="text-center">{{ $paramValues['ciclo2'] ?? '2.50' }}</td>
+                <td class="text-center">{{ $paramValues['ciclo2'] ?? '-' }}</td>
                 <td class="text-center">%</td>
-                <td class="text-center">{{ $paramValues['ciclo3'] ?? '2.27' }}</td>
+                <td class="text-center">{{ $paramValues['ciclo3'] ?? '-' }}</td>
                 <td class="text-center">%</td>
-                <td class="text-center">{{ $paramValues['ciclo4'] ?? '2.41' }}</td>
+                <td class="text-center">{{ $paramValues['ciclo4'] ?? '-' }}</td>
                 <td class="text-center">%</td>
                 <td class="label">Resultado</td>
-                <td class="text-center">{{ $paramValues['resultado_diesel'] ?? '2.33' }}</td>
+                <td class="text-center">{{ $paramValues['resultado_diesel'] ?? '-' }}</td>
                 <td class="text-center">35</td>
                 <td class="text-center">%</td>
             </tr>

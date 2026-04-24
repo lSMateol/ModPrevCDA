@@ -276,7 +276,7 @@ class DiagnosticoController extends Controller
 
     public function show($id)
     {
-        $diagnostico = Diag::with(['vehiculo.empresa', 'persona', 'inspector', 'ingeniero', 'parametros.parametro', 'fotos'])->findOrFail($id);
+        $diagnostico = Diag::with(['vehiculo.empresa', 'vehiculo.marca', 'vehiculo.clase', 'vehiculo.combustible', 'vehiculo.tipoMotor', 'persona', 'inspector', 'ingeniero', 'parametros.parametro', 'fotos'])->findOrFail($id);
         return view('diagnosticos.show', compact('diagnostico'));
     }
 
@@ -600,7 +600,10 @@ class DiagnosticoController extends Controller
     {
         $diagnostico = Diag::with([
             'vehiculo.empresa', 
-            'vehiculo.marca', 
+            'vehiculo.marca',
+            'vehiculo.clase',
+            'vehiculo.combustible',
+            'vehiculo.tipoMotor',
             'persona', 
             'inspector', 
             'ingeniero', 
@@ -615,10 +618,8 @@ class DiagnosticoController extends Controller
             return redirect()->route($prefix . '.diagnosticos.index')->with('error', 'Debe terminar el proceso (guardar parámetros) para poder exportar este diagnóstico.');
         }
 
-        if ($diagnostico->rechazo && $diagnostico->rechazo->estadorec == 'Reasignado') {
-            $prefix = $this->getPrefix();
-            return redirect()->route($prefix . '.diagnosticos.index')->with('error', 'Este diagnóstico ha sido reasignado. Debe completar el nuevo proceso para exportar el formato actualizado.');
-        }
+        // Restricción eliminada: Los diagnósticos reasignados (que generaron reinspección)
+        // igual deben poder exportarse como evidencia histórica del rechazo original.
 
         // Restricción: Requiere al menos 2 fotos de evidencia
         $fotosCount = $diagnostico->fotos->count();
