@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@include('admin.mup.partials.flash')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
@@ -39,8 +40,6 @@
     </div>
 
     @include('admin.mup.partials.navigation')
-
-    @include('admin.mup.partials.flash')
 
     <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
     <div class="grid grid-cols-12 gap-8 mt-6">
@@ -323,6 +322,20 @@
             <form action="{{ route($mupPrefix . '.propietarios.store') }}" method="POST" id="createForm" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 <input type="hidden" name="_propietario_form" value="create">
+
+                @if($errors->any() && old('_propietario_form') === 'create')
+                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-red-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-red-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -383,6 +396,14 @@
                         </select>
                     </div>
                     <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">N° Licencia</label>
+                        <input type="text" name="nliccon" value="{{ old('nliccon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. 12345678">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento Lic.</label>
+                        <input type="date" name="fvencon" value="{{ old('fvencon') }}" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado <span class="text-blue-500">*</span></label>
                         <select name="actper" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all appearance-none" required>
                             <option value="1" @selected(old('actper', '1') == '1')>Activo</option>
@@ -417,7 +438,22 @@
             <form :action="'{{ url($mupBase . '/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
-                
+                <input type="hidden" name="_propietario_form" value="edit">
+                <input type="hidden" name="idper" :value="currentProp.idper">
+
+                @if($errors->any() && old('_propietario_form') === 'edit')
+                    <div class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-amber-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-amber-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-amber-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-blue-500">*</span></label>
@@ -475,6 +511,14 @@
                                 <option value="{{ $cat }}">{{ $cat }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">N° Licencia</label>
+                        <input type="text" name="nliccon" x-model="currentProp.nliccon" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Vencimiento Lic.</label>
+                        <input type="date" name="fvencon" x-model="currentProp.fvencon" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado Operativo <span class="text-blue-500">*</span></label>
@@ -542,14 +586,24 @@ function propietarioManager() {
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         
         init() {
-            // Seleccionar el primero por defecto si existe
-            if (this.propietarios.length > 0) {
+            // Reabrir modal si hay errores
+            @if($errors->any())
+                @if(old('_propietario_form') === 'create')
+                    this.showCreateModal = true;
+                @elseif(old('_propietario_form') === 'edit')
+                    // Para el edit, intentamos recuperar el objeto si existe el ID en old
+                    const oldId = '{{ old('idper') }}';
+                    if (oldId) {
+                        const p = this.propietarios.find(x => x.idper == oldId);
+                        if (p) this.editPropietario(p);
+                    }
+                @endif
+            @endif
+
+            // Seleccionar el primero por defecto si existe y no hay modal abierto
+            if (this.propietarios.length > 0 && !this.showCreateModal && !this.editing) {
                 this.selectPropietario(this.propietarios[0]);
             }
-
-            @if($errors->any() && old('_propietario_form') === 'create')
-                this.showCreateModal = true;
-            @endif
         },
 
         selectPropietario(p) {

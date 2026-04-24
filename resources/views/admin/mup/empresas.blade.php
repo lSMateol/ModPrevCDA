@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@include('admin.mup.partials.flash')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
@@ -39,8 +40,6 @@
     </div>
 
     @include('admin.mup.partials.navigation')
-
-    @include('admin.mup.partials.flash')
 
     <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
     <div class="grid grid-cols-12 gap-8 mt-6">
@@ -302,6 +301,10 @@
                         <input type="text" name="ciudeem" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. Bogotá" required>
                     </div>
                     <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Dirección <span class="text-blue-500">*</span></label>
+                        <input type="text" name="direm" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. Calle 100 # 15-20" required>
+                    </div>
+                    <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Abreviatura</label>
                         <input type="text" name="abremp" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Ej. TUSA">
                     </div>
@@ -386,8 +389,8 @@
                         <input type="text" name="abremp" x-model="currentEmp.abremp" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Dirección Fiscal</label>
-                        <input type="text" name="direm" x-model="currentEmp.direm" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Dirección Fiscal <span class="text-amber-600">*</span></label>
+                        <input type="text" name="direm" x-model="currentEmp.direm" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
 
                     <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">

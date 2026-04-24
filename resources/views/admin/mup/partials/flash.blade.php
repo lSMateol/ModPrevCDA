@@ -1,6 +1,6 @@
 {{-- Alertas de sesión y validación (MUP) — mismo patrón en todo el módulo --}}
 @if(session('success') || session('error') || $errors->any())
-<div class="mup-flash-stack px-2 pt-2 pb-1" role="status" aria-live="polite">
+<div class="mup-flash-stack px-2 pt-2 pb-1" style="position: relative; z-index: 9999;" role="status" aria-live="polite">
     @if(session('success'))
         <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-3 rounded-r-md shadow-sm flex items-center gap-3">
             <iconify-icon icon="lucide:check-circle" class="text-green-500 text-xl shrink-0"></iconify-icon>

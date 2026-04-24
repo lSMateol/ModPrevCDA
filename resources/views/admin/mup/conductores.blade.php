@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@include('admin.mup.partials.flash')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
@@ -39,8 +40,6 @@
     </div>
 
     @include('admin.mup.partials.navigation')
-
-    @include('admin.mup.partials.flash')
 
     <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
     <div class="grid grid-cols-12 gap-8 mt-6">
