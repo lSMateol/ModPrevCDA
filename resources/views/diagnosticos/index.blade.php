@@ -158,8 +158,6 @@
                                 <span class="bg-gray-50 text-gray-400 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-gray-100 uppercase tracking-widest">Pendiente</span>
                             @elseif($diag->aprobado)
                                 <span class="bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-emerald-100 uppercase tracking-widest">Aprobado</span>
-                            @elseif($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado')
-                                <span class="bg-amber-50 text-amber-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-amber-100 uppercase tracking-widest">Reasignado</span>
                             @else
                                 <span class="bg-red-50 text-red-700 px-5 py-2.5 rounded-full text-[0.65rem] font-black border border-red-100 uppercase tracking-widest">No Aprobado</span>
                             @endif
@@ -172,7 +170,7 @@
                             </a>
                             
                             @php
-                                $canExport = !is_null($diag->aprobado) && !($diag->rechazo && $diag->rechazo->estadorec == 'Reasignado');
+                                $canExport = !is_null($diag->aprobado);
                             @endphp
                             
                             <a href="{{ $canExport ? route($prefix . '.diagnosticos.export', $diag->iddia) : 'javascript:void(0)' }}" 
