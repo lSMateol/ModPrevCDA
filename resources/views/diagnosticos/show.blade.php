@@ -9,40 +9,42 @@
         return $p->parametro->tippar->nomtip;
     });
 
-    // Determinar estado general mediante causales de rechazo
     $fallasTipoA = 0;
     $fallasTipoB = 0;
+    $fallasTecnicas = 0;
 
     foreach($diagnostico->parametros as $p) {
         $param = $p->parametro;
         $val = $p->valor;
-        $esSeccionDefectos = str_contains(strtoupper($param->tippar->nomtip ?? ''), 'DEFECTOS');
-        
-        if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-            // Validación numérica por rango (se considera defecto Tipo A)
-            if ($val < $param->rini || $val > $param->rfin) $fallasTipoA++;
-        } elseif ($param->control == 'radio') {
-            // Validación de radio buttons
-            if ($esSeccionDefectos) {
-                if (str_contains(strtolower($param->nompar), 'criterios')) {
-                    if ($val == 'no') $fallasTipoA++;
-                } else {
-                    if ($val == 'si') $fallasTipoA++;
-                }
-            } else {
-                if (in_array($val, ['no', 'no_funciona'])) $fallasTipoA++;
-            }
-        } elseif ($param->nompar == 'desc_inspeccion') {
-            // Conteo de defectos visuales (Tipo A y Tipo B)
+        $nomTip = strtoupper($param->tippar->nomtip ?? '');
+        $esVisual = str_contains($nomTip, 'VISUAL') || str_contains($nomTip, 'SENSORIAL');
+
+        if ($param->nompar == 'desc_inspeccion') {
+            // Conteo de defectos visuales (Único origen permitido para A y B)
             $data = @json_decode($val, true);
             $lista = is_array($data) ? ($data['list'] ?? $data) : [];
             foreach ($lista as $def) {
                 if (($def['tipo'] ?? '') == 'Tipo A') $fallasTipoA++;
                 elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
             }
-        } elseif (in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
-            // Por seguridad, si quedan restos antiguos, cuentan como A
-            if (!empty($val)) $fallasTipoA++;
+        } else {
+            // Validación de otros parámetros (Gases, Luces, etc.)
+            $failed = false;
+            if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
+                if ($val < $param->rini || $val > $param->rfin) $failed = true;
+            } elseif ($param->control == 'radio') {
+                if (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
+                    // Sección "Defectos" (No visual)
+                    if (str_contains(strtolower($param->nompar), 'criterios')) {
+                        if (!in_array(strtolower($val), ['si', 'na'])) $failed = true;
+                    } else {
+                        if (strtolower($val) == 'si') $failed = true;
+                    }
+                } else {
+                    if (in_array($val, ['no', 'no_funciona'])) $failed = true;
+                }
+            }
+            if ($failed) $fallasTecnicas++;
         }
     }
 
@@ -55,9 +57,10 @@
 
     $causalesRechazo = [];
     
-    // 1. si tiene almenos un defecto tipo A
-    if ($fallasTipoA > 0) {
-        $causalesRechazo[] = "Se encuentra al menos un defecto Tipo A ($fallasTipoA en total).";
+    // 1. si tiene almenos un defecto tipo A o fallas técnicas
+    if ($fallasTipoA > 0 || $fallasTecnicas > 0) {
+        if ($fallasTipoA > 0) $causalesRechazo[] = "Se encuentra al menos un defecto Tipo A ($fallasTipoA en total).";
+        if ($fallasTecnicas > 0) $causalesRechazo[] = "Se detectaron fallas técnicas en parámetros obligatorios ($fallasTecnicas en total).";
     }
     
     if (str_contains($tipoVehiculoStr, 'motocicleta') || str_contains($tipoVehiculoStr, 'motocileta')) {
@@ -290,12 +293,11 @@
                                         $cumple = ($val >= $param->rini && $val <= $param->rfin);
                                     } elseif ($param->control == 'radio') {
                                         if ($esSeccionDefectos) {
-                                            // Lógica específica solicitada: (Dilusion_gasolina NO/NA) AND (Criterios_de_validacion SI)
-                                            $valDilusion = $params->firstWhere('parametro.nompar', 'dilusion_gasolina')->valor ?? '';
-                                            $valCriterios = $params->firstWhere('parametro.nompar', 'Criterios_de_validacion')->valor ?? '';
-                                            $dilusionOk = in_array(strtolower($valDilusion), ['no', 'na']);
-                                            $criteriosOk = strtolower($valCriterios) == 'si';
-                                            $cumple = $dilusionOk && $criteriosOk;
+                                            if (str_contains(strtolower($param->nompar), 'criterios')) {
+                                                $cumple = in_array(strtolower($val), ['si', 'na']);
+                                            } else {
+                                                $cumple = in_array(strtolower($val), ['no', 'na']);
+                                            }
                                         } else {
                                             $cumple = !in_array($val, ['no', 'no_funciona']);
                                         }
@@ -322,8 +324,13 @@
                                                 <span class="material-symbols-outlined text-xs">check_circle</span> Cumple
                                             </div>
                                         @else
-                                            <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-xl border border-red-100 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest">
-                                                <span class="material-symbols-outlined text-xs">cancel</span> Error
+                                            <div class="flex flex-col gap-1">
+                                                <div class="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-xl border border-red-100 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest">
+                                                    <span class="material-symbols-outlined text-xs">cancel</span> No Cumple
+                                                </div>
+                                                @if($esSeccionDefectos)
+                                                    <span class="text-[9px] font-black text-red-800 uppercase px-1">Falla Técnica</span>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>
@@ -356,14 +363,11 @@
                                 if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
                                 if (str_contains(strtoupper($tipo), 'DEFECTOS')) {
-                                    $valDilusion = $params->firstWhere('parametro.nompar', 'dilusion_gasolina')->valor ?? '';
-                                    $valCriterios = $params->firstWhere('parametro.nompar', 'Criterios_de_validacion')->valor ?? '';
-                                    
-                                    $dilusionOk = in_array(strtolower($valDilusion), ['no', 'na']);
-                                    $criteriosOk = strtolower($valCriterios) == 'si';
-                                    
-                                    if (!($dilusionOk && $criteriosOk)) $sectionCumple = false;
-                                    break;
+                                    if (str_contains(strtolower($param->nompar), 'criterios')) {
+                                        if (!in_array(strtolower($val), ['si', 'na'])) $sectionCumple = false;
+                                    } else {
+                                        if (!in_array(strtolower($val), ['no', 'na'])) $sectionCumple = false;
+                                    }
                                 } else {
                                     if (in_array($val, ['no', 'no_funciona'])) $sectionCumple = false;
                                 }

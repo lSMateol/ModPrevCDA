@@ -145,7 +145,7 @@ class DiagnosticoController extends Controller
         }
 
         // Filtrar parámetros según la configuración del tipo de vehículo
-        $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
+        $idval_combu = $diagnostico->idval_combu ?? ($diagnostico->vehiculo->combuveh ?? 43); 
         $config = \App\Models\TipoVehiculoConfig::with(['parameter.tippar'])
             ->where('idval_combu', $idval_combu)
             ->orderBy('orden')
@@ -215,36 +215,39 @@ class DiagnosticoController extends Controller
             // Calcular aprobación automática al guardar
             $fallasTipoA = 0;
             $fallasTipoB = 0;
+            $fallasTecnicas = 0;
             $diagnosticoFresh = $diagnostico->fresh('parametros.parametro.tippar', 'vehiculo');
             
             foreach($diagnosticoFresh->parametros as $p) {
                 $pMeta = $p->parametro;
                 $v = $p->valor;
-                
-                // Lógica especial para la sección de DEFECTOS
-                $esSeccionDefectos = str_contains(strtoupper($pMeta->tippar->nomtip ?? ''), 'DEFECTOS');
+                $nomTip = strtoupper($pMeta->tippar->nomtip ?? '');
 
-                if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
-                    if ($v < $pMeta->rini || $v > $pMeta->rfin) $fallasTipoA++;
-                } elseif ($pMeta->control == 'radio') {
-                    if ($esSeccionDefectos) {
-                        if (str_contains(strtolower($pMeta->nompar), 'criterios')) {
-                            if ($v == 'no') $fallasTipoA++;
-                        } else {
-                            if ($v == 'si') $fallasTipoA++;
-                        }
-                    } else {
-                        if (in_array($v, ['no', 'no_funciona'])) $fallasTipoA++;
-                    }
-                } elseif ($pMeta->nompar == 'desc_inspeccion') {
+                if ($pMeta->nompar == 'desc_inspeccion') {
+                    // Solo la inspección visual genera defectos Tipo A y Tipo B
                     $data = @json_decode($v, true);
                     $lista = is_array($data) ? ($data['list'] ?? $data) : [];
                     foreach ($lista as $def) {
                         if (($def['tipo'] ?? '') == 'Tipo A') $fallasTipoA++;
                         elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
                     }
-                } elseif (in_array($pMeta->nompar, ['grupo_inspeccion', 'tipo_defecto'])) {
-                    if (!empty($v)) $fallasTipoA++;
+                } else {
+                    // Otros parámetros (Luces, Gases, etc.) se cuentan como fallas técnicas
+                    $failed = false;
+                    if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
+                        if ($v < $pMeta->rini || $v > $pMeta->rfin) $failed = true;
+                    } elseif ($pMeta->control == 'radio') {
+                        if (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
+                            if (str_contains(strtolower($pMeta->nompar), 'criterios')) {
+                                if (!in_array(strtolower($v), ['si', 'na'])) $failed = true;
+                            } else {
+                                if (strtolower($v) == 'si') $failed = true;
+                            }
+                        } else {
+                            if (in_array($v, ['no', 'no_funciona'])) $failed = true;
+                        }
+                    }
+                    if ($failed) $fallasTecnicas++;
                 }
             }
 
@@ -256,7 +259,11 @@ class DiagnosticoController extends Controller
                 $tipoVehiculoStr = strtolower($vehiculo->tipoveh);
             }
 
-            if ($fallasTipoA > 0) {
+            // Un diagnóstico se rechaza si hay:
+            // 1. Al menos una Falla Técnica (Luces, Gases, etc.)
+            // 2. Al menos un Defecto Visual Tipo A
+            // 3. Cantidad crítica de Defectos Visuales Tipo B
+            if ($fallasTecnicas > 0 || $fallasTipoA > 0) {
                 $allCumple = false;
             } elseif (str_contains($tipoVehiculoStr, 'motocicleta') || str_contains($tipoVehiculoStr, 'motocileta')) {
                 if ($fallasTipoB >= 5) $allCumple = false;
@@ -511,6 +518,7 @@ class DiagnosticoController extends Controller
                 'idper' => Auth::id(), // Quien realiza la reasignación
                 'kilomt' => $request->kilomt,
                 'dpiddia' => $diagnosticoAnterior->iddia, // Referencia al original
+                'idval_combu' => $diagnosticoAnterior->idval_combu ?? ($diagnosticoAnterior->vehiculo->combuveh ?? 43),
             ]);
 
             return $nuevo;
