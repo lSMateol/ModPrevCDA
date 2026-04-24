@@ -145,7 +145,7 @@ class DiagnosticoController extends Controller
         }
 
         // Filtrar parámetros según la configuración del tipo de vehículo
-        $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
+        $idval_combu = $diagnostico->idval_combu ?? ($diagnostico->vehiculo->combuveh ?? 43); 
         $config = \App\Models\TipoVehiculoConfig::with(['parameter.tippar'])
             ->where('idval_combu', $idval_combu)
             ->orderBy('orden')
@@ -511,6 +511,7 @@ class DiagnosticoController extends Controller
                 'idper' => Auth::id(), // Quien realiza la reasignación
                 'kilomt' => $request->kilomt,
                 'dpiddia' => $diagnosticoAnterior->iddia, // Referencia al original
+                'idval_combu' => $diagnosticoAnterior->idval_combu ?? ($diagnosticoAnterior->vehiculo->combuveh ?? 43),
             ]);
 
             return $nuevo;
