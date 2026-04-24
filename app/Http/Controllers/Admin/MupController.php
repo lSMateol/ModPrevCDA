@@ -747,49 +747,53 @@ class MupController extends Controller
             DB::beginTransaction();
             $persona = Persona::findOrFail($id);
 
+            // Verificación de perfil (Seguridad)
             $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
             if (! in_array((int) $id, array_map('intval', $this->personaIdsPropietarioGlobal($perfilPropietario)), true)) {
                 abort(404);
             }
 
-            // 1. Bloqueo por Activos (Propiedad) - CRÍTICO para Propietarios
-            // Como Propietario, el bloqueo por vehículos se mantiene por integridad de activos.
+            // 1. Bloqueo por Propiedad (CRÍTICO)
+            // Según requerimiento: Propietarios -> lógica estricta (no pueden eliminarse si tienen propiedad)
             $vPropiosCount = Vehiculo::where('prop', $id)->count();
             if ($vPropiosCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: El propietario tiene {$vPropiosCount} vehículo(s) registrados. Debe transferir la propiedad primero.");
+                return redirect()->back()->with('error', "No se puede eliminar: Esta persona es propietaria de {$vPropiosCount} vehículo(s). Debe transferirlos primero.");
             }
 
-            // 2. Bloqueo por Trazabilidad (Diagnósticos, Rechazos, Documentos, Historial)
-            $diagCount = DB::table('diag')->where('idper', $id)->count();
-            $rechCount = DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->count();
-            $docCount = DB::table('documento')->where('idper', $id)->count();
+            // 2. Bloqueo por Trazabilidad Legal (Diagnósticos e Historial)
+            // No se permite eliminación si existen registros legales que deben preservarse
+            $diagCount = DB::table('diag')->where('idper', $id)->orWhere('idinsp', $id)->orWhere('iding', $id)->count();
             $histCount = DB::table('historial')->where('idper', $id)->count();
 
-            if ($diagCount > 0 || $rechCount > 0 || $docCount > 0 || $histCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existen registros históricos (diagnósticos o documentos) vinculados a este propietario.");
+            if ($diagCount > 0 || $histCount > 0) {
+                return redirect()->back()->with('error', "No se puede eliminar: Este perfil cuenta con registros legales que deben preservarse.");
             }
 
-            // 3. Limpieza Universal de registros secundarios (No bloqueantes)
+            // 3. Flexibilidad Controlada (Limpieza Automática de registros secundarios)
+            // Se eliminan automáticamente documentos, rechazos y relaciones operativas
+            DB::table('diapar')->where('idper', $id)->delete();
+            DB::table('documento')->where('idper', $id)->delete();
             DB::table('proveh')->where('idper', $id)->delete();
-            
-            // Limpiar rechazos donde participó
             DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->delete();
 
+            // Desvincular como conductor si aplica (Safe)
+            Vehiculo::where('cond', $id)->update(['cond' => null]);
+
+            // 4. Eliminación de cuenta y perfil (Atómico)
             User::where('idper', $id)->delete();
-            
             $persona->delete();
 
             DB::commit();
-            return redirect()->route($routeName)->with('success', 'Perfil eliminado correctamente.');
+            return redirect()->back()->with('success', "Propietario eliminado exitosamente del sistema.");
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error crítico eliminando propietario: " . $e->getMessage());
-            
+
             if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar el registro: Existen procesos operativos vinculados a esta persona que impiden el borrado.");
+                return redirect()->back()->with('error', "No se puede eliminar: Existen procesos operativos vinculados a esta persona que impiden el borrado.");
             }
 
-            return redirect()->route($routeName)->with('error', "No se puede eliminar el registro debido a que existen documentos o procesos operativos vinculados a este documento.");
+            return redirect()->back()->with('error', "No se pudo procesar la eliminación debido a vínculos operativos detectados.");
         }
     }
  
