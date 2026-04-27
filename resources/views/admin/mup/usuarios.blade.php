@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@include('admin.mup.partials.flash')
 <link rel="stylesheet" href="{{ asset('css/mup.css') }}">
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
@@ -57,7 +58,7 @@
 
     @include('admin.mup.partials.navigation')
 
-    @include('admin.mup.partials.flash')
+
 
     <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
     <div class="grid grid-cols-12 gap-8 mt-6">
@@ -277,6 +278,21 @@
 
             <form action="{{ route($mupPrefix . '.usuarios.store') }}" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
+                <input type="hidden" name="_mup_usuario_form" value="create">
+
+                @if($errors->any() && old('_mup_usuario_form') === 'create')
+                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-red-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-red-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -363,6 +379,22 @@
             <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_mup_usuario_form" value="edit">
+                <input type="hidden" name="id" :value="selectedUser?.id">
+
+                @if($errors->any() && old('_mup_usuario_form') === 'edit')
+                    <div class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-amber-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-amber-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-amber-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -390,6 +422,14 @@
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Correo <span class="text-amber-600">*</span></label>
                         <input type="email" name="emaper" x-model="selectedUser.email" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Teléfono</label>
+                        <input type="text" name="telper" x-model="selectedUser.telper" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre de Usuario <span class="text-amber-600">*</span></label>
+                        <input type="text" name="username" x-model="selectedUser.username" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Estado de Cuenta</label>
@@ -435,7 +475,7 @@
             </div>
             <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Usuario?</h3>
             <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
-                Se revocarán los permisos y se <span class="text-red-600 font-black uppercase">eliminará el perfil</span> de <span class="text-[#001834] font-black" x-text="selectedUser?.name"></span> de forma permanente.
+                Esta acción es permanente y eliminará el perfil administrativo de <span class="text-[#001834] font-black" x-text="selectedUser?.name"></span> junto con sus credenciales de acceso y permisos de seguridad.
             </p>
             
             <div class="flex gap-4">
@@ -473,7 +513,20 @@ function usuariosManager() {
         password_confirmation: '',
         
         init() {
-            if (this.usuarios.length > 0) {
+            // Reabrir modal si hay errores
+            @if($errors->any())
+                @if(old('_mup_usuario_form') === 'create')
+                    this.createDrawer = true;
+                @elseif(old('_mup_usuario_form') === 'edit')
+                    const oldId = '{{ old('id') }}';
+                    if (oldId) {
+                        const u = this.usuarios.find(x => x.id == oldId);
+                        if (u) this.openEdit(u);
+                    }
+                @endif
+            @endif
+
+            if (this.usuarios.length > 0 && !this.createDrawer && !this.editDrawer) {
                 this.selectUser(this.usuarios[0]);
             }
         },

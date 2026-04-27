@@ -70,9 +70,10 @@ class MupController extends Controller
      */
     protected function personaIdsConductorGlobal(Perfil $perfilConductor): array
     {
+        // El perfil 8 es "Propietario / Conductor"
         return Persona::query()
-            ->where('idpef', $perfilConductor->idpef)
-            ->orWhereNotNull('nliccon') // Personas que tienen licencia registrada
+            ->whereIn('idpef', [$perfilConductor->idpef, 8])
+            ->orWhereNotNull('nliccon')
             ->pluck('idper')
             ->toArray();
     }
@@ -82,9 +83,10 @@ class MupController extends Controller
      */
     protected function personaIdsPropietarioGlobal(Perfil $perfilPropietario): array
     {
+        // Incluimos perfil 6 (Propietario) y perfil 8 (Propietario / Conductor)
         return Persona::query()
-            ->where('idpef', $perfilPropietario->idpef)
-            ->orWhereHas('vehiculosPropios') // Personas que tienen vehículos a su nombre
+            ->whereIn('idpef', [$perfilPropietario->idpef, 8])
+            ->orWhereHas('vehiculosPropios')
             ->pluck('idper')
             ->toArray();
     }
@@ -146,12 +148,11 @@ class MupController extends Controller
             $persona = Persona::where('ndocper', $request->ndocper)->first();
 
             if ($persona) {
-                // Si es Conductor o Propietario o no tiene perfil, aseguramos que tenga perfil Conductor (7)
-                // Pero si es Administrador (1) o Digitador (2), etc., NO tocamos su perfil.
-                // LÓGICA DE PREFERENCIA DE VISIBILIDAD (Auditoría Crítica)
-                // Si ya es Propietario (6), lo DEJAMOS en 6 para que no desaparezca de esa lista.
-                if ($persona->idpef === 6) {
-                    // Mantenemos el 6.
+                // Sincronización de Perfiles Operativos (Auditoría Crítica)
+                // Si es Propietario (6) y tiene licencia, le asignamos el perfil combinado (8)
+                if ($persona->idpef == 6 && !empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
                 } elseif (in_array($persona->idpef, [7]) || is_null($persona->idpef)) {
                     $persona->idpef = $perfilConductor->idpef;
                 }
@@ -167,9 +168,9 @@ class MupController extends Controller
                 
                 // Determinamos el mensaje basado en el perfil anterior
                 if ($persona->idpef == 6) {
-                    $msg = "¡Perfil reconocido en Propietarios! Se ha habilitado exitosamente como Conductor.";
+                    $msg = "¡Sincronización de Perfil! Se ha detectado un registro previo en el directorio de Propietarios y se ha habilitado exitosamente su rol como Conductor.";
                 } else {
-                    $msg = "Información de conductor actualizada (el registro ya existía en el sistema).";
+                    $msg = "Actualización Exitosa: La información del conductor ha sido sincronizada, ya que contaba con un registro previo en el sistema.";
                 }
             } else {
                 Persona::create(array_merge([
@@ -184,10 +185,14 @@ class MupController extends Controller
                     'codubi' => 1,
                 ], $lic));
                 
-                $msg = "Nuevo Conductor registrado exitosamente.";
+                $msg = "¡Registro Exitoso! El nuevo conductor ha sido incorporado correctamente al sistema y está habilitado para la operación.";
             }
 
             DB::commit();
+
+            // Sincronización de Perfiles Duales (Persona + Usuario de Acceso)
+            $this->syncUserAccount($persona);
+
             return redirect()->back()->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -227,15 +232,15 @@ class MupController extends Controller
             $apeper = $parts[1] ?? '';
 
             $lic = $this->normalizedLicencia($request);
-
-            // LÓGICA DE PREFERENCIA DE VISIBILIDAD (Auditoría Crítica)
-            // Si ya es Propietario (6), lo DEJAMOS en 6 para que no desaparezca de esa lista.
-            // Al tener licencia, seguirá siendo visible en Conductores por la regla global.
-            if ($persona->idpef === 6) {
-                // No hacemos nada, mantenemos el 6.
-            } elseif (in_array($persona->idpef, [7]) || is_null($persona->idpef)) {
-                // Si es conductor o no tiene, le ponemos 7.
-                $persona->idpef = $perfilConductor->idpef;
+ 
+            // Sincronización de Perfiles Operativos
+            if ($persona->idpef > 4 || is_null($persona->idpef)) {
+                if ($persona->idpef == 6 && !empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
+                } elseif (in_array($persona->idpef, [7]) || is_null($persona->idpef)) {
+                    $persona->idpef = $perfilConductor->idpef;
+                }
             }
 
             $persona->update(array_merge([
@@ -249,7 +254,8 @@ class MupController extends Controller
             ], $lic));
 
             DB::commit();
-            return redirect()->back()->with('success', 'Conductor actualizado correctamente.');
+
+            return redirect()->back()->with('success', '¡Actualización Completada! Los datos del conductor han sido validados y guardados satisfactoriamente en el registro maestro.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando conductor: " . $e->getMessage());
@@ -269,32 +275,30 @@ class MupController extends Controller
             DB::beginTransaction();
             $persona = Persona::findOrFail($id);
 
-            // 1. Bloqueo por Trazabilidad Legal CRÍTICA (Diagnósticos e Historial de Auditoría)
-            // No se puede eliminar a alguien que haya firmado diagnósticos o tenga registros de auditoría
             $diagCount = DB::table('diag')->where('idper', $id)->orWhere('idinsp', $id)->orWhere('iding', $id)->count();
             $histCount = DB::table('historial')->where('idper', $id)->count();
 
             if ($diagCount > 0 || $histCount > 0) {
+                DB::rollBack();
                 return redirect()->route($routeName)->with('error', "No se puede eliminar: Este conductor tiene diagnósticos legales o historial de auditoría que debe preservarse por ley.");
             }
 
-            // 2. Desvinculación Automática de Vehículos (Propiedad y Conducción)
-            // Según requerimiento: Permitir eliminar desvinculando vehículos automáticamente
-            Vehiculo::where('prop', $id)->update(['prop' => null]);
-            Vehiculo::where('cond', $id)->update(['cond' => null]);
+            $vVinculadosCount = Vehiculo::where('cond', $id)->orWhere('prop', $id)->count();
+            if ($vVinculadosCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este perfil porque se encuentra vinculado a {$vVinculadosCount} vehículo(s). Por favor, desvincule o reasigne los activos antes de proceder.");
+            }
 
-            // 3. Limpieza de registros secundarios (Donde no hay integridad referencial crítica)
             DB::table('diapar')->where('idper', $id)->delete();
             DB::table('documento')->where('idper', $id)->delete();
             DB::table('proveh')->where('idper', $id)->delete();
             DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->delete();
 
-            // 4. Eliminación de cuenta de usuario y perfil de persona
             User::where('idper', $id)->delete();
             $persona->delete();
 
             DB::commit();
-            return redirect()->route($routeName)->with('success', "Conductor eliminado exitosamente. Los vehículos vinculados han sido desvinculados.");
+            return redirect()->route($routeName)->with('success', "¡Proceso de Baja Completado! El registro del conductor ha sido removido satisfactoriamente del sistema.");
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error crítico eliminando conductor: " . $e->getMessage());
@@ -331,25 +335,20 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Crear Perfil en tabla interna
             $perfil = Perfil::create([
                 'nompef' => $request->nompef,
                 'tipo_pef' => $request->tipo_pef,
                 'des_pef' => $request->des_pef,
-                'pagpri' => null, // Opcional: página de inicio por defecto
+                'pagpri' => null,
             ]);
 
-            // 2. Crear Role de Spatie
             $role = Role::firstOrCreate(['name' => $request->nompef]);
 
-            // 3. Procesar Permisos con Mapeo de Rutas
             if ($request->has('permisos')) {
                 foreach ($request->permisos as $nompag => $actions) {
                     $pagina = Pagina::where('nompag', $nompag)->first();
                     if (!$pagina) continue;
 
-                    // Obtener el prefijo de la ruta base (ej: admin.mup.usuarios)
-                    // Usaremos un mapeo manual para mayor precisión por ahora
                     $baseRoute = $this->mapPaginaToRoute($nompag);
                     if (!$baseRoute) continue;
 
@@ -366,7 +365,6 @@ class MupController extends Controller
                 }
             }
 
-            // 4. Vincular todas las páginas permitidas en pagper (para visibilidad de menú)
             if ($request->has('permisos')) {
                 $paginasIds = Pagina::whereIn('nompag', array_keys($request->permisos))->pluck('idpag');
                 $perfil->paginas()->sync($paginasIds);
@@ -398,24 +396,18 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Actualizar Perfil interno
             $perfil->update([
                 'nompef' => $request->nompef,
                 'des_pef' => $request->des_pef,
             ]);
 
-            // 2. Sincronizar con Role de Spatie
             $role = Role::firstOrCreate(['name' => $request->nompef]);
             
-            // Si el nombre del perfil cambió, el rol viejo debe ser manejado, 
-            // pero Spatie usualmente identifica roles por nombre único.
-            // Para simplicidad en este MVP, asumiremos que si cambia el nombre, se actualiza el rol.
             if ($role->name !== $request->nompef) {
                 $role->update(['name' => $request->nompef]);
             }
 
-            // 3. Limpiar y Reasignar Permisos Basados en Rutas
-            $role->syncPermissions([]); // Limpiar todo para reasignar fresco
+            $role->syncPermissions([]);
 
             if ($request->has('permisos')) {
                 foreach ($request->permisos as $nompag => $actions) {
@@ -433,7 +425,6 @@ class MupController extends Controller
                     }
                 }
 
-                // 4. Sincronizar páginas para menú
                 $paginasIds = Pagina::whereIn('nompag', array_keys($request->permisos))->pluck('idpag');
                 $perfil->paginas()->sync($paginasIds);
             } else {
@@ -455,26 +446,21 @@ class MupController extends Controller
      */
     public function usuarios()
     {
-        // 1. Listado de usuarios con su perfil y persona vinculada
         $usuarios = User::with('persona.perfil', 'persona.tipoDocumento', 'empresa')
             ->orderBy('id', 'desc')
             ->get();
 
-        // 2. Perfiles con conteo de personas y sus permisos (Spatie) cargados manualmente
         $perfilesRaw = Perfil::withCount('personas')
             ->with(['paginas'])
             ->orderBy('idpef')
             ->get();
 
-        // Mapeamos los permisos de Spatie a cada perfil para que el editor los reconozca
         $perfiles = $perfilesRaw->map(function($p) {
             $role = \Spatie\Permission\Models\Role::where('name', $p->nompef)->first();
-            // Inyectamos solo los nombres en un array plano para el frontend
             $p->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
             return $p;
         });
 
-        // 3. Combos para el formulario
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $empresas = Empresa::orderBy('razsoem')->get();
 
@@ -516,12 +502,10 @@ class MupController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Split name
             $parts = explode(' ', $request->nombre_completo, 2);
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            // 2. Create Persona
             $persona = Persona::create([
                 'nomper' => $nomper,
                 'apeper' => $apeper,
@@ -531,11 +515,10 @@ class MupController extends Controller
                 'telper' => $request->telper ?? '',
                 'idpef' => $request->idpef,
                 'idemp' => $request->idemp,
-                'codubi' => 1, // Default
-                'actper' => 1, // Default active
+                'codubi' => 1,
+                'actper' => 1,
             ]);
 
-            // 3. Create User
             $user = User::create([
                 'name' => $request->nombre_completo,
                 'username' => $request->username,
@@ -545,7 +528,6 @@ class MupController extends Controller
                 'idemp' => $request->idemp,
             ]);
 
-            // 4. Assign Spatie Role
             $perfil = Perfil::find($request->idpef);
             if ($perfil) {
                 Role::firstOrCreate(['name' => $perfil->nompef]);
@@ -554,7 +536,7 @@ class MupController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Usuario creado exitosamente.');
+            return redirect()->back()->with('success', '¡Usuario creado con éxito! Las credenciales de acceso y el perfil operativo han sido configurados correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando usuario: " . $e->getMessage());
@@ -567,8 +549,6 @@ class MupController extends Controller
      */
     public function propietarios()
     {
-        // 1. Asegurar que el perfil 'Propietario' existe respetando IDs reales de BD
-        // PerfilSeeder: Propietario = idpef 6
         $perfil = Perfil::firstOrCreate(
             ['nompef' => 'Propietario'],
             ['idpef' => 6, 'pagpri' => null]
@@ -582,8 +562,6 @@ class MupController extends Controller
                 ->orderBy('idper', 'desc')
                 ->get();
 
-        // 3. Obtener datos para combos respetando estructura real
-        // Tipos de documento activos para nuevos registros
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $licenciaCategorias = LicenciaConduccion::CATEGORIAS;
 
@@ -617,17 +595,17 @@ class MupController extends Controller
             $apeper = $parts[1] ?? '';
 
             $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
-
             $lic = $this->normalizedLicencia($request);
-
-            // Sincronización Inteligente: Si ya existe por documento, actualizamos sus datos
             $persona = Persona::where('ndocper', $request->ndocper)->first();
 
             if ($persona) {
-                // Si es Conductor o Propietario o no tiene perfil, aseguramos que tenga perfil Propietario (6)
-                // para que aparezca en la lista aunque no tenga vehículos todavía.
-                if (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
-                    $persona->idpef = $perfilPropietario->idpef;
+                if ($persona->idpef > 4) {
+                    if (!empty($lic['nliccon'])) {
+                        $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                        $persona->idpef = $perfilAmbos->idpef;
+                    } elseif (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
+                        $persona->idpef = $perfilPropietario->idpef;
+                    }
                 }
 
                 $persona->update(array_merge([
@@ -641,14 +619,13 @@ class MupController extends Controller
                     'actper' => $request->actper,
                 ], $lic));
                 
-                // Determinamos el mensaje basado en el perfil anterior
                 if ($persona->idpef == 7) {
-                    $msg = "¡Perfil reconocido en Conductores! Se ha habilitado exitosamente como Propietario.";
+                    $msg = "¡Sincronización de Perfil! Se ha detectado un registro previo en el directorio de Conductores y se ha habilitado exitosamente su rol como Propietario.";
                 } else {
-                    $msg = "Información de propietario actualizada (el registro ya existía en el sistema).";
+                    $msg = "Actualización Exitosa: La información del propietario ha sido sincronizada, ya que contaba con un registro previo en el sistema.";
                 }
             } else {
-                Persona::create(array_merge([
+                $persona = Persona::create(array_merge([
                     'nomper' => $nomper,
                     'apeper' => $apeper,
                     'tdocper' => $request->tdocper,
@@ -658,14 +635,17 @@ class MupController extends Controller
                     'dirper' => $request->dirper,
                     'ciuper' => $request->ciuper,
                     'actper' => $request->actper,
-                    'idpef' => $perfilPropietario->idpef,
+                    'idpef' => !empty($lic['nliccon']) 
+                        ? Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8])->idpef 
+                        : $perfilPropietario->idpef,
                     'codubi' => 1,
                 ], $lic));
                 
-                $msg = "Nuevo Propietario registrado exitosamente.";
+                $msg = "¡Registro Exitoso! El nuevo propietario ha sido incorporado correctamente al sistema y está listo para la vinculación de activos.";
             }
 
             DB::commit();
+
             return redirect()->back()->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -708,10 +688,13 @@ class MupController extends Controller
 
             $lic = $this->normalizedLicencia($request);
 
-            // LÓGICA DE PREFERENCIA DE VISIBILIDAD (Auditoría Crítica)
-            // Si es Conductor (7), lo SUBIMOS a 6 (Propietario) para asegurar visibilidad en ambos módulos.
-            if (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
-                $persona->idpef = $perfilPropietario->idpef;
+            if ($persona->idpef > 4) {
+                if (!empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
+                } elseif (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
+                    $persona->idpef = $perfilPropietario->idpef;
+                }
             }
 
             $persona->update(array_merge([
@@ -727,7 +710,8 @@ class MupController extends Controller
             ], $lic));
 
             DB::commit();
-            return redirect()->back()->with('success', 'Propietario actualizado correctamente.');
+
+            return redirect()->back()->with('success', '¡Actualización Completada! Los datos del propietario han sido validados y guardados exitosamente en el registro maestro.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando propietario: " . $e->getMessage());
@@ -757,7 +741,8 @@ class MupController extends Controller
             // Según requerimiento: Propietarios -> lógica estricta (no pueden eliminarse si tienen propiedad)
             $vPropiosCount = Vehiculo::where('prop', $id)->count();
             if ($vPropiosCount > 0) {
-                return redirect()->back()->with('error', "No se puede eliminar: Esta persona es propietaria de {$vPropiosCount} vehículo(s). Debe transferirlos primero.");
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este perfil porque figura como propietario de {$vPropiosCount} vehículo(s). Para proceder, primero debe realizar el traspaso o desvinculación de estos activos.");
             }
 
             // 2. Bloqueo por Trazabilidad Legal (Diagnósticos e Historial)
@@ -766,7 +751,8 @@ class MupController extends Controller
             $histCount = DB::table('historial')->where('idper', $id)->count();
 
             if ($diagCount > 0 || $histCount > 0) {
-                return redirect()->back()->with('error', "No se puede eliminar: Este perfil cuenta con registros legales que deben preservarse.");
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil cuenta con registros legales que deben preservarse.");
             }
 
             // 3. Flexibilidad Controlada (Limpieza Automática de registros secundarios)
@@ -784,7 +770,7 @@ class MupController extends Controller
             $persona->delete();
 
             DB::commit();
-            return redirect()->back()->with('success', "Propietario eliminado exitosamente del sistema.");
+            return redirect()->route($routeName)->with('success', "¡Eliminación Confirmada! El registro del propietario y sus datos asociados han sido removidos del sistema de forma permanente.");
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error crítico eliminando propietario: " . $e->getMessage());
@@ -874,7 +860,7 @@ class MupController extends Controller
             $user->assignRole($perfilEmpresa->nompef);
 
             DB::commit();
-            return redirect()->back()->with('success', 'Empresa y usuario de acceso creados exitosamente.');
+            return redirect()->back()->with('success', '¡Registro Corporativo Exitoso! La empresa y su cuenta de acceso han sido incorporadas correctamente al sistema.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando empresa: " . $e->getMessage());
@@ -965,7 +951,8 @@ class MupController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Empresa actualizada correctamente.');
+            DB::commit();
+            return redirect()->back()->with('success', '¡Actualización Corporativa Completada! Los datos de la entidad y sus credenciales han sido sincronizados satisfactoriamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando empresa: " . $e->getMessage());
@@ -985,36 +972,26 @@ class MupController extends Controller
             DB::beginTransaction();
             $empresa = Empresa::findOrFail($id);
             
-            // 1. Bloqueo por Vehículos
+            // 1. Bloqueo por Vehículos Vinculados
             $vCount = Vehiculo::where('idemp', $id)->count();
             if ($vCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene {$vCount} vehículo(s) vinculados.");
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar esta empresa porque se encuentra vinculada a {$vCount} vehículo(s). Por favor, desvincule o reasigne la flota antes de proceder.");
             }
 
-            // 2. Bloqueo por Personal e Historial
-            // 1. Bloqueo por Dependencias Operativas
+            // 2. Bloqueo por Personal Vinculado
             $pCount = Persona::where('idemp', $id)->count();
-            $vCount = Vehiculo::where('idemp', $id)->count();
-            $hCount = DB::table('historial')->where('idemp', $id)->count();
-
             if ($pCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene personal vinculado. Mueva el personal a otra empresa primero.");
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: La empresa tiene {$pCount} integrante(s) de personal vinculados. Mueva el personal a otra entidad primero.");
             }
 
-            if ($vCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: La empresa tiene una flota vehicular vinculada.");
-            }
-
-            if ($hCount > 0) {
-                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existe historial de auditoría vinculado a esta empresa.");
-            }
-
-            // 3. Limpiar usuarios de acceso
+            // 3. Limpiar usuarios de acceso y borrar empresa
             User::where('idemp', $id)->delete();
             $empresa->delete();
 
             DB::commit();
-            return redirect()->route($routeName)->with('success', 'Empresa eliminada exitosamente.');
+            return redirect()->route($routeName)->with('success', '¡Proceso de Baja Completado! La empresa y sus cuentas asociadas han sido removidas satisfactoriamente del sistema.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error crítico eliminando empresa: " . $e->getMessage());
@@ -1098,7 +1075,7 @@ class MupController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Usuario actualizado exitosamente.');
+            return redirect()->back()->with('success', '¡Actualización de Usuario Completada! El perfil y los permisos de acceso han sido sincronizados satisfactoriamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando usuario: " . $e->getMessage());
@@ -1125,7 +1102,8 @@ class MupController extends Controller
                 $histCount = DB::table('historial')->where('idper', $idper)->count();
 
                 if ($diagCount > 0 || $histCount > 0) {
-                    return redirect()->route($routeName)->with('error', "No se puede eliminar: El usuario tiene diagnósticos legales o historial de auditoría registrado.");
+                    DB::rollBack();
+                    return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este usuario porque tiene diagnósticos legales o historial de auditoría registrado. Se recomienda inactivar la cuenta en lugar de eliminarla.");
                 }
 
                 // 2. Desvincular vehículos automáticamente (Propiedad y Conducción)
@@ -1146,13 +1124,14 @@ class MupController extends Controller
             }
 
             DB::commit();
-            return redirect()->route($routeName)->with('success', "Usuario y perfiles asociados eliminados correctamente. Los activos vinculados han sido desvinculados.");
+            return redirect()->route($routeName)->with('success', '¡Proceso de Baja Completado! El usuario y sus perfiles asociados han sido removidos satisfactoriamente del sistema.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error eliminando usuario: " . $e->getMessage());
             return redirect()->route($routeName)->with('error', "No se pudo eliminar el usuario debido a vínculos operativos detectados.");
         }
     }
+
 
     /**
      * Mapea el nombre de la página (Módulo) al nombre base de la ruta en web.php
@@ -1239,7 +1218,10 @@ class MupController extends Controller
         }
 
         if (str_contains($msg, 'Unknown column')) {
-            return 'No se pudo ' . $accion . ': la estructura de la base de datos no coincide con la aplicación. Ejecute php artisan migrate y vuelva a intentar.';
+            // Intentar extraer el nombre de la columna para mayor claridad
+            preg_match("/Unknown column '([^']+)'/", $msg, $matches);
+            $col = isset($matches[1]) ? " ({$matches[1]})" : "";
+            return "No se pudo {$accion}: la estructura de la base de datos no coincide con la aplicación. Falta la columna{$col}. Ejecute php artisan migrate y vuelva a intentar.";
         }
 
         // Restricción de clave foránea

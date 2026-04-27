@@ -316,6 +316,20 @@
                 @csrf
                 <input type="hidden" name="_mup_conductor_form" value="create">
                 
+                @if($errors->any() && old('_mup_conductor_form') === 'create')
+                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-red-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-red-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nombre Completo <span class="text-orange-500">*</span></label>
@@ -401,6 +415,22 @@
             <form :action="'{{ url($mupBase . '/entidades/mup/conductores') }}/' + currentCon.idper" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_mup_conductor_form" value="edit">
+                <input type="hidden" name="idper" :value="currentCon.idper">
+
+                @if($errors->any() && old('_mup_conductor_form') === 'edit')
+                    <div class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-amber-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-amber-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-amber-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -479,7 +509,7 @@
             </div>
             <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Conductor?</h3>
             <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
-                Esta acción es permanente y eliminará toda la ficha de <span class="text-[#001834] font-black" x-text="currentCon.nomper"></span>.
+                Esta acción es permanente y eliminará la ficha de <span class="text-[#001834] font-black" x-text="currentCon.nomper"></span> y sus vínculos históricos en el sistema.
             </p>
             
             <div class="flex gap-4">
@@ -518,14 +548,23 @@ function conductorManager() {
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
         
         init() {
-            // Seleccionar el primero por defecto si existe
-            if (this.conductores.length > 0) {
+            // Reabrir modal si hay errores
+            @if($errors->any())
+                @if(old('_mup_conductor_form') === 'create')
+                    this.showCreateModal = true;
+                @elseif(old('_mup_conductor_form') === 'edit')
+                    const oldId = '{{ old('idper') }}';
+                    if (oldId) {
+                        const c = this.conductores.find(x => x.idper == oldId);
+                        if (c) this.editConductor(c);
+                    }
+                @endif
+            @endif
+
+            // Seleccionar el primero por defecto si existe y no hay modal abierto
+            if (this.conductores.length > 0 && !this.showCreateModal && !this.editing) {
                 this.selectConductor(this.conductores[0]);
             }
-
-            @if($errors->any() && old('_mup_conductor_form') === 'create')
-                this.showCreateModal = true;
-            @endif
         },
 
         selectConductor(con) {

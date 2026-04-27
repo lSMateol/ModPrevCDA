@@ -286,6 +286,21 @@
 
             <form action="{{ route($mupPrefix . '.empresas.store') }}" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
+                <input type="hidden" name="_mup_empresa_form" value="create">
+
+                @if($errors->any() && old('_mup_empresa_form') === 'create')
+                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-red-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-red-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-red-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -370,6 +385,22 @@
             <form :action="'{{ url($mupBase . '/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_mup_empresa_form" value="edit">
+                <input type="hidden" name="idemp" :value="currentEmp.idemp">
+
+                @if($errors->any() && old('_mup_empresa_form') === 'edit')
+                    <div class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-2xl animate-in slide-in-from-top duration-300">
+                        <div class="flex items-center gap-3 mb-2">
+                            <iconify-icon icon="lucide:alert-circle" class="text-amber-500 text-xl"></iconify-icon>
+                            <span class="text-xs font-black text-amber-700 uppercase tracking-widest">Errores de validación</span>
+                        </div>
+                        <ul class="text-xs text-amber-600 font-medium space-y-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="sm:col-span-2">
@@ -436,7 +467,7 @@
             </div>
             <h3 class="text-2xl font-black text-[#001834] tracking-tight mb-2">¿Eliminar Empresa?</h3>
             <p class="text-sm text-gray-400 mb-10 leading-relaxed px-4">
-                Se revocará el acceso a <span class="text-[#001834] font-black" x-text="currentEmp.razsoem"></span> y se desvincularán sus activos. Esta acción no se puede deshacer.
+                Esta acción es permanente y eliminará el perfil corporativo de <span class="text-[#001834] font-black" x-text="currentEmp.razsoem"></span> junto con sus credenciales de acceso y vínculos históricos.
             </p>
             
             <div class="flex gap-4">
@@ -474,7 +505,20 @@ function empresaManager() {
         empresas: @json($empresas),
         
         init() {
-            if (this.empresas.length > 0) {
+            // Reabrir modal si hay errores
+            @if($errors->any())
+                @if(old('_mup_empresa_form') === 'create')
+                    this.createDrawer = true;
+                @elseif(old('_mup_empresa_form') === 'edit')
+                    const oldId = '{{ old('idemp') }}';
+                    if (oldId) {
+                        const e = this.empresas.find(x => x.idemp == oldId);
+                        if (e) this.openEdit(e);
+                    }
+                @endif
+            @endif
+
+            if (this.empresas.length > 0 && !this.createDrawer && !this.editDrawer) {
                 this.selectEmpresa(this.empresas[0]);
             }
         },
