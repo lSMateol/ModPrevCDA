@@ -64,6 +64,28 @@ return [
             ]) : [],
         ],
 
+        'legacy' => [
+            'driver' => 'mysql',
+            'url' => env('DB_LEGACY_URL'),
+            'host' => env('DB_LEGACY_HOST', '127.0.0.1'),
+            'port' => env('DB_LEGACY_PORT', '3306'),
+            'database' => env('DB_LEGACY_DATABASE', 'cdarastr_cdarev'),
+            'username' => env('DB_LEGACY_USERNAME', 'root'),
+            'password' => env('DB_LEGACY_PASSWORD', ''),
+            'unix_socket' => env('DB_LEGACY_SOCKET', ''),
+            'charset' => env('DB_LEGACY_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_LEGACY_COLLATION', 'utf8mb4_general_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false, // Set to false to avoid strict mode issues with legacy data
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::ATTR_EMULATE_PREPARES => true,
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_LEGACY_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
