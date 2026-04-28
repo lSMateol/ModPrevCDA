@@ -332,12 +332,6 @@ class LegacyImportSeeder extends Seeder
 
     /**
      * Importar diagnósticos con filtro de fecha y asignación de idval_combu.
-     *
-     * CAMBIOS RESPECTO AL ORIGINAL:
-     * 1. Solo importa diagnósticos con fecdia >= FECHA_CORTE
-     * 2. Asigna idval_combu desde vehiculo.combuveh (fallback: 43 = Diesel)
-     * 3. Remueve columnas legacy que no existen en el nuevo schema (idpun, idmaq)
-     * 4. Guarda los IDs importados para filtrar diapar y foto
      */
     private function importarDiagnosticos()
     {
@@ -363,7 +357,6 @@ class LegacyImportSeeder extends Seeder
             if (isset($data['kilomt']) && $data['kilomt'] < 0) { $data['kilomt'] = 0; }
 
             // ── NUEVO: Asignar idval_combu desde el combustible del vehículo ──
-            // Si no existe en legacy (columna nueva), derivar del vehículo
             if (empty($data['idval_combu'])) {
                 $data['idval_combu'] = $this->vehiculoCombustible[$data['idveh']] ?? 43; // Fallback: Diesel
             }
@@ -381,15 +374,6 @@ class LegacyImportSeeder extends Seeder
         $this->command->info("  Diagnósticos: {$importados} importados, {$omitidos} omitidos (vehículo inexistente)");
     }
 
-    /**
-     * Importar diapar solo para diagnósticos que pasaron el filtro de fecha.
-     * Usa cursor para eficiencia con datasets grandes (560k+ registros en legacy).
-     */
-    /**
-     * Importar diapar con control estricto de duplicados y separación Diesel vs Otto.
-     * FASE 1: Genera automáticamente parámetros críticos (Motor Diesel, Luces).
-     * FASE 2: Migra datos cualitativos desde legacy asegurando 0 duplicados.
-     */
     private function importarDiapar()
     {
         $this->command->info("  Importando Diapar (Filtro ESTRICTO, Agrupación y Anti-Duplicados)...");
@@ -485,13 +469,11 @@ class LegacyImportSeeder extends Seeder
             
             // -----------------------------------------------------
             // A. PROCESAMIENTO DE DEFECTOS (Legacy 30 y 31)
-            // SIEMPRE se mapean y no se filtran por combustible
+            // Guardamos el valor crudo, se normalizará en Fase 3
             // -----------------------------------------------------
             if ($dp->idpar == 30 || $dp->idpar == 31) {
                 $idparDestino = ($dp->idpar == 30) ? 10 : 11;
-                $v = trim($dp->valor ?? '');
-                $val = ($v === 'S') ? 'Cumple' : (($v === 'N') ? 'No Cumple' : 'N/A');
-                $defectos[$dp->iddia][$idparDestino] = $val;
+                $defectos[$dp->iddia][$idparDestino] = $dp->valor;
                 continue;
             }
             
@@ -528,22 +510,16 @@ class LegacyImportSeeder extends Seeder
             $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
             
             if ($esDiesel) {
-                // Si es Diesel, NO se inserta nada más aquí.
-                // Ya tiene luces (1,2), motor(3-9) y los defectos/visual van en Fase 3.
                 $omitidos++;
                 continue;
             } else {
-                // Si es OTTO (Gasolina), procesar Emisión de Gases
-                // Bloquear Motor Diesel explícitamente y Luces ya generadas
                 if ($dp->idpar >= 3 && $dp->idpar <= 9) continue;
                 if ($dp->idpar == 1 || $dp->idpar == 2) continue;
                 
                 $idparDestino = $dp->idpar;
                 
-                // Ignorar si el ID no existe en el nuevo sistema
                 if (!isset($parametrosValidos[$idparDestino])) continue;
                 
-                // Control de duplicados
                 $key = "{$dp->iddia}-{$idparDestino}";
                 if (isset($procesados[$key])) continue;
                 $procesados[$key] = true;
@@ -568,9 +544,9 @@ class LegacyImportSeeder extends Seeder
         // =========================================================================
         // FASE 3: INSERCIÓN DE DEFECTOS E INSPECCIÓN VISUAL (Consolidados)
         // =========================================================================
-        $this->command->info("    -> Fase 3: Insertando Defectos e Inspección Visual consolidados...");
+        $this->command->info("    -> Fase 3: Insertando Defectos normalizados e Inspección Visual con Reglas de Negocio...");
         
-        // Insertar Defectos (10, 11)
+        // Insertar Defectos (10, 11) NORMALIZADOS
         foreach ($defectos as $iddia => $defs) {
             foreach ($defs as $idparDestino => $valor) {
                 $key = "{$iddia}-{$idparDestino}";
@@ -581,7 +557,7 @@ class LegacyImportSeeder extends Seeder
                     'iddia' => $iddia,
                     'idpar' => $idparDestino,
                     'idper' => 1,
-                    'valor' => $valor,
+                    'valor' => $this->normalizarDefecto($valor),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -589,32 +565,57 @@ class LegacyImportSeeder extends Seeder
             }
         }
         
-        // Insertar Inspección Visual (12, 13, 14) agrupada
+        // Insertar Inspección Visual (12, 13, 14) aplicando CASO A o CASO B
         foreach ($inspeccionVisual as $iddia => $iv) {
-            // Convertir descripciones separadas por coma en una lista JSON para el nuevo sistema
-            $descRaw = str_replace('|', ',', $iv['desc'] ?? '');
-            $descList = array_map('trim', explode(',', $descRaw));
-            $descList = array_filter($descList);
+            $descOriginal = $iv['desc'] ?? '';
+            $tipoDetectado = $this->mapearTipoLegacy($iv['tipo'] ?? null);
             
-            $jsonList = [];
-            foreach ($descList as $item) {
-                $jsonList[] = [
-                    'obs' => $item,
-                    'grupo' => $iv['grupo'] ?? '',
-                    'tipo' => $iv['tipo'] ?? ''
+            $mapeoDestino = [];
+            
+            if ($tipoDetectado !== null) {
+                // CASO B: Es Tipo A o Tipo B (Códigos legacy 2 o 3)
+                $descRaw = str_replace('|', ',', $descOriginal);
+                $descList = array_map('trim', explode(',', $descRaw));
+                $descList = array_filter($descList);
+                
+                $jsonList = [];
+                foreach ($descList as $item) {
+                    $jsonList[] = [
+                        'obs' => $item,
+                        'grupo' => 'Otro', // REGLA: siempre "Otro"
+                        'tipo' => $tipoDetectado // REGLA: "Tipo A" o "Tipo B"
+                    ];
+                }
+                
+                $jsonPayload = count($jsonList) > 0 ? json_encode([
+                    'list' => $jsonList,
+                    'obs' => ''
+                ], JSON_UNESCAPED_UNICODE) : 'SIN REGISTRO';
+                
+                $mapeoDestino = [
+                    12 => 'Otro',
+                    13 => $tipoDetectado,
+                    14 => $jsonPayload
+                ];
+            } else {
+                // CASO A: Código legacy 1 o nulo (Sin defectos tipificados)
+                // Solo insertamos en Observaciones Generales (idpar 14, JSON key "obs")
+                if (trim($descOriginal) === '') {
+                    continue; // Evitar insertar registros vacíos
+                }
+                
+                // Formateamos para que las observaciones se vean limpias
+                $obsLimpia = str_replace('|', ', ', $descOriginal);
+                
+                $jsonPayload = json_encode([
+                    'list' => [],
+                    'obs' => $obsLimpia
+                ], JSON_UNESCAPED_UNICODE);
+                
+                $mapeoDestino = [
+                    14 => $jsonPayload
                 ];
             }
-            
-            $jsonPayload = count($jsonList) > 0 ? json_encode([
-                'list' => $jsonList,
-                'obs' => ''
-            ], JSON_UNESCAPED_UNICODE) : 'SIN REGISTRO';
-            
-            $mapeoDestino = [
-                12 => $iv['grupo'] ?? 'SIN REGISTRO',
-                13 => $iv['tipo'] ?? 'SIN REGISTRO',
-                14 => $jsonPayload
-            ];
             
             foreach ($mapeoDestino as $idparDestino => $valor) {
                 $key = "{$iddia}-{$idparDestino}";
@@ -643,6 +644,51 @@ class LegacyImportSeeder extends Seeder
         }
         
         $this->command->info("  Diapar: {$total} insertados/generados, {$omitidos} parámetros no permitidos bloqueados.");
+    }
+
+    /**
+     * Mapea el valor REAL numérico del legacy (idpar 36) a Tipo A o Tipo B.
+     * Basado en investigación de la base de datos legacy cdarastr_cdarev.
+     */
+    private function mapearTipoLegacy($tipoRaw)
+    {
+        if (!$tipoRaw) return null;
+
+        // Legacy guardaba los datos separados por '|' si el agrupador lo concatenó
+        // Tomaremos el primer código numérico válido que encontremos
+        $tipos = array_map('trim', explode('|', $tipoRaw));
+        
+        foreach ($tipos as $tipo) {
+            // '2' en legacy provocaba 100% de rechazos (Defectos Críticos -> Tipo A)
+            if ($tipo === '2') return 'Tipo A';
+            // '3' en legacy permitía aprobaciones (Defectos Menores -> Tipo B)
+            if ($tipo === '3') return 'Tipo B';
+        }
+
+        // '1' significa Sin Defectos (Observaciones Generales)
+        return null;
+    }
+
+    /**
+     * Normaliza los valores de los defectos (idpar 10, 11) a 'si', 'no' o 'na'
+     */
+    private function normalizarDefecto($valor)
+    {
+        $v = strtolower(trim($valor ?? ''));
+        
+        if ($v === '' || $v === 'n/a' || $v === 'na' || $v === null) {
+            return 'na';
+        }
+        
+        if (in_array($v, ['si', 'sí', 's', '1', 'true', 'cumple'])) {
+            return 'si';
+        }
+        
+        if (in_array($v, ['no', 'n', '0', 'false', 'no cumple'])) {
+            return 'no';
+        }
+        
+        return 'na';
     }
 
     /**
