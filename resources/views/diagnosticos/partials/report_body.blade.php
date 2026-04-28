@@ -359,10 +359,28 @@
         </table>
     </div>
 
-    <div class="footer-signatures" style="margin-top: 40px;">
-        <div class="signature-box">
-            E. NOMBRE Y FIRMA AUTORIZADAS<br>
-            <span style="font-weight: bold; font-size: 9pt;">Ing. {{ $diagnostico->ingeniero->nomper ?? '' }} {{ $diagnostico->ingeniero->apeper ?? '' }}</span>
+    <div class="footer-signatures" style="margin-top: 40px; text-align: center;">
+        <div class="signature-box" style="display: inline-block; text-align: center; width: 250px; margin: 0 auto;">
+            <div style="height: 70px; margin-bottom: 5px;">
+                @php
+                    $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+                    $firmaBase64 = '';
+                    if (file_exists($firmaPath)) {
+                        $type = pathinfo($firmaPath, PATHINFO_EXTENSION);
+                        $data = @file_get_contents($firmaPath);
+                        if ($data) {
+                            $firmaBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                        }
+                    }
+                @endphp
+                @if($firmaBase64)
+                    <img src="{{ $firmaBase64 }}" alt="Firma Ingeniera" style="max-height: 70px; max-width: 200px; display: block; margin: 0 auto;">
+                @endif
+            </div>
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                E. NOMBRE Y FIRMA AUTORIZADAS<br>
+                <span style="font-weight: bold; font-size: 9pt;">Ing. {{ $diagnostico->ingeniero->nomper ?? 'INGENIERA DE TURNO' }} {{ $diagnostico->ingeniero->apeper ?? '' }}</span>
+            </div>
         </div>
     </div>
 
