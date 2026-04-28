@@ -150,10 +150,7 @@
                 </div>
             </div>
             
-            <div style="margin-bottom: 12px; font-size: 13px; color: #6b7280;">
-                Mostrando <span style="font-weight: 600; color: #111827;" x-text="displayedDiagnosticos.length"></span> de <span style="font-weight: 600; color: #111827;" x-text="filteredDiagnosticos.length"></span> registros
-                <span x-show="!showAll && hasMore" style="color: #0b3a5a;"> (máx. <span x-text="maxRows"></span>)</span>
-            </div>
+
 
             <!-- DATA TABLE -->
             <div class="card">
@@ -237,11 +234,28 @@
                     </table>
                 </div>
                 
-                <div class="show-more-bar" x-show="hasMore">
-                    <button @click="showAll = !showAll" style="width: 100%; height: 100%; border: none; background: transparent; cursor: pointer;">
-                        <i class="fa-solid" :class="showAll ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                        <span x-text="showAll ? 'Mostrar menos' : 'Ver todos (' + filteredDiagnosticos.length + ')'"></span>
-                    </button>
+                {{-- Pagination --}}
+                <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4">
+                    <div style="color: #64748b; font-size: 14px;">
+                        Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(currentPage - 1) * perPage + (totalItems > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(currentPage * perPage, totalItems)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="totalItems"></span> resultados
+                    </div>
+                    <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="totalPages > 1" x-cloak>
+                        <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" 
+                                :style="currentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                            <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                        </button>
+                        <template x-for="(page, index) in paginationArray" :key="index">
+                            <button @click="page !== '...' ? goToPage(page) : null" 
+                                    :disabled="page === '...'"
+                                    x-text="page" 
+                                    :style="page === currentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                            </button>
+                        </template>
+                        <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" 
+                                :style="currentPage === totalPages ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                            <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -257,8 +271,16 @@
                 empresaFilter: '',
                 fechaInicio: '',
                 fechaFin: '',
-                maxRows: 5,
-                showAll: false,
+                currentPage: 1,
+                perPage: 15,
+
+                init() {
+                    this.$watch('search', () => { this.currentPage = 1; });
+                    this.$watch('estadoFilter', () => { this.currentPage = 1; });
+                    this.$watch('empresaFilter', () => { this.currentPage = 1; });
+                    this.$watch('fechaInicio', () => { this.currentPage = 1; });
+                    this.$watch('fechaFin', () => { this.currentPage = 1; });
+                },
 
                 get isFiltering() {
                     return this.search !== '' || this.estadoFilter !== '' || this.empresaFilter !== '' || this.fechaInicio !== '' || this.fechaFin !== '';
@@ -310,12 +332,55 @@
                     });
                 },
 
-                get displayedDiagnosticos() {
-                    return this.showAll ? this.filteredDiagnosticos : this.filteredDiagnosticos.slice(0, this.maxRows);
+                get totalItems() {
+                    return this.filteredDiagnosticos.length;
                 },
 
-                get hasMore() {
-                    return this.filteredDiagnosticos.length > this.maxRows;
+                get totalPages() {
+                    return Math.ceil(this.totalItems / this.perPage) || 1;
+                },
+
+                get paginationArray() {
+                    let current = this.currentPage;
+                    let last = this.totalPages;
+                    let delta = 2;
+                    let left = current - delta;
+                    let right = current + delta + 1;
+                    let range = [];
+                    let rangeWithDots = [];
+                    let l;
+
+                    for (let i = 1; i <= last; i++) {
+                        if (i === 1 || i === last || (i >= left && i < right)) {
+                            range.push(i);
+                        }
+                    }
+
+                    for (let i of range) {
+                        if (l) {
+                            if (i - l === 2) {
+                                rangeWithDots.push(l + 1);
+                            } else if (i - l !== 1) {
+                                rangeWithDots.push('...');
+                            }
+                        }
+                        rangeWithDots.push(i);
+                        l = i;
+                    }
+
+                    return rangeWithDots;
+                },
+
+                goToPage(page) {
+                    if (page >= 1 && page <= this.totalPages) {
+                        this.currentPage = page;
+                    }
+                },
+
+                get displayedDiagnosticos() {
+                    const start = (this.currentPage - 1) * this.perPage;
+                    const end = start + this.perPage;
+                    return this.filteredDiagnosticos.slice(start, end);
                 },
 
                 exportarReporte() {

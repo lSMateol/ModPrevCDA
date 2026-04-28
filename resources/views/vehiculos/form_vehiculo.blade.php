@@ -150,7 +150,6 @@
     </div>
     @endif
 
-    {{-- Validation errors --}}
     @if($errors->any())
     <div class="veh-alert-error">
         <strong><i class="fa-solid fa-triangle-exclamation"></i> Corrige los siguientes errores:</strong>
@@ -161,6 +160,14 @@
         </ul>
     </div>
     @endif
+
+    @php
+        $user = auth()->user();
+        $isEmpresa = $user->hasRole('Empresa');
+        $isRestricted = $isEmpresa && $modo === 'editar';
+        $readonlyAttr = $isRestricted ? 'readonly style="background-color: #f8fafc; color: #9aa6b2; pointer-events: none;" tabindex="-1"' : '';
+        $disabledAttr = $isRestricted ? 'disabled style="background-color: #f8fafc; color: #9aa6b2;"' : '';
+    @endphp
 
     {{-- Header --}}
     <div class="veh-form-header">
@@ -214,14 +221,14 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>No. placa <span class="req">*</span></label>
-                    <input type="text" name="placaveh" value="{{ old('placaveh', $vehiculo->placaveh ?? '') }}" placeholder="Ej: ABC123" maxlength="6" required />
+                    <label>No. placa {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="text" name="placaveh" value="{{ old('placaveh', $vehiculo->placaveh ?? '') }}" placeholder="Ej: ABC123" maxlength="6" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('placaveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Tipo de servicio <span class="req">*</span></label>
-                    <select name="tipo_servicio" required>
+                    <label>Tipo de servicio {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <select name="tipo_servicio" {{ !$isRestricted ? 'required' : '' }} {!! $disabledAttr !!}>
                         <option value="" disabled {{ old('tipo_servicio', $vehiculo->tipo_servicio ?? '') == '' ? 'selected' : '' }}>Seleccionar servicio</option>
                         <option value="1" {{ old('tipo_servicio', $vehiculo->tipo_servicio ?? '') == 1 ? 'selected' : '' }}>Particular</option>
                         <option value="2" {{ old('tipo_servicio', $vehiculo->tipo_servicio ?? '') == 2 ? 'selected' : '' }}>Público</option>
@@ -230,9 +237,9 @@
                 </div>
 
                 <div class="veh-field" style="position: relative;" @click.away="showMarcaList = false">
-                    <label>Línea (Marca) <span class="req">*</span></label>
+                    <label>Línea (Marca) {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
                     <input type="hidden" name="linveh" :value="selectedMarcaId">
-                    <input type="text" x-model="searchMarca" @focus="showMarcaList = true" placeholder="Escriba para buscar o seleccionar..." autocomplete="off" required>
+                    <input type="text" x-model="searchMarca" @focus="!isRestricted && (showMarcaList = true)" placeholder="Escriba para buscar o seleccionar..." autocomplete="off" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!}>
                     
                     <div x-show="showMarcaList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" x-cloak>
                         <template x-for="m in filteredMarcas" :key="m.idmar">
@@ -244,14 +251,14 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>Modelo (Año) <span class="req">*</span></label>
-                    <input type="number" name="modveh" value="{{ old('modveh', $vehiculo->modveh ?? '') }}" placeholder="Ej: 2024" min="1950" max="2035" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
+                    <label>Modelo (Año) {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="number" name="modveh" value="{{ old('modveh', $vehiculo->modveh ?? '') }}" placeholder="Ej: 2024" min="1950" max="2035" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('modveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Color del vehículo <span class="req">*</span></label>
-                    <input type="text" name="colveh" value="{{ old('colveh', $vehiculo->colveh ?? '') }}" placeholder="Ej: Blanco" maxlength="20" required />
+                    <label>Color del vehículo {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="text" name="colveh" value="{{ old('colveh', $vehiculo->colveh ?? '') }}" placeholder="Ej: Blanco" maxlength="20" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('colveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -261,8 +268,8 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>Clase de vehículo <span class="req">*</span></label>
-                    <select name="clveh" required>
+                    <label>Clase de vehículo {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <select name="clveh" {{ !$isRestricted ? 'required' : '' }} {!! $disabledAttr !!}>
                         <option value="">Seleccionar clase</option>
                         @foreach($clases as $c)
                             <option value="{{ $c->idval }}" {{ old('clveh', $vehiculo->clveh ?? '') == $c->idval ? 'selected' : '' }}>
@@ -298,20 +305,20 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>Número de sillas <span class="req">*</span></label>
-                    <input type="number" name="capveh" value="{{ old('capveh', $vehiculo->capveh ?? '') }}" placeholder="Ej: 5" min="1" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
+                    <label>Número de sillas {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="number" name="capveh" value="{{ old('capveh', $vehiculo->capveh ?? '') }}" placeholder="Ej: 5" min="1" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('capveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Cilindraje (cc) <span class="req">*</span></label>
-                    <input type="number" name="cilveh" value="{{ old('cilveh', $vehiculo->cilveh ?? '') }}" placeholder="Ej: 1600" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required />
+                    <label>Cilindraje (cc) {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="number" name="cilveh" value="{{ old('cilveh', $vehiculo->cilveh ?? '') }}" placeholder="Ej: 1600" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '');" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('cilveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Categoría de carga <span class="req">*</span></label>
-                    <select name="crgveh" required>
+                    <label>Categoría de carga {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <select name="crgveh" {{ !$isRestricted ? 'required' : '' }} {!! $disabledAttr !!}>
                         <option value="">Seleccionar carga</option>
                         @foreach($cargas as $cr)
                             <option value="{{ $cr->idval }}" {{ old('crgveh', $vehiculo->crgveh ?? '') == $cr->idval ? 'selected' : '' }}>
@@ -323,20 +330,20 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>No. motor <span class="req">*</span></label>
-                    <input type="text" name="nmotveh" value="{{ old('nmotveh', $vehiculo->nmotveh ?? '') }}" placeholder="Número de motor" maxlength="30" required />
+                    <label>No. motor {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="text" name="nmotveh" value="{{ old('nmotveh', $vehiculo->nmotveh ?? '') }}" placeholder="Número de motor" maxlength="30" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('nmotveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>No. chasis <span class="req">*</span></label>
-                    <input type="text" name="nchaveh" value="{{ old('nchaveh', $vehiculo->nchaveh ?? '') }}" placeholder="Número de chasis" maxlength="30" required />
+                    <label>No. chasis {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <input type="text" name="nchaveh" value="{{ old('nchaveh', $vehiculo->nchaveh ?? '') }}" placeholder="Número de chasis" maxlength="30" {{ !$isRestricted ? 'required' : '' }} {!! $readonlyAttr !!} />
                     @error('nchaveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Blindaje <span class="req">*</span></label>
-                    <select name="blinveh" required>
+                    <label>Blindaje {!! !$isRestricted ? '<span class="req">*</span>' : '' !!}</label>
+                    <select name="blinveh" {{ !$isRestricted ? 'required' : '' }} {!! $disabledAttr !!}>
                         <option value="">Seleccionar</option>
                         <option value="2" {{ old('blinveh', $vehiculo->blinveh ?? '') == 2 ? 'selected' : '' }}>No</option>
                         <option value="1" {{ old('blinveh', $vehiculo->blinveh ?? '') == 1 ? 'selected' : '' }}>Sí</option>
@@ -350,14 +357,14 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>No. licencia de tránsito <span class="req">*</span></label>
-                    <input type="number" name="lictraveh" value="{{ old('lictraveh', $vehiculo->lictraveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
+                    <label>No. licencia de tránsito</label>
+                    <input type="number" name="lictraveh" value="{{ old('lictraveh', $vehiculo->lictraveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                     @error('lictraveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Fecha de matrícula <span class="req">*</span></label>
-                    <input type="date" name="fmatv" value="{{ old('fmatv', $vehiculo->fmatv ?? '') }}" required />
+                    <label>Fecha de matrícula</label>
+                    <input type="date" name="fmatv" value="{{ old('fmatv', $vehiculo->fmatv ?? '') }}" />
                     @error('fmatv') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -395,14 +402,14 @@
 
                 {{-- Extracontractual --}}
                 <div class="veh-field">
-                    <label>Póliza Extracontractual <span class="req">*</span></label>
-                    <input type="number" name="extcontveh" value="{{ old('extcontveh', $vehiculo->extcontveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" required />
+                    <label>Póliza Extracontractual</label>
+                    <input type="number" name="extcontveh" value="{{ old('extcontveh', $vehiculo->extcontveh ?? '') }}" placeholder="Solo números" min="0" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                     @error('extcontveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="veh-field">
-                    <label>Vencimiento Extracontractual <span class="req">*</span></label>
-                    <input type="date" name="fecvene" value="{{ old('fecvene', $vehiculo->fecvene ?? '') }}" required />
+                    <label>Vencimiento Extracontractual</label>
+                    <input type="date" name="fecvene" value="{{ old('fecvene', $vehiculo->fecvene ?? '') }}" />
                     @error('fecvene') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -412,8 +419,8 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>Propietario <span class="req">*</span></label>
-                    <select name="prop" required>
+                    <label>Propietario <span class="req" x-show="!empresaId && !isRestricted">*</span></label>
+                    <select name="prop" :required="!empresaId && !isRestricted" {!! $disabledAttr !!}>
                         <option value="">Seleccionar</option>
                         @foreach($propietarios as $p)
                             <option value="{{ $p->idper }}" {{ old('prop', $vehiculo->prop ?? '') == $p->idper ? 'selected' : '' }}>
@@ -425,8 +432,8 @@
                 </div>
 
                 <div class="veh-field">
-                    <label>Conductor asignado <span class="req">*</span></label>
-                    <select name="cond" required>
+                    <label>Conductor asignado <span class="req" x-show="!empresaId && !isRestricted">*</span></label>
+                    <select name="cond" :required="!empresaId && !isRestricted" {!! $disabledAttr !!}>
                         <option value="">Seleccionar</option>
                         @foreach($conductores as $p)
                             <option value="{{ $p->idper }}" {{ old('cond', $vehiculo->cond ?? '') == $p->idper ? 'selected' : '' }}>
@@ -439,10 +446,10 @@
 
                 <div class="veh-field">
                     <label>Empresa asociada</label>
-                    <select name="idemp">
+                    <select name="idemp" x-model="empresaId" {!! $disabledAttr !!}>
                         <option value="">Sin empresa / Independiente</option>
                         @foreach($empresas as $e)
-                            <option value="{{ $e->idemp }}" {{ old('idemp', $vehiculo->idemp ?? '') == $e->idemp ? 'selected' : '' }}>
+                            <option value="{{ $e->idemp }}">
                                 {{ $e->razsoem }}
                             </option>
                         @endforeach
@@ -473,6 +480,9 @@
             propietarios: @json($propietarios),
             conductores: @json($conductores),
             
+            isRestricted: {{ $isRestricted ? 'true' : 'false' }},
+            empresaId: '{{ old('idemp', $vehiculo->idemp ?? '') }}',
+
             // Marca (Línea)
             searchMarca: '{{ $vehiculo->marca->nommarlin ?? '' }}',
             selectedMarcaId: '{{ old('linveh', $vehiculo->linveh ?? '') }}',
