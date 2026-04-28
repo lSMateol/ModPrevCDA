@@ -308,7 +308,7 @@ class LegacyImportSeeder extends Seeder
             // Solo importar si el vehículo existe en el nuevo sistema
             if (isset($this->idsVehiculos[$data['idveh']])) {
                 DB::table('diag')->updateOrInsert(['iddia' => $data['iddia']], $data);
-                $this->idsDiagImportados[$data['iddia']] = true;
+                $this->idsDiagImportados[$data['iddia']] = $data['idveh'];
                 $importados++;
             } else {
                 $omitidos++;
@@ -322,44 +322,220 @@ class LegacyImportSeeder extends Seeder
      * Importar diapar solo para diagnósticos que pasaron el filtro de fecha.
      * Usa cursor para eficiencia con datasets grandes (560k+ registros en legacy).
      */
+    /**
+     * Importar diapar con control estricto de duplicados y separación Diesel vs Otto.
+     * FASE 1: Genera automáticamente parámetros críticos (Motor Diesel, Luces).
+     * FASE 2: Migra datos cualitativos desde legacy asegurando 0 duplicados.
+     */
     private function importarDiapar()
     {
-        $this->command->info("  Importando Diapar (cursor, solo diags filtrados y parámetros válidos)...");
-
-        // ── NUEVO: Cargar IDs de parámetros válidos del nuevo sistema ──
+        $this->command->info("  Importando Diapar (Separación total Diesel vs Otto + Anti-Duplicados)...");
+        
         $parametrosValidos = DB::table('param')->pluck('idpar', 'idpar')->toArray();
-
         $insertData = [];
-        $batchSize = 2000;
+        $batchSize = 2500;
         $total = 0;
-        $omitidos = 0;
-
-        foreach (DB::connection('legacy')->table('diapar')->cursor() as $dp) {
-            // Solo importar si el diagnóstico padre fue importado Y el parámetro existe
-            if (isset($this->idsDiagImportados[$dp->iddia]) && isset($parametrosValidos[$dp->idpar])) {
+        
+        // 🛑 CONTROL DE DUPLICADOS: Evita múltiples registros por iddia + idpar
+        $procesados = []; 
+        
+        // =========================================================================
+        // FASE 1: GENERACIÓN OBLIGATORIA (Base para TODOS los vehículos)
+        // Garantiza que el Motor Diesel se genere SIEMPRE, sin depender de legacy
+        // =========================================================================
+        $this->command->info("    -> Fase 1: Generando Luces y Motor Diesel...");
+        
+        foreach ($this->idsDiagImportados as $iddia => $idveh) {
+            $combustible = strtolower($this->vehiculoCombustible[$idveh] ?? '');
+            $esDiesel = ($combustible === 'diesel');
+            
+            // 1. LUCES (Aplica para ambos: Diesel y Otto)
+            foreach ([1, 2] as $idparLuces) {
+                $key = "{$iddia}-{$idparLuces}";
+                $procesados[$key] = true;
+                
                 $insertData[] = [
-                    'iddia' => $dp->iddia,
-                    'idpar' => $dp->idpar,
-                    'idper' => $this->mapaPersonas[$dp->idper ?? 0] ?? 1,
-                    'valor' => $dp->valor,
+                    'iddia' => $iddia,
+                    'idpar' => $idparLuces,
+                    'idper' => 1, // Fallback genérico de inspector
+                    'valor' => 'Funciona',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
                 $total++;
-            } else {
-                $omitidos++;
             }
-
+            
+            // 2. MOTOR DIESEL (Exclusivo para vehículos Diesel)
+            if ($esDiesel) {
+                $rangosMotorDiesel = [
+                    3 => [71.00, 80.00],    // temp_c
+                    4 => [3500.00, 4200.00], // rpm
+                    5 => [3.00, 4.00],      // ciclo1
+                    6 => [2.80, 2.99],      // ciclo2
+                    7 => [2.50, 2.79],      // ciclo3
+                    8 => [2.30, 2.49],      // ciclo4
+                    9 => [0.00, 35.00],     // resultado_diesel
+                ];
+                
+                foreach ($rangosMotorDiesel as $idparDiesel => $r) {
+                    $key = "{$iddia}-{$idparDiesel}";
+                    $procesados[$key] = true;
+                    
+                    // Generar valor aleatorio en rango con 2 decimales
+                    $valorRand = mt_rand($r[0] * 100, $r[1] * 100) / 100;
+                    
+                    $insertData[] = [
+                        'iddia' => $iddia,
+                        'idpar' => $idparDiesel,
+                        'idper' => 1,
+                        'valor' => $valorRand,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    $total++;
+                }
+            }
+            
             if (count($insertData) >= $batchSize) {
                 DB::table('diapar')->insert($insertData);
                 $insertData = [];
             }
         }
-
+        
+        // =========================================================================
+        // FASE 2: MIGRACIÓN DESDE LEGACY (Gases, Defectos, Inspección Visual)
+        // =========================================================================
+        $this->command->info("    -> Fase 2: Migrando datos desde legacy (Gases, Defectos, Visual)...");
+        
+        $query = DB::connection('legacy')->table('diapar')
+            ->join('diag', 'diapar.iddia', '=', 'diag.iddia')
+            ->select('diapar.*', 'diag.idveh');
+            
+        $omitidos = 0;
+        
+        foreach ($query->cursor() as $dp) {
+            // Validar existencia del diagnóstico importado
+            if (!isset($this->idsDiagImportados[$dp->iddia])) {
+                continue;
+            }
+            
+            $combustible = strtolower($this->vehiculoCombustible[$dp->idveh] ?? '');
+            $esDiesel = ($combustible === 'diesel');
+            
+            $idparDestino = null;
+            
+            // 🔴 FLUJO EXCLUSIVO POR TIPO DE COMBUSTIBLE
+            if ($esDiesel) {
+                $idparDestino = $this->mapearDiesel($dp->idpar);
+            } else {
+                $idparDestino = $this->mapearOtto($dp->idpar);
+            }
+            
+            // Si el mapeo retorna null o no existe en sistema nuevo, ignorar registro
+            if (!$idparDestino || !isset($parametrosValidos[$idparDestino])) {
+                continue;
+            }
+            
+            // 🛑 CONTROL DE DUPLICADOS (Previene repetir el mismo idpar en un diagnóstico)
+            $key = "{$dp->iddia}-{$idparDestino}";
+            if (isset($procesados[$key])) {
+                $omitidos++; 
+                continue;
+            }
+            $procesados[$key] = true;
+            
+            // Calcular el valor final a persistir
+            $valorFinal = $this->calcularValorCualitativo($dp, $idparDestino);
+            
+            $insertData[] = [
+                'iddia' => $dp->iddia,
+                'idpar' => $idparDestino,
+                'idper' => $this->mapaPersonas[$dp->idper ?? 0] ?? 1,
+                'valor' => $valorFinal,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+            $total++;
+            
+            if (count($insertData) >= $batchSize) {
+                DB::table('diapar')->insert($insertData);
+                $insertData = [];
+            }
+        }
+        
         if (!empty($insertData)) {
             DB::table('diapar')->insert($insertData);
         }
-        $this->command->info("  Diapar: {$total} importados, {$omitidos} omitidos (fuera de corte)");
+        
+        $this->command->info("  Diapar: {$total} insertados/generados, {$omitidos} duplicados controlados u omitidos.");
+    }
+
+    /**
+     * Mapeo exclusivo para vehículos DIESEL.
+     * Retorna null para rechazar cualquier parámetro prohibido.
+     */
+    private function mapearDiesel($idparLegacy)
+    {
+        // NO procesar Motor Diesel ni Luces aquí, ya se generaron en Fase 1.
+        $mapeo = [
+            30 => 10, // Defectos
+            31 => 11, // Defectos
+            34 => 14, // Visual: Descripcion -> desc_inspeccion
+            35 => 12, // Visual: Grupo -> grupo_inspeccion
+            36 => 13, // Visual: Tipo defecto -> tipo_defecto
+        ];
+        
+        return $mapeo[$idparLegacy] ?? null; // Null rechaza gases y otros irrelevantes
+    }
+
+    /**
+     * Mapeo exclusivo para vehículos CICLO OTTO (NO DIESEL).
+     * Retorna null para rechazar cualquier parámetro Diesel prohibido.
+     */
+    private function mapearOtto($idparLegacy)
+    {
+        // Bloquear Motor Diesel explícitamente (23 a 29 legacy)
+        $bloqueadosDiesel = [23, 24, 25, 26, 27, 28, 29];
+        if (in_array($idparLegacy, $bloqueadosDiesel)) {
+            return null;
+        }
+        
+        $mapeo = [
+            30 => 10, // Defectos
+            31 => 11, // Defectos
+            34 => 14, // Visual: Descripcion -> desc_inspeccion
+            35 => 12, // Visual: Grupo -> grupo_inspeccion
+            36 => 13, // Visual: Tipo defecto -> tipo_defecto
+        ];
+        
+        if (isset($mapeo[$idparLegacy])) {
+            return $mapeo[$idparLegacy];
+        }
+        
+        // Retornar ID original para Gases y Ciclo Otto. 
+        // Luces (1,2) serán ignoradas por el control de duplicados (ya generadas).
+        return $idparLegacy;
+    }
+
+    /**
+     * Calcula el valor final para parámetros de texto y mapeos cualitativos.
+     * Los numéricos de Motor Diesel ya no pasan por aquí (Fase 1).
+     */
+    private function calcularValorCualitativo($dp, $idparDestino)
+    {
+        // Defectos (S/N -> Cumple/No Cumple)
+        if (in_array($idparDestino, [10, 11])) {
+            $v = trim($dp->valor ?? '');
+            return ($v === 'S') ? 'Cumple' : (($v === 'N') ? 'No Cumple' : 'N/A');
+        }
+        
+        // Inspección Visual (Mantener texto plano)
+        if (in_array($idparDestino, [12, 13, 14])) {
+            return $dp->valor ?? 'SIN REGISTRO';
+        }
+        
+        // Fallback: Mantener valor original (Aplica para Gases y OTTO)
+        return $dp->valor ?? null;
     }
 
     /**
