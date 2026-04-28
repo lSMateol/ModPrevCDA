@@ -85,20 +85,20 @@
             <div class="flex flex-col gap-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
                 <template x-for="u in filteredUsuarios()" :key="u.id">
                     <div @click="selectUser(u)" 
-                        class="group bg-white p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden"
+                        class="group bg-white p-3 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex-shrink-0"
                         :class="selectedId === u.id ? 'border-blue-500 shadow-md translate-x-2' : 'border-transparent hover:border-gray-200 shadow-sm'">
                         
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3">
                             <!-- Avatar Circular -->
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 transition-transform group-hover:rotate-12"
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 transition-transform group-hover:rotate-12"
                                 :class="u.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-blue-600' : 'bg-gray-300'"
                                 x-text="getInitials(u.name)">
                             </div>
                             
                             <div class="min-w-0 flex-1">
-                                <div class="flex justify-between items-start">
-                                    <h3 class="font-bold text-[#001834] text-sm truncate uppercase tracking-tight" x-text="u.name"></h3>
-                                    <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                                <div class="flex justify-between items-center gap-2">
+                                    <h3 class="font-bold text-[#001834] text-[13px] truncate uppercase tracking-tight" x-text="u.name"></h3>
+                                    <span class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shrink-0"
                                         :class="{
                                             'bg-blue-50 text-blue-600': u.nompef === 'Administrador',
                                             'bg-purple-50 text-purple-600': u.nompef === 'Ingeniero',
@@ -109,13 +109,14 @@
                                         x-text="u.nompef">
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <iconify-icon icon="lucide:user" class="text-gray-400 text-[10px]"></iconify-icon>
-                                    <span class="text-[11px] font-bold text-gray-500 truncate" x-text="u.username"></span>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <iconify-icon icon="lucide:user" class="text-gray-400 text-[9px]"></iconify-icon>
+                                    <span class="text-[10px] font-bold text-gray-500 truncate" x-text="u.username"></span>
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                    <span class="text-[11px] font-bold text-gray-400" x-text="u.nomdoc + ': ' + u.ndocper"></span>
+                                    <span class="text-[10px] font-bold text-gray-400" x-text="u.nomdoc + ': ' + u.ndocper"></span>
                                 </div>
                             </div>
+                            <iconify-icon icon="lucide:chevron-right" class="text-gray-300 group-hover:text-blue-500 transition-colors shrink-0"></iconify-icon>
                         </div>
 
                         <!-- Indicador de selección activa -->

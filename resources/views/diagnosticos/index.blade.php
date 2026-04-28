@@ -73,7 +73,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Fecha</label>
-                    <input type="date" name="fecha" onchange="this.form.submit()" value="{{ request('fecha') ?? now()->toDateString() }}" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
+                    <input type="date" name="fecha" onchange="this.form.submit()" value="{{ request('fecha') }}" class="w-full bg-surface-container-lowest border-2 border-transparent focus:border-primary-fixed-dim focus:ring-0 rounded-xl p-3 text-sm font-semibold transition-all">
                 </div>
                 <div class="flex flex-col gap-2">
                     <label class="font-body uppercase text-[0.6rem] font-black tracking-widest text-on-surface-variant opacity-70 px-1">Empresa</label>
