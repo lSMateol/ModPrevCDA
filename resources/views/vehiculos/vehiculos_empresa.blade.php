@@ -12,9 +12,39 @@
         activeView: 'vehiculos', // 'vehiculos', 'perfil'
         detailLoading: false,
         detailData: null,
-        showAll: false,
-        maxRows: 5,
+        currentPage: 1,
+        perPage: 15,
         
+        peVehCurrentPage: 1,
+        peVehPerPage: 15,
+        peCondCurrentPage: 1,
+        peCondPerPage: 15,
+        pePropCurrentPage: 1,
+        pePropPerPage: 15,
+        peRepCurrentPage: 1,
+        peRepPerPage: 15,
+        
+        init() {
+            this.$watch('search', () => { this.currentPage = 1; });
+            this.$watch('empresaFiltro', () => { this.currentPage = 1; });
+            this.$watch('peSearchTerm', () => { this.peVehCurrentPage = 1; });
+            this.$watch('peFilterEstado', () => { this.peVehCurrentPage = 1; });
+            this.$watch('fechaInicio', () => { this.peRepCurrentPage = 1; });
+            this.$watch('fechaFin', () => { this.peRepCurrentPage = 1; });
+            this.$watch('peSubTab', () => {
+                this.peVehCurrentPage = 1;
+                this.peCondCurrentPage = 1;
+                this.pePropCurrentPage = 1;
+                this.peRepCurrentPage = 1;
+            });
+            this.$watch('activeView', () => {
+                this.peVehCurrentPage = 1;
+                this.peCondCurrentPage = 1;
+                this.pePropCurrentPage = 1;
+                this.peRepCurrentPage = 1;
+            });
+        },
+
         /* ──── Flujo Perfil Empresa ──── */
         peSubTab: 'vehiculos',
         
@@ -270,11 +300,55 @@
                 return matchSearch && matchEmpresa;
             });
         },
-        get displayedVehiculos() {
-            return this.showAll ? this.filteredVehiculos : this.filteredVehiculos.slice(0, this.maxRows);
+        get totalItems() {
+            return this.filteredVehiculos.length;
         },
-        get hasMore() {
-            return this.filteredVehiculos.length > this.maxRows;
+        get totalPages() {
+            return Math.ceil(this.totalItems / this.perPage) || 1;
+        },
+        get paginationArray() {
+            return this.buildPaginationArray(this.totalItems, this.perPage, this.currentPage);
+        },
+        buildPaginationArray(totalItems, perPage, currentPage) {
+            let totalPages = Math.ceil(totalItems / perPage) || 1;
+            let current = currentPage;
+            let last = totalPages;
+            let delta = 2;
+            let left = current - delta;
+            let right = current + delta + 1;
+            let range = [];
+            let rangeWithDots = [];
+            let l;
+
+            for (let i = 1; i <= last; i++) {
+                if (i === 1 || i === last || (i >= left && i < right)) {
+                    range.push(i);
+                }
+            }
+
+            for (let i of range) {
+                if (l) {
+                    if (i - l === 2) {
+                        rangeWithDots.push(l + 1);
+                    } else if (i - l !== 1) {
+                        rangeWithDots.push('...');
+                    }
+                }
+                rangeWithDots.push(i);
+                l = i;
+            }
+
+            return rangeWithDots;
+        },
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+        get displayedVehiculos() {
+            const start = (this.currentPage - 1) * this.perPage;
+            const end = start + this.perPage;
+            return this.filteredVehiculos.slice(start, end);
         },
 
         /* ──── Selección y detalle ──── */
@@ -559,12 +633,6 @@
             </div>
         </div>
 
-        {{-- Count --}}
-        <div style="margin-bottom: 12px; font-size: 13px; color: #6b7280;">
-            Mostrando <span style="font-weight: 600; color: #111827;" x-text="displayedVehiculos.length"></span> de <span style="font-weight: 600; color: #111827;" x-text="filteredVehiculos.length"></span> vehículos vinculados
-            <span x-show="!showAll && hasMore" style="color: #0b3a5a;"> (máx. <span x-text="maxRows"></span>)</span>
-        </div>
-
         {{-- ═══════════════════════════════════════ --}}
         {{-- DATA TABLE                              --}}
         {{-- ═══════════════════════════════════════ --}}
@@ -607,11 +675,28 @@
                     </tr>
                 </tbody>
             </table>
-            <div class="show-more-bar" x-show="hasMore">
-                <button @click="showAll = !showAll">
-                    <i class="fa-solid" :class="showAll ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                    <span x-text="showAll ? 'Mostrar menos' : 'Ver todos (' + filteredVehiculos.length + ')'"></span>
-                </button>
+            {{-- Pagination --}}
+            <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4">
+                <div style="color: #64748b; font-size: 14px;">
+                    Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(currentPage - 1) * perPage + (totalItems > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(currentPage * perPage, totalItems)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="totalItems"></span> resultados
+                </div>
+                <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="totalPages > 1" x-cloak>
+                    <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" 
+                            :style="currentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                    </button>
+                    <template x-for="(page, index) in paginationArray" :key="index">
+                        <button @click="page !== '...' ? goToPage(page) : null" 
+                                :disabled="page === '...'"
+                                x-text="page" 
+                                :style="page === currentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                        </button>
+                    </template>
+                    <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" 
+                            :style="currentPage === totalPages ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                        <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1287,7 +1372,7 @@
                                             <td colspan="6" style="text-align: center; padding: 32px; color: #6b7280;">No se encontraron vehículos que coincidan con la búsqueda.</td>
                                         </tr>
                                     </template>
-                                    <template x-for="v in peFilteredVehiculos" :key="v.idveh">
+                                    <template x-for="v in peFilteredVehiculos.slice((peVehCurrentPage - 1) * peVehPerPage, peVehCurrentPage * peVehPerPage)" :key="v.idveh">
                                         <tr>
                                             <td>
                                                 <div class="vehicle-cell">
@@ -1312,6 +1397,30 @@
                                     </template>
                                 </tbody>
                             </table>
+                            
+                            {{-- Pagination --}}
+                            <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4" x-show="peFilteredVehiculos.length > 0">
+                                <div style="color: #64748b; font-size: 14px;">
+                                    Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(peVehCurrentPage - 1) * peVehPerPage + (peFilteredVehiculos.length > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(peVehCurrentPage * peVehPerPage, peFilteredVehiculos.length)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="peFilteredVehiculos.length"></span> resultados
+                                </div>
+                                <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="Math.ceil(peFilteredVehiculos.length / peVehPerPage) > 1" x-cloak>
+                                    <button @click="peVehCurrentPage > 1 ? peVehCurrentPage-- : null" :disabled="peVehCurrentPage === 1" 
+                                            :style="peVehCurrentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                                        <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                                    </button>
+                                    <template x-for="(page, index) in buildPaginationArray(peFilteredVehiculos.length, peVehPerPage, peVehCurrentPage)" :key="index">
+                                        <button @click="page !== '...' ? peVehCurrentPage = page : null" 
+                                                :disabled="page === '...'"
+                                                x-text="page" 
+                                                :style="page === peVehCurrentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                                        </button>
+                                    </template>
+                                    <button @click="peVehCurrentPage < Math.ceil(peFilteredVehiculos.length / peVehPerPage) ? peVehCurrentPage++ : null" :disabled="peVehCurrentPage === Math.ceil(peFilteredVehiculos.length / peVehPerPage)" 
+                                            :style="peVehCurrentPage === Math.ceil(peFilteredVehiculos.length / peVehPerPage) ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                                        <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         </div>
 
@@ -1333,7 +1442,7 @@
                                                 <td colspan="4" style="text-align: center; padding: 32px; color: #6b7280;">No hay conductores vinculados a los vehículos de esta empresa.</td>
                                             </tr>
                                         </template>
-                                        <template x-for="c in peConductores" :key="c.idper">
+                                        <template x-for="c in peConductores.slice((peCondCurrentPage - 1) * peCondPerPage, peCondCurrentPage * peCondPerPage)" :key="c.idper">
                                             <tr>
                                                 <td>
                                                     <span style="font-family: monospace; color: var(--primary);" x-text="c.ndocper"></span>
@@ -1356,6 +1465,30 @@
                                         </template>
                                     </tbody>
                                 </table>
+                                
+                                {{-- Pagination --}}
+                                <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4" x-show="peConductores.length > 0">
+                                    <div style="color: #64748b; font-size: 14px;">
+                                        Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(peCondCurrentPage - 1) * peCondPerPage + (peConductores.length > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(peCondCurrentPage * peCondPerPage, peConductores.length)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="peConductores.length"></span> resultados
+                                    </div>
+                                    <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="Math.ceil(peConductores.length / peCondPerPage) > 1" x-cloak>
+                                        <button @click="peCondCurrentPage > 1 ? peCondCurrentPage-- : null" :disabled="peCondCurrentPage === 1" 
+                                                :style="peCondCurrentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                                            <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                                        </button>
+                                        <template x-for="(page, index) in buildPaginationArray(peConductores.length, peCondPerPage, peCondCurrentPage)" :key="index">
+                                            <button @click="page !== '...' ? peCondCurrentPage = page : null" 
+                                                    :disabled="page === '...'"
+                                                    x-text="page" 
+                                                    :style="page === peCondCurrentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                                            </button>
+                                        </template>
+                                        <button @click="peCondCurrentPage < Math.ceil(peConductores.length / peCondPerPage) ? peCondCurrentPage++ : null" :disabled="peCondCurrentPage === Math.ceil(peConductores.length / peCondPerPage)" 
+                                                :style="peCondCurrentPage === Math.ceil(peConductores.length / peCondPerPage) ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                                            <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1377,7 +1510,7 @@
                                                 <td colspan="4" style="text-align: center; padding: 32px; color: #6b7280;">No hay propietarios registrados para los vehículos de esta empresa.</td>
                                             </tr>
                                         </template>
-                                        <template x-for="p in pePropietarios" :key="p.idper">
+                                        <template x-for="p in pePropietarios.slice((pePropCurrentPage - 1) * pePropPerPage, pePropCurrentPage * pePropPerPage)" :key="p.idper">
                                             <tr>
                                                 <td>
                                                     <span style="font-family: monospace; color: var(--primary);" x-text="p.ndocper"></span>
@@ -1400,6 +1533,30 @@
                                         </template>
                                     </tbody>
                                 </table>
+                                
+                                {{-- Pagination --}}
+                                <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4" x-show="pePropietarios.length > 0">
+                                    <div style="color: #64748b; font-size: 14px;">
+                                        Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(pePropCurrentPage - 1) * pePropPerPage + (pePropietarios.length > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(pePropCurrentPage * pePropPerPage, pePropietarios.length)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="pePropietarios.length"></span> resultados
+                                    </div>
+                                    <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="Math.ceil(pePropietarios.length / pePropPerPage) > 1" x-cloak>
+                                        <button @click="pePropCurrentPage > 1 ? pePropCurrentPage-- : null" :disabled="pePropCurrentPage === 1" 
+                                                :style="pePropCurrentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                                            <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                                        </button>
+                                        <template x-for="(page, index) in buildPaginationArray(pePropietarios.length, pePropPerPage, pePropCurrentPage)" :key="index">
+                                            <button @click="page !== '...' ? pePropCurrentPage = page : null" 
+                                                    :disabled="page === '...'"
+                                                    x-text="page" 
+                                                    :style="page === pePropCurrentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                                            </button>
+                                        </template>
+                                        <button @click="pePropCurrentPage < Math.ceil(pePropietarios.length / pePropPerPage) ? pePropCurrentPage++ : null" :disabled="pePropCurrentPage === Math.ceil(pePropietarios.length / pePropPerPage)" 
+                                                :style="pePropCurrentPage === Math.ceil(pePropietarios.length / pePropPerPage) ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                                            <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1597,7 +1754,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <template x-for="rep in reportesFiltrados" :key="rep.iddia">
+                                    <template x-for="rep in reportesFiltrados.slice((peRepCurrentPage - 1) * peRepPerPage, peRepCurrentPage * peRepPerPage)" :key="rep.iddia">
                                         <tr>
                                             <td>
                                                 <div style="font-weight: 500; color: #111827;" x-text="formatDateTime(rep.fecdia).split(',')[0]"></div>
@@ -1635,6 +1792,30 @@
                                     </template>
                                 </tbody>
                             </table>
+                            
+                            {{-- Pagination --}}
+                            <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4" x-show="reportesFiltrados.length > 0">
+                                <div style="color: #64748b; font-size: 14px;">
+                                    Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(peRepCurrentPage - 1) * peRepPerPage + (reportesFiltrados.length > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(peRepCurrentPage * peRepPerPage, reportesFiltrados.length)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="reportesFiltrados.length"></span> resultados
+                                </div>
+                                <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="Math.ceil(reportesFiltrados.length / peRepPerPage) > 1" x-cloak>
+                                    <button @click="peRepCurrentPage > 1 ? peRepCurrentPage-- : null" :disabled="peRepCurrentPage === 1" 
+                                            :style="peRepCurrentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                                        <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                                    </button>
+                                    <template x-for="(page, index) in buildPaginationArray(reportesFiltrados.length, peRepPerPage, peRepCurrentPage)" :key="index">
+                                        <button @click="page !== '...' ? peRepCurrentPage = page : null" 
+                                                :disabled="page === '...'"
+                                                x-text="page" 
+                                                :style="page === peRepCurrentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                                        </button>
+                                    </template>
+                                    <button @click="peRepCurrentPage < Math.ceil(reportesFiltrados.length / peRepPerPage) ? peRepCurrentPage++ : null" :disabled="peRepCurrentPage === Math.ceil(reportesFiltrados.length / peRepPerPage)" 
+                                            :style="peRepCurrentPage === Math.ceil(reportesFiltrados.length / peRepPerPage) ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                                        <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Footer --}}

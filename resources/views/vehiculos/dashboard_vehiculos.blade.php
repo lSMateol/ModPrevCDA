@@ -10,11 +10,14 @@
         empresaFiltro: '',
         claseFiltro: '',
         servicioFiltro: '',
-        showAll: false,
-        maxRows: 5,
+        currentPage: 1,
+        perPage: 15,
         vinculoMode: false,
         vinculoSaving: false,
         vinculoForm: { prop: '', cond: '', idemp: '' },
+        editDocMode: false,
+        docSaving: false,
+        docForm: { soat: '', fecvens: '', tecmecveh: '', fecvent: '', lictraveh: '', fmatv: '', fecvenr: '', extcontveh: '', fecvene: '' },
         propietarios: {{ $propietarios->toJson() }},
         conductores: {{ $conductores->toJson() }},
         allEmpresas: {{ $empresasFiltro->toJson() }},
@@ -36,12 +39,55 @@
             });
         },
 
-        get displayedVehiculos() {
-            return this.showAll ? this.filteredVehiculos : this.filteredVehiculos.slice(0, this.maxRows);
+        get totalItems() {
+            return this.filteredVehiculos.length;
         },
 
-        get hasMore() {
-            return this.filteredVehiculos.length > this.maxRows;
+        get totalPages() {
+            return Math.ceil(this.totalItems / this.perPage) || 1;
+        },
+
+        get paginationArray() {
+            let current = this.currentPage;
+            let last = this.totalPages;
+            let delta = 2;
+            let left = current - delta;
+            let right = current + delta + 1;
+            let range = [];
+            let rangeWithDots = [];
+            let l;
+
+            for (let i = 1; i <= last; i++) {
+                if (i === 1 || i === last || (i >= left && i < right)) {
+                    range.push(i);
+                }
+            }
+
+            for (let i of range) {
+                if (l) {
+                    if (i - l === 2) {
+                        rangeWithDots.push(l + 1);
+                    } else if (i - l !== 1) {
+                        rangeWithDots.push('...');
+                    }
+                }
+                rangeWithDots.push(i);
+                l = i;
+            }
+
+            return rangeWithDots;
+        },
+
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+
+        get displayedVehiculos() {
+            const start = (this.currentPage - 1) * this.perPage;
+            const end = start + this.perPage;
+            return this.filteredVehiculos.slice(start, end);
         },
 
         servicioLabel(tipo) {
@@ -65,6 +111,40 @@
         init() {
             if (this.vehiculos.length > 0) {
                 this.selectedVehiculo = this.vehiculos[0];
+                this.updateDocForm();
+            }
+            
+            this.$watch('selectedVehiculo', (val) => {
+                this.updateDocForm();
+                this.editDocMode = false;
+            });
+
+            this.$watch('search', () => { this.currentPage = 1; });
+            this.$watch('empresaFiltro', () => { this.currentPage = 1; });
+            this.$watch('claseFiltro', () => { this.currentPage = 1; });
+            this.$watch('servicioFiltro', () => { this.currentPage = 1; });
+            
+            this.$watch('currentPage', () => {
+                if (this.displayedVehiculos.length > 0) {
+                    const isSelectedInPage = this.displayedVehiculos.some(v => this.selectedVehiculo && v.idveh === this.selectedVehiculo.idveh);
+                    if (!isSelectedInPage) {
+                        this.selectedVehiculo = this.displayedVehiculos[0];
+                    }
+                }
+            });
+        },
+        
+        updateDocForm() {
+            if (this.selectedVehiculo) {
+                this.docForm.soat = this.selectedVehiculo.soat || '';
+                this.docForm.fecvens = this.selectedVehiculo.fecvens || '';
+                this.docForm.tecmecveh = this.selectedVehiculo.tecmecveh || '';
+                this.docForm.fecvent = this.selectedVehiculo.fecvent || '';
+                this.docForm.lictraveh = this.selectedVehiculo.lictraveh || '';
+                this.docForm.fmatv = this.selectedVehiculo.fmatv || '';
+                this.docForm.fecvenr = this.selectedVehiculo.fecvenr || '';
+                this.docForm.extcontveh = this.selectedVehiculo.extcontveh || '';
+                this.docForm.fecvene = this.selectedVehiculo.fecvene || '';
             }
         },
 
@@ -136,9 +216,53 @@
                     this.vinculoMode = false;
                 }
             } catch (e) {
-                console.error('Error guardando v\u00ednculos:', e);
+                console.error('Error guardando vínculos:', e);
             } finally {
                 this.vinculoSaving = false;
+            }
+        },
+
+        openDocEdit() {
+            this.updateDocForm();
+            this.editDocMode = true;
+        },
+
+        cancelDocEdit() {
+            this.updateDocForm();
+            this.editDocMode = false;
+        },
+
+        async saveDoc() {
+            if (!this.docForm.soat || !this.docForm.fecvens || !this.docForm.tecmecveh || !this.docForm.fecvent) {
+                alert('SOAT, Vencimiento SOAT, Tecnomecánica y Vencimiento Tecnomecánica son obligatorios.');
+                return;
+            }
+            this.docSaving = true;
+            try {
+                const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+                const url = '/' + prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/edicion-rapida';
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(this.docForm)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = this.vehiculos.findIndex(v => v.idveh === this.selectedVehiculo.idveh);
+                    if (idx !== -1) this.vehiculos[idx] = data.vehiculo;
+                    this.selectedVehiculo = data.vehiculo;
+                    this.editDocMode = false;
+                } else {
+                    alert('Error: ' + (data.message || 'Verifique los datos'));
+                }
+            } catch (e) {
+                console.error('Error guardando documentación:', e);
+            } finally {
+                this.docSaving = false;
             }
         }
     }">
@@ -254,8 +378,8 @@
                 <h1 class="page-title">Listado General de Vehículos</h1>
                 <p class="page-subtitle">Gestión de activos vehiculares del CDA</p>
             </div>
+            @php $prefix = auth()->user()->hasRole('Administrador') ? 'admin' : (auth()->user()->hasRole('Digitador') ? 'digitador' : 'empresa'); @endphp
             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-            @php $prefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador'; @endphp
             <a href="{{ route($prefix . '.vehiculos.create') }}" class="vbtn vbtn-primary" style="text-decoration: none;">
                 <i class="fa-solid fa-plus"></i> Nuevo vehículo
             </a>
@@ -304,11 +428,6 @@
         </div>
 
         <!-- Results count -->
-        <div style="margin-bottom: 12px; font-size: 13px; color: #6b7280;">
-            Mostrando <span style="font-weight: 600; color: #111827;" x-text="displayedVehiculos.length"></span> de <span style="font-weight: 600; color: #111827;" x-text="filteredVehiculos.length"></span> vehículos
-            <span x-show="!showAll && hasMore" style="color: #0b3a5a;"> (limitado a <span x-text="maxRows"></span>)</span>
-        </div>
-
         <!-- Data Table -->
         <div class="vcard" style="overflow-x: auto; margin-bottom: 24px;">
             <table class="data-table">
@@ -338,8 +457,8 @@
                             <td x-text="vehiculo.combustible?.nomval || 'N/A'"></td>
                             @if(!auth()->user()->hasRole('Empresa'))
                             <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
-                                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <a class="icon-btn" title="Editar en formulario" :href="'/' + '{{ $prefix }}' + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
+                                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <button class="icon-btn" title="Eliminar" style="color: #ef4444;" @click.stop="deleteVehiculo(vehiculo)"><i class="fa-solid fa-trash-can"></i></button>
                                 @endif
                             </td>
@@ -354,12 +473,28 @@
                     </tr>
                 </tbody>
             </table>
-            {{-- Show more / Show less --}}
-            <div class="show-more-bar" x-show="hasMore">
-                <button @click="showAll = !showAll">
-                    <i class="fa-solid" :class="showAll ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                    <span x-text="showAll ? 'Mostrar menos' : 'Ver todos los vehículos (' + filteredVehiculos.length + ')'"></span>
-                </button>
+            {{-- Pagination --}}
+            <div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-slate-200 gap-4">
+                <div style="color: #64748b; font-size: 14px;">
+                    Mostrando <span style="font-weight: 500; color: #0f172a;" x-text="(currentPage - 1) * perPage + (totalItems > 0 ? 1 : 0)"></span> a <span style="font-weight: 500; color: #0f172a;" x-text="Math.min(currentPage * perPage, totalItems)"></span> de <span style="font-weight: 500; color: #0f172a;" x-text="totalItems"></span> resultados
+                </div>
+                <div class="inline-flex border border-slate-200 rounded-md overflow-x-auto shadow-sm max-w-full" x-show="totalPages > 1" x-cloak>
+                    <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" 
+                            :style="currentPage === 1 ? 'padding: 8px 12px; background: #f8fafc; border-right: 1px solid #e2e8f0; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; border-right: 1px solid #e2e8f0; color: #64748b; cursor: pointer;'">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 12px;"></i>
+                    </button>
+                    <template x-for="(page, index) in paginationArray" :key="index">
+                        <button @click="page !== '...' ? goToPage(page) : null" 
+                                :disabled="page === '...'"
+                                x-text="page" 
+                                :style="page === currentPage ? 'padding: 8px 14px; background: #f1f5f9; border-right: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #0f172a; cursor: default;' : (page === '...' ? 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #94a3b8; cursor: default;' : 'padding: 8px 14px; background: #fff; border-right: 1px solid #e2e8f0; font-size: 14px; color: #64748b; cursor: pointer;')">
+                        </button>
+                    </template>
+                    <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" 
+                            :style="currentPage === totalPages ? 'padding: 8px 12px; background: #f8fafc; color: #cbd5e1; cursor: not-allowed;' : 'padding: 8px 12px; background: #fff; color: #64748b; cursor: pointer;'">
+                        <i class="fa-solid fa-chevron-right" style="font-size: 12px;"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -464,45 +599,61 @@
                     <!-- Section 2: Documentación y Seguros     -->
                     <!-- ====================================== -->
                     <div class="form-section" x-show="tab === 'todos' || tab === 'documentos'">
-                        <h4 class="form-section-title"><i class="fa-solid fa-file-shield"></i> Documentación y Seguros</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h4 class="form-section-title" style="margin: 0;"><i class="fa-solid fa-file-shield"></i> Documentación y Seguros</h4>
+                            @if(auth()->user()->hasRole('Empresa'))
+                            <div>
+                                <button class="vbtn vbtn-outline" style="font-size: 12px; padding: 6px 12px;" @click="openDocEdit()" x-show="!editDocMode">
+                                    <i class="fa-solid fa-pen"></i> Editar Seguros
+                                </button>
+                                <div style="display: flex; gap: 8px;" x-show="editDocMode" x-cloak>
+                                    <button class="vbtn vbtn-secondary" style="font-size: 12px; padding: 6px 12px;" @click="cancelDocEdit()" :disabled="docSaving">Cancelar</button>
+                                    <button class="vbtn vbtn-primary" style="font-size: 12px; padding: 6px 12px;" @click="saveDoc()" :disabled="docSaving">
+                                        <i class="fa-solid fa-check" x-show="!docSaving"></i>
+                                        <i class="fa-solid fa-spinner fa-spin" x-show="docSaving"></i> <span x-text="docSaving ? 'Guardando...' : 'Guardar'"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            @endif
+                        </div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Licencia de tránsito</label>
-                                <input type="text" :value="selectedVehiculo.lictraveh || 'N/A'" readonly />
+                                <input type="number" x-model="docForm.lictraveh" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                             </div>
                             <div class="form-group">
                                 <label>Fecha de matrícula</label>
-                                <input type="text" :value="selectedVehiculo.fmatv || 'N/A'" readonly />
+                                <input type="date" x-model="docForm.fmatv" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" />
                             </div>
                             <div class="form-group">
                                 <label>Venc. tarjeta de operación</label>
-                                <input type="text" :value="selectedVehiculo.fecvenr || 'N/A'" readonly />
+                                <input type="date" x-model="docForm.fecvenr" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" />
                             </div>
                             <div class="form-group">
-                                <label>SOAT</label>
-                                <input type="text" :value="selectedVehiculo.soat || 'N/A'" readonly />
+                                <label>SOAT <span x-show="editDocMode" style="color: #ef4444;">*</span></label>
+                                <input type="number" x-model="docForm.soat" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                             </div>
                             <div class="form-group">
-                                <label>Vencimiento SOAT</label>
-                                <input type="text" :value="selectedVehiculo.fecvens || 'N/A'" readonly />
+                                <label>Vencimiento SOAT <span x-show="editDocMode" style="color: #ef4444;">*</span></label>
+                                <input type="date" x-model="docForm.fecvens" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" />
                             </div>
                             <div class="form-group" style="border-right: none;"></div>
                             <div class="form-group">
-                                <label>Tecnomecánica</label>
-                                <input type="text" :value="selectedVehiculo.tecmecveh || 'N/A'" readonly />
+                                <label>Tecnomecánica <span x-show="editDocMode" style="color: #ef4444;">*</span></label>
+                                <input type="number" x-model="docForm.tecmecveh" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                             </div>
                             <div class="form-group">
-                                <label>Vencimiento tecnomecánica</label>
-                                <input type="text" :value="selectedVehiculo.fecvent || 'N/A'" readonly />
+                                <label>Vencimiento tecnomecánica <span x-show="editDocMode" style="color: #ef4444;">*</span></label>
+                                <input type="date" x-model="docForm.fecvent" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" />
                             </div>
                             <div class="form-group" style="border-right: none;"></div>
                             <div class="form-group">
                                 <label>Póliza extracontractual</label>
-                                <input type="text" :value="selectedVehiculo.extcontveh || 'N/A'" readonly />
+                                <input type="number" x-model="docForm.extcontveh" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" onkeydown="if(['+', '-', 'e', '.', ','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 20);" />
                             </div>
                             <div class="form-group">
                                 <label>Vencimiento extracontractual</label>
-                                <input type="text" :value="selectedVehiculo.fecvene || 'N/A'" readonly />
+                                <input type="date" x-model="docForm.fecvene" :readonly="!editDocMode" :class="{ 'editable': editDocMode }" />
                             </div>
                         </div>
                     </div>

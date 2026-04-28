@@ -114,15 +114,24 @@ class VehiculoController extends Controller
     public function update(Request $request, $id)
     {
         $vehiculo = Vehiculo::findOrFail($id);
+        
+        $user = auth()->user();
+        if ($user->hasRole('Empresa') && $vehiculo->idemp != $user->empresa->idemp ?? $user->idemp) {
+            if ($vehiculo->idemp != $user->idemp) {
+                abort(403, 'No tiene permiso para editar este vehículo.');
+            }
+        }
+
         $validated = $this->validateVehiculo($request, $id);
         
-        // Mantener la integridad de tipoveh
-        $validated['tipoveh'] = ($validated['clveh'] == 7) ? 2 : 1;
+        // Mantener la integridad de tipoveh solo si está en validación
+        if (isset($validated['clveh'])) {
+            $validated['tipoveh'] = ($validated['clveh'] == 7) ? 2 : 1;
+        }
 
         $vehiculo->update($validated);
 
-        $user = auth()->user();
-        $prefix = $user->hasRole('Administrador') ? 'admin' : 'digitador';
+        $prefix = $user->hasRole('Administrador') ? 'admin' : ($user->hasRole('Digitador') ? 'digitador' : 'empresa');
 
         return redirect("/{$prefix}/vehiculos")
             ->with('success', 'Vehículo actualizado exitosamente.');
@@ -193,18 +202,37 @@ class VehiculoController extends Controller
      */
     public function quickUpdate(Request $request, $id)
     {
-        $validated = $request->validate([
-            'linveh'       => 'nullable|integer',
-            'clveh'        => 'nullable|integer',
-            'tipo_servicio'=> 'nullable|in:1,2',
-            'idemp'        => 'nullable|integer',
-            'combuveh'     => 'nullable|integer',
-            'crgveh'       => 'nullable|integer',
-            'blinveh'      => 'nullable|in:1,2',
-            'polaveh'      => 'nullable|in:1,2',
-            'prop'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [6, 8])],
-            'cond'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [7, 8])],
-        ], [
+        $user = auth()->user();
+        $isEmpresa = $user->hasRole('Empresa');
+
+        $rules = [
+            'soat'         => ($isEmpresa ? 'required' : 'nullable') . '|numeric|digits_between:1,20',
+            'fecvens'      => ($isEmpresa ? 'required' : 'nullable') . '|date',
+            'tecmecveh'    => ($isEmpresa ? 'required' : 'nullable') . '|numeric|digits_between:1,20',
+            'fecvent'      => ($isEmpresa ? 'required' : 'nullable') . '|date',
+            'lictraveh'    => 'nullable|numeric|digits_between:1,20',
+            'fmatv'        => 'nullable|date',
+            'fecvenr'      => 'nullable|date',
+            'extcontveh'   => 'nullable|numeric|digits_between:1,20',
+            'fecvene'      => 'nullable|date',
+        ];
+
+        if (!$isEmpresa) {
+            $rules = array_merge($rules, [
+                'linveh'       => 'nullable|integer',
+                'clveh'        => 'nullable|integer',
+                'tipo_servicio'=> 'nullable|in:1,2',
+                'idemp'        => 'nullable|integer',
+                'combuveh'     => 'nullable|integer',
+                'crgveh'       => 'nullable|integer',
+                'blinveh'      => 'nullable|in:1,2',
+                'polaveh'      => 'nullable|in:1,2',
+                'prop'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [6, 8])],
+                'cond'         => ['nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [7, 8])],
+            ]);
+        }
+
+        $validated = $request->validate($rules, [
             'integer' => 'El valor ingresado no es válido.',
             'in' => 'La opción seleccionada no es válida.',
             'exists' => 'La opción seleccionada no existe en el sistema.',
@@ -214,9 +242,11 @@ class VehiculoController extends Controller
             $vehiculo = Vehiculo::findOrFail($id);
 
             // Convertir strings vacíos a null para las FK
-            foreach (['linveh', 'clveh', 'idemp', 'combuveh', 'crgveh', 'prop', 'cond'] as $fk) {
-                if (isset($validated[$fk]) && $validated[$fk] === '') {
-                    $validated[$fk] = null;
+            if (!$user->hasRole('Empresa')) {
+                foreach (['linveh', 'clveh', 'idemp', 'combuveh', 'crgveh', 'prop', 'cond'] as $fk) {
+                    if (isset($validated[$fk]) && $validated[$fk] === '') {
+                        $validated[$fk] = null;
+                    }
                 }
             }
 
@@ -258,6 +288,28 @@ class VehiculoController extends Controller
      */
     private function validateVehiculo(Request $request, $id = null): array
     {
+        $user = auth()->user();
+        
+        if ($id && $user->hasRole('Empresa')) {
+            // Empresa solo puede actualizar documentación y seguros
+            return $request->validate([
+                'lictraveh'    => 'nullable|numeric|digits_between:1,20',
+                'fmatv'        => 'nullable|date',
+                'fecvenr'      => 'nullable|date',
+                'soat'         => 'required|numeric|digits_between:1,20',
+                'fecvens'      => 'required|date',
+                'tecmecveh'    => 'required|numeric|digits_between:1,20',
+                'fecvent'      => 'required|date',
+                'extcontveh'   => 'nullable|numeric|digits_between:1,20',
+                'fecvene'      => 'nullable|date',
+            ], [
+                'required' => 'Este campo es obligatorio.',
+                'numeric' => 'Debe ingresar un valor numérico.',
+                'date' => 'Debe ingresar una fecha válida.',
+                'digits_between' => 'Debe contener entre :min y :max dígitos.',
+            ]);
+        }
+
         return $request->validate([
             'nordveh'      => 'nullable|string|max:30',
             'placaveh'     => 'required|string|max:6|unique:vehiculo,placaveh,' . ($id ? $id : 'NULL') . ',idveh',
@@ -275,17 +327,17 @@ class VehiculoController extends Controller
             'nchaveh'      => 'required|string|max:30',
             'blinveh'      => 'required|in:1,2',
             'polaveh'      => 'nullable|in:1,2',
-            'lictraveh'    => 'required|numeric|digits_between:1,20',
-            'fmatv'        => 'required|date',
+            'lictraveh'    => 'nullable|numeric|digits_between:1,20',
+            'fmatv'        => 'nullable|date',
             'fecvenr'      => 'nullable|date',
             'soat'         => 'required|numeric|digits_between:1,20',
             'fecvens'      => 'required|date',
-            'extcontveh'   => 'required|numeric|digits_between:1,20',
-            'fecvene'      => 'required|date',
             'tecmecveh'    => 'required|numeric|digits_between:1,20',
             'fecvent'      => 'required|date',
-            'prop'         => ['required', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [6, 8])],
-            'cond'         => ['required', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [7, 8])],
+            'extcontveh'   => 'nullable|numeric|digits_between:1,20',
+            'fecvene'      => 'nullable|date',
+            'prop'         => [Rule::requiredIf(empty($request->idemp)), 'nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [6, 8])],
+            'cond'         => [Rule::requiredIf(empty($request->idemp)), 'nullable', 'integer', Rule::exists('persona', 'idper')->whereIn('idpef', [7, 8])],
             'idemp'        => 'nullable|integer|exists:empresa,idemp',
         ], [
             'required' => 'Este campo es obligatorio.',
