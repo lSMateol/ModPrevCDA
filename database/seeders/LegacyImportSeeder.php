@@ -392,27 +392,31 @@ class LegacyImportSeeder extends Seeder
      */
     private function importarDiapar()
     {
-        $this->command->info("  Importando Diapar (Separación total Diesel vs Otto + Anti-Duplicados)...");
+        $this->command->info("  Importando Diapar (Filtro ESTRICTO, Agrupación y Anti-Duplicados)...");
         
         $parametrosValidos = DB::table('param')->pluck('idpar', 'idpar')->toArray();
         $insertData = [];
         $batchSize = 2500;
         $total = 0;
+        $omitidos = 0;
         
         // 🛑 CONTROL DE DUPLICADOS: Evita múltiples registros por iddia + idpar
         $procesados = []; 
         
+        // Almacenamiento temporal para agrupar
+        $inspeccionVisual = []; // [iddia => ['grupo' => val, 'tipo' => val, 'desc' => val]]
+        $defectos = [];         // [iddia => [10 => val, 11 => val]]
+        
         // =========================================================================
         // FASE 1: GENERACIÓN OBLIGATORIA (Base para TODOS los vehículos)
-        // Garantiza que el Motor Diesel se genere SIEMPRE, sin depender de legacy
         // =========================================================================
         $this->command->info("    -> Fase 1: Generando Luces y Motor Diesel...");
         
         foreach ($this->idsDiagImportados as $iddia => $idveh) {
-            $combustible = strtolower($this->vehiculoCombustible[$idveh] ?? '');
-            $esDiesel = ($combustible === 'diesel');
+            $combustible = $this->vehiculoCombustible[$idveh] ?? null;
+            $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
             
-            // 1. LUCES (Aplica para ambos: Diesel y Otto)
+            // 1. LUCES (Aplica para ambos) -> "funciona" en minúscula
             foreach ([1, 2] as $idparLuces) {
                 $key = "{$iddia}-{$idparLuces}";
                 $procesados[$key] = true;
@@ -420,8 +424,8 @@ class LegacyImportSeeder extends Seeder
                 $insertData[] = [
                     'iddia' => $iddia,
                     'idpar' => $idparLuces,
-                    'idper' => 1, // Fallback genérico de inspector
-                    'valor' => 'Funciona',
+                    'idper' => 1,
+                    'valor' => 'funciona',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -444,7 +448,6 @@ class LegacyImportSeeder extends Seeder
                     $key = "{$iddia}-{$idparDiesel}";
                     $procesados[$key] = true;
                     
-                    // Generar valor aleatorio en rango con 2 decimales
                     $valorRand = mt_rand($r[0] * 100, $r[1] * 100) / 100;
                     
                     $insertData[] = [
@@ -466,63 +469,172 @@ class LegacyImportSeeder extends Seeder
         }
         
         // =========================================================================
-        // FASE 2: MIGRACIÓN DESDE LEGACY (Gases, Defectos, Inspección Visual)
+        // FASE 2: MIGRACIÓN DESDE LEGACY (Agrupación de Visual y Defectos)
         // =========================================================================
-        $this->command->info("    -> Fase 2: Migrando datos desde legacy (Gases, Defectos, Visual)...");
+        $this->command->info("    -> Fase 2: Procesando datos desde legacy (Agrupando Inspección y Defectos)...");
         
         $query = DB::connection('legacy')->table('diapar')
             ->join('diag', 'diapar.iddia', '=', 'diag.iddia')
             ->select('diapar.*', 'diag.idveh');
             
-        $omitidos = 0;
-        
         foreach ($query->cursor() as $dp) {
-            // Validar existencia del diagnóstico importado
+            // Validar existencia del diagnóstico
             if (!isset($this->idsDiagImportados[$dp->iddia])) {
                 continue;
             }
             
-            $combustible = strtolower($this->vehiculoCombustible[$dp->idveh] ?? '');
-            $esDiesel = ($combustible === 'diesel');
+            // -----------------------------------------------------
+            // A. PROCESAMIENTO DE DEFECTOS (Legacy 30 y 31)
+            // SIEMPRE se mapean y no se filtran por combustible
+            // -----------------------------------------------------
+            if ($dp->idpar == 30 || $dp->idpar == 31) {
+                $idparDestino = ($dp->idpar == 30) ? 10 : 11;
+                $v = trim($dp->valor ?? '');
+                $val = ($v === 'S') ? 'Cumple' : (($v === 'N') ? 'No Cumple' : 'N/A');
+                $defectos[$dp->iddia][$idparDestino] = $val;
+                continue;
+            }
             
-            $idparDestino = null;
+            // -----------------------------------------------------
+            // B. PROCESAMIENTO DE INSPECCIÓN VISUAL (Legacy 34, 35, 36)
+            // Agrupamos la info de cada diagnóstico para insertarla junta
+            // -----------------------------------------------------
+            if (in_array($dp->idpar, [34, 35, 36])) {
+                if (!isset($inspeccionVisual[$dp->iddia])) {
+                    $inspeccionVisual[$dp->iddia] = [
+                        'grupo' => null,
+                        'tipo' => null,
+                        'desc' => null
+                    ];
+                }
+                
+                $v = trim($dp->valor ?? '');
+                if ($v !== '') {
+                    if ($dp->idpar == 35) { // Grupo -> 12
+                        $inspeccionVisual[$dp->iddia]['grupo'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['grupo'], $v);
+                    } elseif ($dp->idpar == 36) { // Tipo -> 13
+                        $inspeccionVisual[$dp->iddia]['tipo'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['tipo'], $v);
+                    } elseif ($dp->idpar == 34) { // Desc -> 14
+                        $inspeccionVisual[$dp->iddia]['desc'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['desc'], $v);
+                    }
+                }
+                continue;
+            }
             
-            // 🔴 FLUJO EXCLUSIVO POR TIPO DE COMBUSTIBLE
+            // -----------------------------------------------------
+            // C. PROCESAMIENTO DE GASES (Resto de parámetros)
+            // -----------------------------------------------------
+            $combustible = $this->vehiculoCombustible[$dp->idveh] ?? null;
+            $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
+            
             if ($esDiesel) {
-                $idparDestino = $this->mapearDiesel($dp->idpar);
+                // Si es Diesel, NO se inserta nada más aquí.
+                // Ya tiene luces (1,2), motor(3-9) y los defectos/visual van en Fase 3.
+                $omitidos++;
+                continue;
             } else {
-                $idparDestino = $this->mapearOtto($dp->idpar);
+                // Si es OTTO (Gasolina), procesar Emisión de Gases
+                // Bloquear Motor Diesel explícitamente y Luces ya generadas
+                if ($dp->idpar >= 3 && $dp->idpar <= 9) continue;
+                if ($dp->idpar == 1 || $dp->idpar == 2) continue;
+                
+                $idparDestino = $dp->idpar;
+                
+                // Ignorar si el ID no existe en el nuevo sistema
+                if (!isset($parametrosValidos[$idparDestino])) continue;
+                
+                // Control de duplicados
+                $key = "{$dp->iddia}-{$idparDestino}";
+                if (isset($procesados[$key])) continue;
+                $procesados[$key] = true;
+                
+                $insertData[] = [
+                    'iddia' => $dp->iddia,
+                    'idpar' => $idparDestino,
+                    'idper' => $this->mapaPersonas[$dp->idper ?? 0] ?? 1,
+                    'valor' => $dp->valor,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                $total++;
+                
+                if (count($insertData) >= $batchSize) {
+                    DB::table('diapar')->insert($insertData);
+                    $insertData = [];
+                }
+            }
+        }
+        
+        // =========================================================================
+        // FASE 3: INSERCIÓN DE DEFECTOS E INSPECCIÓN VISUAL (Consolidados)
+        // =========================================================================
+        $this->command->info("    -> Fase 3: Insertando Defectos e Inspección Visual consolidados...");
+        
+        // Insertar Defectos (10, 11)
+        foreach ($defectos as $iddia => $defs) {
+            foreach ($defs as $idparDestino => $valor) {
+                $key = "{$iddia}-{$idparDestino}";
+                if (isset($procesados[$key])) continue;
+                $procesados[$key] = true;
+                
+                $insertData[] = [
+                    'iddia' => $iddia,
+                    'idpar' => $idparDestino,
+                    'idper' => 1,
+                    'valor' => $valor,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                $total++;
+            }
+        }
+        
+        // Insertar Inspección Visual (12, 13, 14) agrupada
+        foreach ($inspeccionVisual as $iddia => $iv) {
+            // Convertir descripciones separadas por coma en una lista JSON para el nuevo sistema
+            $descRaw = str_replace('|', ',', $iv['desc'] ?? '');
+            $descList = array_map('trim', explode(',', $descRaw));
+            $descList = array_filter($descList);
+            
+            $jsonList = [];
+            foreach ($descList as $item) {
+                $jsonList[] = [
+                    'obs' => $item,
+                    'grupo' => $iv['grupo'] ?? '',
+                    'tipo' => $iv['tipo'] ?? ''
+                ];
             }
             
-            // Si el mapeo retorna null o no existe en sistema nuevo, ignorar registro
-            if (!$idparDestino || !isset($parametrosValidos[$idparDestino])) {
-                continue;
-            }
+            $jsonPayload = count($jsonList) > 0 ? json_encode([
+                'list' => $jsonList,
+                'obs' => ''
+            ], JSON_UNESCAPED_UNICODE) : 'SIN REGISTRO';
             
-            // 🛑 CONTROL DE DUPLICADOS (Previene repetir el mismo idpar en un diagnóstico)
-            $key = "{$dp->iddia}-{$idparDestino}";
-            if (isset($procesados[$key])) {
-                $omitidos++; 
-                continue;
-            }
-            $procesados[$key] = true;
-            
-            // Calcular el valor final a persistir
-            $valorFinal = $this->calcularValorCualitativo($dp, $idparDestino);
-            
-            $insertData[] = [
-                'iddia' => $dp->iddia,
-                'idpar' => $idparDestino,
-                'idper' => $this->mapaPersonas[$dp->idper ?? 0] ?? 1,
-                'valor' => $valorFinal,
-                'created_at' => now(),
-                'updated_at' => now(),
+            $mapeoDestino = [
+                12 => $iv['grupo'] ?? 'SIN REGISTRO',
+                13 => $iv['tipo'] ?? 'SIN REGISTRO',
+                14 => $jsonPayload
             ];
-            $total++;
             
-            if (count($insertData) >= $batchSize) {
-                DB::table('diapar')->insert($insertData);
-                $insertData = [];
+            foreach ($mapeoDestino as $idparDestino => $valor) {
+                $key = "{$iddia}-{$idparDestino}";
+                if (isset($procesados[$key])) continue;
+                $procesados[$key] = true;
+                
+                $insertData[] = [
+                    'iddia' => $iddia,
+                    'idpar' => $idparDestino,
+                    'idper' => 1,
+                    'valor' => $valor,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                $total++;
+                
+                if (count($insertData) >= $batchSize) {
+                    DB::table('diapar')->insert($insertData);
+                    $insertData = [];
+                }
             }
         }
         
@@ -530,75 +642,18 @@ class LegacyImportSeeder extends Seeder
             DB::table('diapar')->insert($insertData);
         }
         
-        $this->command->info("  Diapar: {$total} insertados/generados, {$omitidos} duplicados controlados u omitidos.");
+        $this->command->info("  Diapar: {$total} insertados/generados, {$omitidos} parámetros no permitidos bloqueados.");
     }
 
     /**
-     * Mapeo exclusivo para vehículos DIESEL.
-     * Retorna null para rechazar cualquier parámetro prohibido.
+     * Auxiliar para concatenar descripciones de inspección visual y evitar pérdida de datos.
      */
-    private function mapearDiesel($idparLegacy)
+    private function concatenarValor($actual, $nuevo)
     {
-        // NO procesar Motor Diesel ni Luces aquí, ya se generaron en Fase 1.
-        $mapeo = [
-            30 => 10, // Defectos
-            31 => 11, // Defectos
-            34 => 14, // Visual: Descripcion -> desc_inspeccion
-            35 => 12, // Visual: Grupo -> grupo_inspeccion
-            36 => 13, // Visual: Tipo defecto -> tipo_defecto
-        ];
-        
-        return $mapeo[$idparLegacy] ?? null; // Null rechaza gases y otros irrelevantes
-    }
-
-    /**
-     * Mapeo exclusivo para vehículos CICLO OTTO (NO DIESEL).
-     * Retorna null para rechazar cualquier parámetro Diesel prohibido.
-     */
-    private function mapearOtto($idparLegacy)
-    {
-        // Bloquear Motor Diesel explícitamente (23 a 29 legacy)
-        $bloqueadosDiesel = [23, 24, 25, 26, 27, 28, 29];
-        if (in_array($idparLegacy, $bloqueadosDiesel)) {
-            return null;
-        }
-        
-        $mapeo = [
-            30 => 10, // Defectos
-            31 => 11, // Defectos
-            34 => 14, // Visual: Descripcion -> desc_inspeccion
-            35 => 12, // Visual: Grupo -> grupo_inspeccion
-            36 => 13, // Visual: Tipo defecto -> tipo_defecto
-        ];
-        
-        if (isset($mapeo[$idparLegacy])) {
-            return $mapeo[$idparLegacy];
-        }
-        
-        // Retornar ID original para Gases y Ciclo Otto. 
-        // Luces (1,2) serán ignoradas por el control de duplicados (ya generadas).
-        return $idparLegacy;
-    }
-
-    /**
-     * Calcula el valor final para parámetros de texto y mapeos cualitativos.
-     * Los numéricos de Motor Diesel ya no pasan por aquí (Fase 1).
-     */
-    private function calcularValorCualitativo($dp, $idparDestino)
-    {
-        // Defectos (S/N -> Cumple/No Cumple)
-        if (in_array($idparDestino, [10, 11])) {
-            $v = trim($dp->valor ?? '');
-            return ($v === 'S') ? 'Cumple' : (($v === 'N') ? 'No Cumple' : 'N/A');
-        }
-        
-        // Inspección Visual (Mantener texto plano)
-        if (in_array($idparDestino, [12, 13, 14])) {
-            return $dp->valor ?? 'SIN REGISTRO';
-        }
-        
-        // Fallback: Mantener valor original (Aplica para Gases y OTTO)
-        return $dp->valor ?? null;
+        if (empty($actual)) return $nuevo;
+        // Evitar duplicar el mismo defecto/grupo si se repite de forma idéntica
+        if (strpos($actual, $nuevo) !== false) return $actual;
+        return $actual . ' | ' . $nuevo;
     }
 
     /**
