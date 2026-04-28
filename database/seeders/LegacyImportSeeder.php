@@ -55,6 +55,11 @@ class LegacyImportSeeder extends Seeder
         $this->command->info('══════════════════════════════════════════════');
 
         // ═══════════════════════════════════════════════════════════════
+        // 0. LIMPIEZA PREVIA (Opcional, según condiciones)
+        // ═══════════════════════════════════════════════════════════════
+        $this->limpiarDatosPrevios();
+
+        // ═══════════════════════════════════════════════════════════════
         // 1. MAESTROS DEL NUEVO SISTEMA (Roles, Perfiles, Parámetros)
         // ═══════════════════════════════════════════════════════════════
         $this->command->info('');
@@ -141,6 +146,30 @@ class LegacyImportSeeder extends Seeder
     // ─────────────────────────────────────────────────────────────────
     //  MÉTODOS AUXILIARES
     // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Limpia los datos transaccionales previos para evitar duplicados
+     * o inconsistencias en re-ejecuciones.
+     */
+    private function limpiarDatosPrevios()
+    {
+        $this->command->warn("  Limpiando datos transaccionales previos (≥ " . self::FECHA_CORTE . ")...");
+
+        // Identificar IDs de diagnósticos en el rango de migración
+        $idsAEliminar = DB::table('diag')
+            ->where('fecdia', '>=', self::FECHA_CORTE)
+            ->pluck('iddia');
+
+        if ($idsAEliminar->isNotEmpty()) {
+            $countDiapar = DB::table('diapar')->whereIn('iddia', $idsAEliminar)->delete();
+            $countFotos = DB::table('foto')->whereIn('iddia', $idsAEliminar)->delete();
+            $countDiag = DB::table('diag')->whereIn('iddia', $idsAEliminar)->delete();
+
+            $this->command->info("    ✓ $countDiag diagnósticos, $countDiapar parámetros y $countFotos fotos eliminados.");
+        } else {
+            $this->command->info("    - No se encontraron datos previos para limpiar.");
+        }
+    }
 
     private function cargarMapaPersonas()
     {
