@@ -115,7 +115,19 @@
         </div>
 
         <div class="intro-text">
-            Dando cumplimiento al protocolo de revisión establecido, me permito entregarles el informe final de <strong>{{ $totalVehiculos }}</strong> vehículos registrados bajo su supervisión. Durante el periodo evaluado, se realizaron un total de <strong>{{ $diagnosticos->count() }}</strong> diagnósticos técnicos de revisión preventiva y correctiva para asegurar la integridad operativa de su flota.
+            Dando cumplimiento al protocolo de revisión establecido, me permito entregarles el informe técnico correspondiente a <strong>{{ $diagnosticos->count() }}</strong> diagnóstico(s) de revisión preventiva realizados sobre <strong>{{ $totalVehiculos }}</strong> vehículo(s) durante el periodo:
+            <strong>
+                @if($periodoInicio && $periodoFin)
+                    del {{ $periodoInicio }} al {{ $periodoFin }}
+                @elseif($periodoInicio)
+                    desde el {{ $periodoInicio }}
+                @elseif($periodoFin)
+                    hasta el {{ $periodoFin }}
+                @else
+                    sin filtro de fecha (histórico completo)
+                @endif
+            </strong>.
+            Los resultados reflejan el estado técnico de la flota registrada bajo supervisión del CDA Rastrillantas Ltda.
         </div>
 
         <table class="data-table">
@@ -129,24 +141,6 @@
             </thead>
             <tbody>
                 @forelse($diagnosticos as $diag)
-                    @php
-                        // Hallazgos dinámicos basados en fallos
-                        $hallazgos = [];
-                        if ($diag->aprobado == 0) {
-                            foreach($diag->parametros as $p) {
-                                $meta = $p->parametro;
-                                if (!$meta) continue;
-                                if ($meta->control === 'radio' && ($p->valor === 'no' || $p->valor === 'no_funciona')) {
-                                    $hallazgos[] = strtoupper($meta->nompar);
-                                }
-                                if ($meta->control === 'number' && $meta->rini !== null && $meta->rfin !== null) {
-                                    if (floatval($p->valor) < floatval($meta->rini) || floatval($p->valor) > floatval($meta->rfin)) {
-                                        $hallazgos[] = strtoupper($meta->nompar) . " (FUERA DE RANGO)";
-                                    }
-                                }
-                            }
-                        }
-                    @endphp
                     <tr>
                         <td class="col-fecha">
                             <div style="font-weight: 600;">{{ \Carbon\Carbon::parse($diag->fecdia)->format('d/m/Y') }}</div>
@@ -155,26 +149,32 @@
                         <td class="col-orden">{{ str_pad($diag->iddia, 4, '0', STR_PAD_LEFT) }}</td>
                         <td class="col-placa">{{ $diag->vehiculo->placaveh ?? 'N/A' }}</td>
                         <td class="col-obs">
-                            @if(!empty($hallazgos))
-                                <ul class="obs-list">
-                                    @foreach($hallazgos as $hallazgo)
-                                        <li class="obs-item">{{ $hallazgo }}</li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                            
-                            @if($diag->aprobado == 0 && $diag->rechazo && $diag->rechazo->motivo)
-                                <div style="margin-top: 6px; margin-bottom: 6px; font-size: 9.5px; background-color: #fef2f2; border-left: 2px solid #ef4444; padding: 5px 8px; color: #7f1d1d; border-radius: 3px;">
-                                    <strong>MOTIVO DE RECHAZO:</strong> {{ $diag->rechazo->motivo }}
-                                </div>
-                            @endif
-                            
-                            @if($diag->aprobado == 1)
-                                <span class="badge badge-success">APROBADO</span>
-                            @elseif($diag->aprobado == 0 && $diag->aprobado !== null)
+                            @if($diag->aprobado == 0)
+                                @if($diag->rechazo && $diag->rechazo->motivo)
+                                    {{-- Motivo oficial de rechazo --}}
+                                    <div style="margin-bottom: 5px; font-size: 9.5px; background-color: #fef2f2; border-left: 2px solid #ef4444; padding: 5px 8px; color: #7f1d1d; border-radius: 3px;">
+                                        <strong>MOTIVO:</strong> {{ $diag->rechazo->motivo }}
+                                    </div>
+                                @elseif($diag->parametros->isNotEmpty())
+                                    {{-- Parámetros con fallo real de la base de datos --}}
+                                    <div style="margin-bottom: 5px; font-size: 9px; background-color: #fff7ed; border-left: 2px solid #f97316; padding: 5px 8px; color: #7c2d12; border-radius: 3px;">
+                                        <strong>FALLAS DETECTADAS:</strong>
+                                        <ul style="margin: 3px 0 0 0; padding-left: 12px; font-size: 8.5px;">
+                                            @foreach($diag->parametros as $p)
+                                                @if($p->parametro)
+                                                    <li>{{ strtoupper($p->parametro->nompar) }}</li>
+                                                @endif
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @else
+                                    <div style="font-size: 9px; color: #991b1b; font-style: italic;">Sin detalle de fallo registrado</div>
+                                @endif
                                 <span class="badge badge-danger">NO APROBADO</span>
+                            @else
+                                <span class="badge badge-success">APROBADO</span>
                             @endif
-                            
+
                             @if($diag->vehiculo && !$empresa)
                                 <div style="font-size: 8px; color: #9ca3af; margin-top: 5px; text-transform: uppercase;">
                                     {{ $diag->vehiculo->empresa->razsoem ?? 'Sin Empresa' }}
@@ -192,8 +192,34 @@
             </tbody>
         </table>
 
-        <div class="footer">
-            Este informe es un documento digital verificado. Generado automáticamente por el Sistema de Gestión Vehicular CDA Rastrellantas Ltda.
+        {{-- Firma de la Ingeniera --}}
+        @php
+            $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+            $firmaBase64 = '';
+            if (file_exists($firmaPath)) {
+                $data = @file_get_contents($firmaPath);
+                if ($data) {
+                    $firmaBase64 = 'data:image/png;base64,' . base64_encode($data);
+                }
+            }
+        @endphp
+        <div style="margin-top: 55px; padding-top: 20px; border-top: 2px solid #001834; text-align: center;">
+            <div style="display: inline-block; text-align: center; min-width: 240px;">
+                @if($firmaBase64)
+                    <img src="{{ $firmaBase64 }}" alt="Firma Ingeniera Autorizada"
+                         style="max-height: 70px; max-width: 200px; display: block; margin: 0 auto 6px auto;">
+                @else
+                    <div style="height: 70px;"></div>
+                @endif
+                <div style="border-top: 1.5px solid #001834; padding-top: 6px;">
+                    <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #001834; letter-spacing: 0.05em;">Firma Ingeniera Autorizada</span><br>
+                    <span style="font-size: 9px; color: #374151;">CDA Rastrillantas Ltda.</span>
+                </div>
+            </div>
+            <div style="margin-top: 12px; font-size: 9px; color: #9ca3af;">
+                Generado el {{ \Carbon\Carbon::now()->translatedFormat('d \d\e F \d\e Y') }} —
+                Sistema de Gestión Vehicular
+            </div>
         </div>
     </div>
 </body>

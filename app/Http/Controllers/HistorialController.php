@@ -66,7 +66,19 @@ class HistorialController extends Controller
     {
         $user = auth()->user();
         
-        $query = Diag::with(['vehiculo.empresa', 'vehiculo.marca', 'rechazo', 'parametros.parametro'])
+        $query = Diag::with([
+                        'vehiculo.empresa',
+                        'vehiculo.marca',
+                        'rechazo',
+                        // Solo cargamos parámetros con valor fallido para evitar memory crash
+                        'parametros' => function($q) {
+                            $q->whereIn('valor', ['no', 'no_funciona'])
+                              ->with(['parametro' => function($pq) {
+                                  $pq->select(['idpar', 'nompar']);
+                              }])
+                              ->select(['iddiapar', 'iddia', 'idpar', 'valor']);
+                        }
+                    ])
                     ->orderBy('fecdia', 'desc');
 
         // RBAC: Si es Empresa, solo ve historiales de sus vehículos
@@ -82,7 +94,7 @@ class HistorialController extends Controller
             });
         }
 
-        // Filtro por fecha (puede ser rango en el request)
+        // Filtro por fecha
         if ($request->filled('fecha_inicio')) {
             $query->whereDate('fecdia', '>=', $request->fecha_inicio);
         }
@@ -90,18 +102,17 @@ class HistorialController extends Controller
             $query->whereDate('fecdia', '<=', $request->fecha_fin);
         }
 
-        // REGLA ESTRICTA PARA EL REPORTE: SOLO Aprobados y No Aprobados.
-        // Se excluyen completamente Pendientes y Reasignados.
+        // REGLA ESTRICTA: SOLO Aprobados y No Aprobados (sin Pendientes ni Reasignados)
         $query->where(function($q) {
-            $q->where('aprobado', 1) // Aprobados
-              ->orWhere(function($sub) { // No Aprobados (Rechazados definitivos)
+            $q->where('aprobado', 1)
+              ->orWhere(function($sub) {
                   $sub->where('aprobado', 0)->whereDoesntHave('rechazo', function($r) {
                       $r->where('estadorec', 'Reasignado');
                   });
               });
         });
 
-        // Filtro adicional por estado si se especificó en la vista
+        // Filtro adicional por estado
         if ($request->filled('estado')) {
             $estado = $request->estado;
             if ($estado === 'aprobado') {
@@ -109,15 +120,16 @@ class HistorialController extends Controller
             } elseif ($estado === 'no_aprobado') {
                 $query->where('aprobado', 0);
             } elseif ($estado === 'reasignado' || $estado === 'pendiente') {
-                // Si el usuario filtró por algo que no se permite en el reporte,
-                // forzamos a que no devuelva nada
                 $query->whereRaw('1 = 0');
             }
         }
 
-        $diagnosticos = $query->get();
+        $diagnosticos = $query->limit(300)->get();
 
-        // Determinar empresa
+        // Vehículos únicos dentro del resultado filtrado (siempre refleja el filtro activo)
+        $totalVehiculos = $diagnosticos->pluck('idveh')->unique()->count();
+
+        // Determinar empresa para mostrar datos del destinatario
         $empresaId = null;
         if ($user->hasRole('Empresa')) {
             $empresaId = $user->idemp;
@@ -125,16 +137,18 @@ class HistorialController extends Controller
             $empresaId = $request->empresa;
         }
         
-        $empresa = null;
-        $totalVehiculos = 0;
-        if ($empresaId) {
-            $empresa = \App\Models\Empresa::find($empresaId);
-            $totalVehiculos = \App\Models\Vehiculo::where('idemp', $empresaId)->count();
-        } else {
-            // Si no hay empresa específica filtrada, contamos los vehículos únicos de estos diagnósticos
-            $totalVehiculos = $diagnosticos->pluck('idveh')->unique()->count();
-        }
+        $empresa = $empresaId ? \App\Models\Empresa::find($empresaId) : null;
 
-        return view('vehiculos.export_historial', compact('diagnosticos', 'empresa', 'totalVehiculos', 'request'));
+        // Periodo evaluado
+        $periodoInicio = $request->filled('fecha_inicio')
+            ? \Carbon\Carbon::parse($request->fecha_inicio)->format('d/m/Y')
+            : null;
+        $periodoFin = $request->filled('fecha_fin')
+            ? \Carbon\Carbon::parse($request->fecha_fin)->format('d/m/Y')
+            : null;
+
+        return view('vehiculos.export_historial', compact(
+            'diagnosticos', 'empresa', 'totalVehiculos', 'request', 'periodoInicio', 'periodoFin'
+        ));
     }
 }
