@@ -242,14 +242,15 @@ class VehiculoEmpresaController extends Controller
     public function exportFlota(\Illuminate\Http\Request $request)
     {
         $request->validate([
-            'empresa_id' => 'required|integer|exists:empresa,idemp',
+            'empresa_id'   => 'required|integer|exists:empresa,idemp',
             'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date',
+            'fecha_fin'    => 'nullable|date',
+            'placa'        => 'nullable|string|max:10',
         ], [
             'required' => 'Este campo es obligatorio.',
-            'integer' => 'El formato debe ser un número entero.',
-            'exists' => 'El registro seleccionado no es válido.',
-            'date' => 'Debe ingresar una fecha válida.',
+            'integer'  => 'El formato debe ser un número entero.',
+            'exists'   => 'El registro seleccionado no es válido.',
+            'date'     => 'Debe ingresar una fecha válida.',
         ]);
 
         $user = auth()->user();
@@ -288,6 +289,14 @@ class VehiculoEmpresaController extends Controller
         }
         if ($request->filled('fecha_fin')) {
             $query->whereDate('fecdia', '<=', $request->fecha_fin);
+        }
+
+        // Filtro por placa (búsqueda parcial, case-insensitive)
+        if ($request->filled('placa')) {
+            $placa = strtoupper(trim($request->placa));
+            $query->whereHas('vehiculo', function ($q) use ($placa) {
+                $q->where('placaveh', 'LIKE', '%' . $placa . '%');
+            });
         }
 
         $diagnosticosRaw = $query->latest('fecdia')->get();

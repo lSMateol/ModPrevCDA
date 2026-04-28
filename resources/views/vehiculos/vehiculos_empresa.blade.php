@@ -105,6 +105,7 @@
         /* ──── Filtros Reporte ──── */
         fechaInicio: '',
         fechaFin: '',
+        reportePlaca: '',
         reporteQuickMes: '',
         reporteQuickAnio: '',
 
@@ -130,6 +131,7 @@
         clearReporteFilters() {
             this.fechaInicio = '';
             this.fechaFin = '';
+            this.reportePlaca = '';
             this.reporteQuickMes = '';
             this.reporteQuickAnio = '';
         },
@@ -144,6 +146,10 @@
             if (this.fechaFin) {
                 const fFin = new Date(this.fechaFin + 'T23:59:59');
                 r = r.filter(x => new Date(x.fecdia) <= fFin);
+            }
+            if (this.reportePlaca) {
+                const q = this.reportePlaca.trim().toLowerCase();
+                r = r.filter(x => (x.vehiculo?.placaveh ?? '').toLowerCase().includes(q));
             }
             return r;
         },
@@ -190,7 +196,8 @@
             if (!empresaId) return;
             let url = '/' + prefix + '/vehiculos-empresa/export-flota?empresa_id=' + empresaId;
             if (this.fechaInicio) url += '&fecha_inicio=' + this.fechaInicio;
-            if (this.fechaFin) url += '&fecha_fin=' + this.fechaFin;
+            if (this.fechaFin)    url += '&fecha_fin='    + this.fechaFin;
+            if (this.reportePlaca.trim()) url += '&placa=' + encodeURIComponent(this.reportePlaca.trim());
             window.open(url, '_blank');
         },
         get reportesExportables() {
@@ -1709,7 +1716,20 @@
                                     <input type="date" x-model="fechaFin" @change="reporteQuickMes = ''; reporteQuickAnio = '';" class="rf-input-date">
                                 </div>
 
-                                <button class="rf-clear-btn" @click="clearReporteFilters()" x-show="fechaInicio || fechaFin" style="align-self: flex-end;">
+                                <span style="color: #d1d5db; margin: 0 4px;">|</span>
+
+                                <div style="display: flex; flex-direction: column;">
+                                    <label>Placa</label>
+                                    <input type="text"
+                                           x-model="reportePlaca"
+                                           placeholder="Ej: ABC123"
+                                           maxlength="7"
+                                           class="rf-input-date"
+                                           style="text-transform: uppercase; width: 90px; letter-spacing: 1px;"
+                                           @input="reportePlaca = reportePlaca.toUpperCase()">
+                                </div>
+
+                                <button class="rf-clear-btn" @click="clearReporteFilters()" x-show="fechaInicio || fechaFin || reportePlaca" style="align-self: flex-end;">
                                     <i class="fa-solid fa-xmark"></i> Limpiar
                                 </button>
                             </div>
