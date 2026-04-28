@@ -58,6 +58,7 @@ class LegacyImportSeeder extends Seeder
         // 0. LIMPIEZA PREVIA (Opcional, según condiciones)
         // ═══════════════════════════════════════════════════════════════
         $this->limpiarDatosPrevios();
+        $this->purgarLegacyAntiguo();
 
         // ═══════════════════════════════════════════════════════════════
         // 1. MAESTROS DEL NUEVO SISTEMA (Roles, Perfiles, Parámetros)
@@ -151,6 +152,10 @@ class LegacyImportSeeder extends Seeder
      * Limpia los datos transaccionales previos para evitar duplicados
      * o inconsistencias en re-ejecuciones.
      */
+    /**
+     * Limpia los datos transaccionales previos para evitar duplicados
+     * o inconsistencias en re-ejecuciones.
+     */
     private function limpiarDatosPrevios()
     {
         $this->command->warn("  Limpiando datos transaccionales previos (≥ " . self::FECHA_CORTE . ")...");
@@ -168,6 +173,35 @@ class LegacyImportSeeder extends Seeder
             $this->command->info("    ✓ $countDiag diagnósticos, $countDiapar parámetros y $countFotos fotos eliminados.");
         } else {
             $this->command->info("    - No se encontraron datos previos para limpiar.");
+        }
+    }
+
+    /**
+     * PURGA de la base de datos LEGACY (cdarastr_cdarev).
+     * Elimina datos anteriores a la fecha de corte para aligerar el origen.
+     */
+    private function purgarLegacyAntiguo()
+    {
+        $this->command->warn("  [PELIGRO] Purgando datos antiguos en base LEGACY (< " . self::FECHA_CORTE . ")...");
+
+        // 1. Obtener IDs de diagnósticos antiguos en la base legacy
+        $idsViejos = DB::connection('legacy')->table('diag')
+            ->where('fecdia', '<', self::FECHA_CORTE)
+            ->pluck('iddia');
+
+        if ($idsViejos->isNotEmpty()) {
+            $this->command->info("    -> Eliminando registros relacionados para " . count($idsViejos) . " diagnósticos antiguos...");
+
+            // Procesamos en bloques para no saturar la base de datos antigua
+            foreach ($idsViejos->chunk(3000) as $chunk) {
+                DB::connection('legacy')->table('diapar')->whereIn('iddia', $chunk)->delete();
+                DB::connection('legacy')->table('foto')->whereIn('iddia', $chunk)->delete();
+                DB::connection('legacy')->table('diag')->whereIn('iddia', $chunk)->delete();
+            }
+
+            $this->command->info("    ✓ Base legacy purgada correctamente.");
+        } else {
+            $this->command->info("    - No se encontraron datos antiguos en legacy para purgar.");
         }
     }
 
