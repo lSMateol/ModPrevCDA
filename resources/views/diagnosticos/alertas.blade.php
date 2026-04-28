@@ -96,9 +96,14 @@
                 <h2 class="font-headline text-xl md:text-2xl font-black text-[#001834] tracking-tight">Alertas Detectadas</h2>
                 <p class="text-xs md:text-sm text-gray-500 font-medium mt-1">Acción requerida en los documentos marcados</p>
             </div>
-            <button class="w-full sm:w-auto bg-[#001834] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[#002d54] transition-all shadow-xl shadow-[#001834]/10">
-                Exportar Reporte
-            </button>
+            <div class="flex flex-col items-end gap-3">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Mostrando <span class="text-[#001834]">{{ $alertas->firstItem() ?? 0 }}</span> - <span class="text-[#001834]">{{ $alertas->lastItem() ?? 0 }}</span> de <span class="text-[#001834]">{{ $alertas->total() }}</span> Resultados
+                </p>
+                <button class="w-full sm:w-auto bg-[#001834] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[#002d54] transition-all shadow-xl shadow-[#001834]/10">
+                    Exportar Reporte
+                </button>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
@@ -167,6 +172,16 @@
                 <p class="text-gray-500 max-w-sm mx-auto">No se han detectado alertas críticas en la flota actualmente. Todos los documentos están vigentes.</p>
             </div>
             @endif
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-12 flex flex-col sm:flex-row justify-between items-center gap-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                Página <span class="text-[#001834]">{{ $alertas->currentPage() }}</span> de <span class="text-[#001834]">{{ $alertas->lastPage() }}</span>
+            </div>
+            <div class="flex items-center">
+                {{ $alertas->onEachSide(1)->links() }}
+            </div>
         </div>
     </section>
 </div>

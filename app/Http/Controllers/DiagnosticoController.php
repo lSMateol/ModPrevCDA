@@ -393,12 +393,25 @@ class DiagnosticoController extends Controller
             return $item['prioridad'] === 'alta' ? 2 : ($item['prioridad'] === 'media' ? 1 : 0);
         });
 
+        $perPage = 15;
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $currentItems = $alertas->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        
+        $alertasPaginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentItems,
+            $alertas->count(),
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
         $metricas = [
             'criticos' => $alertas->where('prioridad', 'alta')->count(),
             'advertencias' => $alertas->where('prioridad', 'media')->count(),
             'al_dia' => $vehiculos->count() - $alertas->count()
         ];
 
+        $alertas = $alertasPaginated;
         $empresas = Empresa::all();
 
         return view('diagnosticos.alertas', compact('alertas', 'metricas', 'empresas'));

@@ -66,32 +66,32 @@
             <div class="flex flex-col gap-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
                 <template x-for="p in filteredPropietarios()" :key="p.idper">
                     <div @click="selectPropietario(p)" 
-                        class="group bg-white p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden"
+                        class="group bg-white p-3 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex-shrink-0"
                         :class="selectedId === p.idper ? 'border-blue-500 shadow-md translate-x-2' : 'border-transparent hover:border-gray-200 shadow-sm'">
                         
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3">
                             <!-- Avatar con iniciales -->
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0 transition-transform group-hover:scale-110"
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 transition-transform group-hover:scale-110"
                                 :class="p.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]' : 'bg-gray-300'"
                                 x-text="p.nomper[0] + (p.apeper ? p.apeper[0] : '')">
                             </div>
                             
                             <div class="min-w-0 flex-1">
-                                <div class="flex justify-between items-start">
-                                    <h3 class="font-bold text-[#001834] text-sm truncate uppercase tracking-tight" x-text="p.nomper + ' ' + (p.apeper || '')"></h3>
+                                <div class="flex justify-between items-center gap-2">
+                                    <h3 class="font-bold text-[#001834] text-[13px] truncate uppercase tracking-tight" x-text="p.nomper + ' ' + (p.apeper || '')"></h3>
                                     <span :class="p.actper ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'" 
-                                        class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                                        class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shrink-0"
                                         x-text="p.actper ? 'Activo' : 'Inactivo'"></span>
                                 </div>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <iconify-icon icon="lucide:map-pin" class="text-gray-400 text-[10px]"></iconify-icon>
-                                    <span class="text-[11px] font-bold text-gray-500 truncate" x-text="p.ciuper || 'N/A'"></span>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <iconify-icon icon="lucide:map-pin" class="text-gray-400 text-[9px]"></iconify-icon>
+                                    <span class="text-[10px] font-bold text-gray-500 truncate" x-text="p.ciuper || 'N/A'"></span>
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                    <span class="text-[11px] font-bold text-gray-400" x-text="numberFormat(p.ndocper)"></span>
+                                    <span class="text-[10px] font-bold text-gray-400" x-text="numberFormat(p.ndocper)"></span>
                                 </div>
                             </div>
 
-                            <iconify-icon icon="lucide:chevron-right" class="text-gray-300 group-hover:text-blue-500 transition-colors"></iconify-icon>
+                            <iconify-icon icon="lucide:chevron-right" class="text-gray-300 group-hover:text-blue-500 transition-colors shrink-0"></iconify-icon>
                         </div>
 
                         <!-- Indicador de selección activa -->
