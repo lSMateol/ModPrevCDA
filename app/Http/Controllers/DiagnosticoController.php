@@ -99,6 +99,7 @@ class DiagnosticoController extends Controller
             'kilometraje' => 'required|integer|min:0',
             'idinsp' => 'required|exists:persona,idper',
             'iding' => 'required|exists:persona,idper',
+            'tipo_formulario' => 'required|string',
         ]);
 
         $vehiculo = Vehiculo::findOrFail($request->idveh);
@@ -129,6 +130,7 @@ class DiagnosticoController extends Controller
             'kilomt' => $request->idveh ? $vehiculo->kilomt : 0, 
             'idinsp' => $request->idinsp,
             'iding' => $request->iding,
+            'tipo_formulario' => $request->tipo_formulario,
         ]);
 
         $prefix = $this->getPrefix();
@@ -171,7 +173,23 @@ class DiagnosticoController extends Controller
         // Obtener solo los parámetros configurados para este tipo de vehículo
         $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
         $configIds = \App\Models\TipoVehiculoConfig::where('idval_combu', $idval_combu)->pluck('idpar');
-        $parametros = Param::whereIn('idpar', $configIds)->where('actpar', 1)->get();
+        $parametrosRaw = Param::with('tippar')->whereIn('idpar', $configIds)->where('actpar', 1)->get();
+        
+        // Filtrar según tipo_formulario
+        $parametros = collect();
+        $formType = $diagnostico->tipo_formulario ?? '';
+        foreach ($parametrosRaw as $param) {
+            $nomTip = strtoupper($param->tippar->nomtip ?? '');
+            $skip = false;
+            
+            if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) $skip = true;
+            elseif ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) $skip = true;
+            elseif ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) $skip = true;
+            
+            if (!$skip) {
+                $parametros->push($param);
+            }
+        }
         
         $rules = [];
         $messages = [];
@@ -295,12 +313,14 @@ class DiagnosticoController extends Controller
             'kilomt' => 'required|numeric',
             'idinsp' => 'required|exists:persona,idper',
             'iding' => 'required|exists:persona,idper',
+            'tipo_formulario' => 'nullable|string',
         ]);
 
         $diagnostico->update([
             'kilomt' => $request->kilomt,
             'idinsp' => $request->idinsp,
             'iding' => $request->iding,
+            'tipo_formulario' => $request->tipo_formulario,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Asignación de servicio actualizada correctamente.']);
@@ -503,6 +523,7 @@ class DiagnosticoController extends Controller
             'idinsp_nuevo' => 'required|exists:persona,idper',
             'iding_nuevo' => 'required|exists:persona,idper',
             'kilomt' => 'required|numeric',
+            'tipo_formulario' => 'required|string',
         ]);
 
         // Restricción: No duplicar si ya hay uno pendiente
@@ -532,6 +553,7 @@ class DiagnosticoController extends Controller
                 'kilomt' => $request->kilomt,
                 'dpiddia' => $diagnosticoAnterior->iddia, // Referencia al original
                 'idval_combu' => $diagnosticoAnterior->idval_combu ?? ($diagnosticoAnterior->vehiculo->combuveh ?? 43),
+                'tipo_formulario' => $request->tipo_formulario,
             ]);
 
             return $nuevo;
@@ -655,7 +677,14 @@ class DiagnosticoController extends Controller
             ], 422);
         }
 
-        $params = $diagnostico->parametros->groupBy(function($p) {
+        $params = $diagnostico->parametros->filter(function($p) use ($diagnostico) {
+            $nomTip = strtoupper($p->parametro->tippar->nomtip ?? '');
+            $formType = $diagnostico->tipo_formulario ?? '';
+            if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) return false;
+            if ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) return false;
+            if ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) return false;
+            return true;
+        })->groupBy(function($p) {
             return $p->parametro->tippar->nomtip;
         });
 

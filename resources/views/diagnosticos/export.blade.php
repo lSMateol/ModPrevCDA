@@ -230,7 +230,10 @@
             $paramValues = $diagnostico->parametros->pluck('valor', 'parametro.nompar')->toArray();
             $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
             $isDiesel = str_contains($combuStr, 'DIESEL');
-            $isGasolina = str_contains($combuStr, 'GASOLINA') || str_contains($combuStr, 'GAS');
+            
+            $formType = $diagnostico->tipo_formulario ?? '';
+            $showGases = !in_array($formType, ['diesel_basico', 'otto_sin_gases']);
+            $showMotor = !in_array($formType, ['solo_gases']);
         @endphp
 
         <!-- A. INFORMACION GENERAL -->
@@ -364,6 +367,7 @@
                 <th style="width: 10%;">N/A</th>
                 <th style="width: 30%;">RESULTADO</th>
             </tr>
+            @if($showMotor)
             <tr>
                 <td class="label">DILUSION GASOLINA</td>
                 <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'si' ? 'X' : '' }}</td>
@@ -385,9 +389,15 @@
                 <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
                 <td class="text-center" style="font-weight: bold;">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'CUMPLE' : 'NO CUMPLE' }}</td>
             </tr>
+            @else
+            <tr>
+                <td colspan="5" class="text-center" style="color: #666; font-style: italic;">Sección de Motor / Ciclo Otto no aplica para este tipo de formulario.</td>
+            </tr>
+            @endif
         </table>
 
-        @if($isDiesel)
+        @if($showGases)
+            @if($isDiesel)
         <!-- 7. EMISIONES DE GASES DIESEL -->
         <div class="section-title">7. EMISIONES DE GASES - VEHICULO DIESEL</div>
         <table class="mechanized-section">
@@ -473,6 +483,7 @@
                 <td class="text-center">[0.00 - 5.00]</td>
             </tr>
         </table>
+            @endif
         @endif
 
         <!-- D. DEFECTOS ENCONTRADOS -->

@@ -42,6 +42,17 @@
         @endif
 
         @foreach($parametrosPorTipo as $tipo => $params)
+        @php
+            $t = strtoupper($tipo);
+            $formType = $diagnostico->tipo_formulario ?? '';
+            $showSection = true;
+
+            if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showSection = false;
+            elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showSection = false;
+            elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showSection = false;
+        @endphp
+
+        @if($showSection)
         <section class="space-y-6">
             <!-- Título de Sección -->
             <div class="flex items-center gap-3 pb-3 border-b-2 border-outline-variant/10">
@@ -202,9 +213,57 @@
                     </div>
                     @endif
                     @endforeach
+                    @if(str_contains(strtoupper($tipo), 'LUCES'))
+                    <!-- Lógica Especial: Luces Exploradoras -->
+                    <div class="col-span-full bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10 mt-4 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="tiene_exploradoras" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 rounded focus:ring-offset-0 focus:ring-0 cursor-pointer">
+                            <label for="tiene_exploradoras" class="text-sm font-black uppercase tracking-widest text-on-surface-variant">¿Tiene luces exploradoras?</label>
+                        </div>
+                        
+                        <div id="exploradoras_container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Exploradora Izquierda -->
+                            <div class="flex flex-col gap-3 p-4 bg-white rounded-xl border border-outline-variant/10">
+                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Exploradora Izquierda</label>
+                                <div class="flex gap-5">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="_exploradora_izquierda_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
+                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">Funciona</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="_exploradora_izquierda_ui" value="no_funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
+                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">No Funciona</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Exploradora Derecha -->
+                            <div class="flex flex-col gap-3 p-4 bg-white rounded-xl border border-outline-variant/10">
+                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Exploradora Derecha</label>
+                                <div class="flex gap-5">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="_exploradora_derecha_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
+                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">Funciona</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="_exploradora_derecha_ui" value="no_funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
+                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">No Funciona</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Comentario Opcional -->
+                            <div class="col-span-full flex flex-col gap-2">
+                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Comentario Opcional (Luces Exploradoras)</label>
+                                <textarea id="comentario_exploradoras" rows="2" placeholder="Se enviará a 'Otros hallazgos'..." class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             @endif
         </section>
+        @endif
         @endforeach
 
         <!-- Botón de Acción -->
@@ -276,16 +335,45 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        const obs_general = document.getElementById('visual_obs_general').value;
+        const obs_general = document.getElementById('visual_obs_general') ? document.getElementById('visual_obs_general').value.trim() : '';
+        const chkExploradoras = document.getElementById('tiene_exploradoras');
+        let combined_obs = obs_general;
+        
+        if (chkExploradoras && chkExploradoras.checked) {
+            const expIzq = document.querySelector('input[name="_exploradora_izquierda_ui"]:checked');
+            const expDer = document.querySelector('input[name="_exploradora_derecha_ui"]:checked');
+            const expCom = document.getElementById('comentario_exploradoras') ? document.getElementById('comentario_exploradoras').value.trim() : '';
+            
+            let extra = "LUCES EXPLORADORAS:";
+            if (expIzq) extra += " Izquierda: " + (expIzq.value == 'funciona' ? 'Funciona' : 'No funciona') + ".";
+            if (expDer) extra += " Derecha: " + (expDer.value == 'funciona' ? 'Funciona' : 'No funciona') + ".";
+            if (expCom) extra += " Obs: " + expCom;
+            
+            if (combined_obs) combined_obs += "\n\n" + extra;
+            else combined_obs = extra;
+        }
+
         const finalData = {
             list: list,
-            obs: obs_general
+            obs: combined_obs
         };
 
         if(hiddenJson) {
             hiddenJson.value = JSON.stringify(finalData);
         }
     });
+
+    const chkExploradorasEvent = document.getElementById('tiene_exploradoras');
+    if (chkExploradorasEvent) {
+        chkExploradorasEvent.addEventListener('change', function() {
+            const container = document.getElementById('exploradoras_container');
+            if (this.checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        });
+    }
 });
 
 function fillDieselPass() {

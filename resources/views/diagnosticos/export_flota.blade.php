@@ -219,6 +219,12 @@
 
         @php
             $paramValues = $diagnostico->parametros->pluck('valor', 'parametro.nompar')->toArray();
+            $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
+            $isDiesel = str_contains($combuStr, 'DIESEL');
+            
+            $formType = $diagnostico->tipo_formulario ?? '';
+            $showGases = !in_array($formType, ['diesel_basico', 'otto_sin_gases']);
+            $showMotor = !in_array($formType, ['solo_gases']);
         @endphp
 
         <!-- A. INFORMACION GENERAL -->
@@ -352,6 +358,7 @@
                 <th style="width: 10%;">N/A</th>
                 <th style="width: 30%;">RESULTADO</th>
             </tr>
+            @if($showMotor)
             <tr>
                 <td class="label">DILUSION GASOLINA</td>
                 <td class="text-center">{{ ($paramValues['dilusion_gasolina'] ?? '') == 'si' ? 'X' : '' }}</td>
@@ -366,8 +373,14 @@
                 <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'na' ? 'X' : '' }}</td>
                 <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['Criterios_de_validacion'] ?? '-') }}</td>
             </tr>
+            @else
+            <tr>
+                <td colspan="5" class="text-center" style="color: #666; font-style: italic;">Sección de Motor / Ciclo Otto no aplica para este tipo de formulario.</td>
+            </tr>
+            @endif
         </table>
 
+        @if($showGases)
         <!-- 7. EMISIONES DE GASES -->
         <div class="section-title">7. EMISIONES DE GASES - VEHICULO DIESEL</div>
         <table class="mechanized-section">
@@ -404,6 +417,7 @@
                 <td class="text-center">%</td>
             </tr>
         </table>
+        @endif
 
         <!-- D. DEFECTOS ENCONTRADOS -->
         <div class="section-title">D. DEFECTOS ENCONTRADOS EN LA INSPECCIÓN VISUAL Y SENSORIAL</div>

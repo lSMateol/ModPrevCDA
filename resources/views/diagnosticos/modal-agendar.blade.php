@@ -49,6 +49,17 @@
                     </div>
                 </div>
 
+                <!-- Tipo de Formulario (Dinámico) -->
+                <div class="space-y-2 hidden" id="container_tipo_formulario">
+                    <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Tipo de Formulario</label>
+                    <div class="relative group">
+                        <select name="tipo_formulario" id="tipo_formulario_agendar" required class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-primary-fixed-dim focus:ring-0 rounded-t-xl px-4 py-3 appearance-none text-on-surface font-semibold text-sm transition-all group-hover:bg-surface-container-highest cursor-pointer">
+                            <option value="" disabled selected>Seleccione primero el vehículo</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">assignment</span>
+                    </div>
+                </div>
+
                 <!-- Kilometraje -->
                 <div class="space-y-2">
                     <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Kilometraje Actual</label>
@@ -114,3 +125,36 @@
         transform: scale(1);
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectVehiculo = document.getElementById('idveh');
+        const containerForm = document.getElementById('container_tipo_formulario');
+        const selectForm = document.getElementById('tipo_formulario_agendar');
+
+        if (selectVehiculo) {
+            selectVehiculo.addEventListener('change', (e) => {
+                // allVehicles es una variable global definida en index.blade.php
+                if (typeof allVehicles !== 'undefined') {
+                    const veh = allVehicles.find(v => v.idveh == e.target.value);
+                    if (veh && veh.combustible) {
+                        const isDiesel = veh.combustible.nomval.toLowerCase().includes('diesel');
+                        
+                        selectForm.innerHTML = '';
+                        if (isDiesel) {
+                            selectForm.innerHTML += '<option value="diesel_basico">Diésel Básico</option>';
+                            selectForm.innerHTML += '<option value="diesel_con_gases">Diésel con Gases</option>';
+                        } else {
+                            selectForm.innerHTML += '<option value="otto_completo">Otto Completo (Con Gases)</option>';
+                            selectForm.innerHTML += '<option value="otto_sin_gases">Otto Sin Gases</option>';
+                            selectForm.innerHTML += '<option value="solo_gases">Solo Gases</option>';
+                        }
+                        containerForm.classList.remove('hidden');
+                    } else {
+                        containerForm.classList.add('hidden');
+                    }
+                }
+            });
+        }
+    });
+</script>

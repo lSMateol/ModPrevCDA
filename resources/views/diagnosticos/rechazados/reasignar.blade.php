@@ -87,6 +87,27 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Tipo de Formulario -->
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Tipo de Formulario</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">assignment</span>
+                            <select name="tipo_formulario" required class="w-full bg-white border-2 border-gray-50 focus:border-[#ffba20] focus:ring-0 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold shadow-sm transition-all">
+                                @php
+                                    $isDiesel = str_contains(strtolower($diagnostico->vehiculo->combustible->nomval ?? ''), 'diesel');
+                                @endphp
+                                @if($isDiesel)
+                                    <option value="diesel_basico" {{ ($diagnostico->tipo_formulario ?? '') == 'diesel_basico' ? 'selected' : '' }}>Diésel Básico</option>
+                                    <option value="diesel_con_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'diesel_con_gases' ? 'selected' : '' }}>Diésel con Gases</option>
+                                @else
+                                    <option value="otto_completo" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_completo' ? 'selected' : '' }}>Otto Completo (Con Gases)</option>
+                                    <option value="otto_sin_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_sin_gases' ? 'selected' : '' }}>Otto Sin Gases</option>
+                                    <option value="solo_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'solo_gases' ? 'selected' : '' }}>Solo Gases</option>
+                                @endif
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-10 border-t border-gray-50">

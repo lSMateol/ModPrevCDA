@@ -16,6 +16,27 @@
                 @csrf
                 
                 <div class="space-y-4">
+                    <!-- Tipo de Formulario -->
+                    <div class="space-y-2">
+                        <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Tipo de Formulario</label>
+                        <div class="relative">
+                            <select name="tipo_formulario" id="edit_tipo_formulario" required class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-[#ffba20] focus:ring-0 rounded-t-xl px-4 py-3 appearance-none text-[#001834] font-semibold text-sm">
+                                @php
+                                    $isDiesel = str_contains(strtolower($diagnostico->vehiculo->combustible->nomval ?? ''), 'diesel');
+                                @endphp
+                                @if($isDiesel)
+                                    <option value="diesel_basico" {{ ($diagnostico->tipo_formulario ?? '') == 'diesel_basico' ? 'selected' : '' }}>Diésel Básico</option>
+                                    <option value="diesel_con_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'diesel_con_gases' ? 'selected' : '' }}>Diésel con Gases</option>
+                                @else
+                                    <option value="otto_completo" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_completo' ? 'selected' : '' }}>Otto Completo (Con Gases)</option>
+                                    <option value="otto_sin_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_sin_gases' ? 'selected' : '' }}>Otto Sin Gases</option>
+                                    <option value="solo_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'solo_gases' ? 'selected' : '' }}>Solo Gases</option>
+                                @endif
+                            </select>
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant opacity-40">assignment</span>
+                        </div>
+                    </div>
+
                     <!-- Kilometraje -->
                     <div class="space-y-2">
                         <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Kilometraje Actual</label>
