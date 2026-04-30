@@ -9,9 +9,11 @@
         empresaFiltro: '',
         selectedVehiculo: null,
         selectedTab: 'vinculo',
-        activeView: 'vehiculos', // 'vehiculos', 'perfil'
+        activeView: 'vehiculos',
         detailLoading: false,
+        reporteLoading: false,
         detailData: null,
+        companyCache: {}, // { idemp: { stats, conductores, propietarios } }
         currentPage: 1,
         perPage: 15,
         
@@ -37,11 +39,12 @@
                 this.pePropCurrentPage = 1;
                 this.peRepCurrentPage = 1;
             });
-            this.$watch('activeView', () => {
+            this.$watch('activeView', (val) => {
                 this.peVehCurrentPage = 1;
                 this.peCondCurrentPage = 1;
                 this.pePropCurrentPage = 1;
                 this.peRepCurrentPage = 1;
+                if (val === 'reporte') this.loadReporteFlota();
             });
         },
 
@@ -49,23 +52,11 @@
         peSubTab: 'vehiculos',
         
         get peConductores() {
-            if (!this.selectedVehiculo || !this.selectedVehiculo.empresa) return [];
-            let vehs = this.vehiculos.filter(v => v.idemp === this.selectedVehiculo.empresa.idemp && v.conductor);
-            let map = new Map();
-            vehs.forEach(v => {
-                if (!map.has(v.conductor.idper)) map.set(v.conductor.idper, v.conductor);
-            });
-            return Array.from(map.values());
+            return this.detailData?.conductores || [];
         },
 
         get pePropietarios() {
-            if (!this.selectedVehiculo || !this.selectedVehiculo.empresa) return [];
-            let vehs = this.vehiculos.filter(v => v.idemp === this.selectedVehiculo.empresa.idemp && v.propietario);
-            let map = new Map();
-            vehs.forEach(v => {
-                if (!map.has(v.propietario.idper)) map.set(v.propietario.idper, v.propietario);
-            });
-            return Array.from(map.values());
+            return this.detailData?.propietarios || [];
         },
 
         /* ──── Filtros Perfil Empresa ──── */
@@ -93,7 +84,15 @@
             return list;
         },
         getVehiculoEstadoPerfil(idveh) {
-            if (!this.detailData || !this.detailData.reporte_flota) return { texto: 'Pendiente', clase: 'inactive' };
+            // Si no hay reporte de flota cargado, mostramos el estado basado en el último diagnóstico del vehículo si está disponible
+            if (!this.detailData || !this.detailData.reporte_flota) {
+                if (this.detailData?.ultimo_diag?.idveh === idveh) {
+                    const d = this.detailData.ultimo_diag;
+                    if (d.aprobado === 1) return { texto: 'Aprobado', clase: 'success' };
+                    if (d.aprobado === 0) return { texto: 'No Aprobado', clase: 'danger' };
+                }
+                return { texto: 'Pendiente', clase: 'inactive' };
+            }
             const diags = this.detailData.reporte_flota.filter(d => d.idveh === idveh);
             if (diags.length === 0) return { texto: 'Pendiente', clase: 'inactive' };
             const lastDiag = diags[0];
@@ -183,7 +182,6 @@
         },
         canExportDiag(rep) {
             if (rep.aprobado === null) return false;
-            if (rep.rechazo && rep.rechazo.estadorec === 'Reasignado') return false;
             return true;
         },
         exportUrl(diagId) {
@@ -364,21 +362,66 @@
             this.selectedTab = 'vinculo';
             this.editandoEmpresa = false;
             this.detailLoading = true;
+            
+            // Scroll suave al detalle
             setTimeout(() => {
                 const el = document.getElementById('vehiculo-detalles');
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 50);
+
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+                
+                // 1. Obtener datos del vehículo (Rápido)
                 const res = await fetch('/' + prefix + '/vehiculos-empresa/' + v.idveh, {
                     headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                 });
-                this.detailData = await res.json();
+                const data = await res.json();
+                
+                // 2. Si ya tenemos esta empresa en cache, inyectamos sus datos al detalle nuevo
+                if (v.idemp && this.companyCache[v.idemp]) {
+                    data.reporte_flota = this.companyCache[v.idemp].reporte_flota;
+                }
+
+                // 3. Inyectar datos en detailData
+                this.detailData = data;
+                
+                // 4. Si el usuario cambia a vista de reporte, se cargará bajo demanda
+                if (this.activeView === 'reporte') {
+                    this.loadReporteFlota();
+                }
             } catch(e) {
                 console.error('Error cargando detalle:', e);
                 this.detailData = null;
             } finally {
                 this.detailLoading = false;
+            }
+        },
+
+        async loadReporteFlota() {
+            if (!this.selectedVehiculo?.idemp || this.reporteLoading) return;
+            
+            // Si ya tenemos el reporte para esta empresa, no recargar
+            if (this.detailData?.reporte_flota) return;
+
+            this.reporteLoading = true;
+            try {
+                const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
+                const res = await fetch('/' + prefix + '/vehiculos-empresa/reporte/' + this.selectedVehiculo.idemp, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const reportes = await res.json();
+                
+                // Guardar en cache para que otros vehículos de la misma empresa no tengan que recargar
+                this.companyCache[this.selectedVehiculo.idemp] = { reporte_flota: reportes };
+
+                if (this.detailData) {
+                    this.detailData.reporte_flota = reportes;
+                }
+            } catch(e) {
+                console.error('Error cargando reporte de flota:', e);
+            } finally {
+                this.reporteLoading = false;
             }
         },
 
@@ -651,7 +694,7 @@
                         <th>Placa</th>
                         <th>Línea / Modelo</th>
                         <th>Clase</th>
-                        <th>Propietario</th>
+                        <th>Gerente / Encargado</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -671,7 +714,7 @@
                             </td>
                             <td x-text="vehiculoModelo(v)"></td>
                             <td x-text="v.clase?.nomval || 'N/A'"></td>
-                            <td x-text="v.propietario ? (v.propietario.nomper + ' ' + (v.propietario.apeper || '')) : 'N/A'"></td>
+                            <td x-text="v.empresa?.nomger || 'N/A'"></td>
                         </tr>
                     </template>
                     <tr x-show="filteredVehiculos.length === 0">
