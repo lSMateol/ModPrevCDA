@@ -127,7 +127,6 @@
                             <option value="">Todos los estados</option>
                             <option value="aprobado">Aprobado</option>
                             <option value="no_aprobado">No Aprobado</option>
-                            <option value="reasignado">Reasignado</option>
                             <option value="pendiente">Pendiente</option>
                         </select>
                     </div>
@@ -204,10 +203,7 @@
                                         <template x-if="diag.aprobado == 1">
                                             <span class="status-badge success">APROBADO</span>
                                         </template>
-                                        <template x-if="diag.aprobado == 0 && diag.aprobado !== null && diag.rechazo && diag.rechazo.estadorec === 'Reasignado'">
-                                            <span class="status-badge warning">REASIGNADO</span>
-                                        </template>
-                                        <template x-if="diag.aprobado == 0 && diag.aprobado !== null && !(diag.rechazo && diag.rechazo.estadorec === 'Reasignado')">
+                                        <template x-if="diag.aprobado == 0 && diag.aprobado !== null">
                                             <span class="status-badge danger">NO APROBADO</span>
                                         </template>
                                         <template x-if="diag.aprobado === null || diag.aprobado === ''">
@@ -310,8 +306,7 @@
                         // Estado
                         if (this.estadoFilter) {
                             if (this.estadoFilter === 'aprobado' && d.aprobado !== 1) match = false;
-                            if (this.estadoFilter === 'no_aprobado' && (d.aprobado !== 0 || (d.rechazo && d.rechazo.estadorec === 'Reasignado'))) match = false;
-                            if (this.estadoFilter === 'reasignado' && (d.aprobado !== 0 || !d.rechazo || d.rechazo.estadorec !== 'Reasignado')) match = false;
+                            if (this.estadoFilter === 'no_aprobado' && d.aprobado !== 0) match = false;
                             if (this.estadoFilter === 'pendiente' && d.aprobado !== null) match = false;
                         }
 

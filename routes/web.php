@@ -101,6 +101,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
     Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
     Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
 
@@ -171,6 +172,7 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
     Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
     Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
 
@@ -215,10 +217,12 @@ Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->
     
     // Gestión Vehicular para Empresa (filtrado automático por idemp)
     Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
 
     // Vehículos por Empresa (solo lectura)
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
     Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
+    Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
     Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
 

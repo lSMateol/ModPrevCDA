@@ -32,15 +32,15 @@
         .intro-text strong { color: #001834; }
         
         /* Tabla de Datos */
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        .data-table th { background-color: #001834; color: #ffffff; font-weight: 600; text-align: left; padding: 10px 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #001834; }
-        .data-table td { padding: 10px 8px; border: 1px solid #e5e7eb; vertical-align: top; font-size: 10.5px; word-wrap: break-word; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
+        .data-table th { background-color: #001834; color: #ffffff; font-weight: 600; text-align: left; padding: 7px 7px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid #001834; }
+        .data-table td { padding: 7px 7px; border: 1px solid #e5e7eb; vertical-align: top; font-size: 9.5px; word-wrap: break-word; line-height: 1.3; }
         .data-table tr:nth-child(even) { background-color: #f9fafb; }
         
         /* Columnas específicas */
-        .col-fecha { width: 85px; }
-        .col-orden { width: 60px; text-align: center; }
-        .col-placa { width: 80px; font-weight: 700; font-family: 'Courier New', Courier, monospace; }
+        .col-fecha { width: 78px; }
+        .col-orden { width: 50px; text-align: center; }
+        .col-placa { width: 72px; font-weight: 700; font-family: 'Courier New', Courier, monospace; }
         .col-obs { width: auto; }
         
         /* Estados */
@@ -68,6 +68,22 @@
             .no-print { display: none !important; }
             body { margin: 0; padding: 0; }
             .report-container { max-width: 100%; }
+
+            /* Evitar que una fila se parta a la mitad entre dos páginas */
+            .data-table tbody tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            /* Repetir el encabezado de la tabla en cada página */
+            .data-table thead {
+                display: table-header-group;
+            }
+
+            /* Separación visual al inicio de cada nueva página */
+            @page {
+                margin: 28px 40px 28px 40px;
+            }
         }
     </style>
 </head>
@@ -155,19 +171,55 @@
                                     <div style="margin-bottom: 5px; font-size: 9.5px; background-color: #fef2f2; border-left: 2px solid #ef4444; padding: 5px 8px; color: #7f1d1d; border-radius: 3px;">
                                         <strong>MOTIVO:</strong> {{ $diag->rechazo->motivo }}
                                     </div>
-                                @elseif($diag->parametros->isNotEmpty())
+                                @endif
+                                
+                                @if(isset($diag->fallas_calculadas) && count($diag->fallas_calculadas) > 0)
                                     {{-- Parámetros con fallo real de la base de datos --}}
                                     <div style="margin-bottom: 5px; font-size: 9px; background-color: #fff7ed; border-left: 2px solid #f97316; padding: 5px 8px; color: #7c2d12; border-radius: 3px;">
                                         <strong>FALLAS DETECTADAS:</strong>
-                                        <ul style="margin: 3px 0 0 0; padding-left: 12px; font-size: 8.5px;">
-                                            @foreach($diag->parametros as $p)
-                                                @if($p->parametro)
-                                                    <li>{{ strtoupper($p->parametro->nompar) }}</li>
-                                                @endif
-                                            @endforeach
-                                        </ul>
+                                        @php
+                                            // Agrupar fallas por grupo y tipo
+                                            $gruposTipoA = [];
+                                            $fallasTecnicas = [];
+                                            foreach ($diag->fallas_calculadas as $falla) {
+                                                $isTipoA = is_array($falla) && ($falla['is_tipo_a'] ?? false);
+                                                $desc = is_array($falla) ? $falla['desc'] : $falla;
+                                                $parts = explode(' - ', $desc, 2);
+                                                $grupo = count($parts) > 1 ? ucfirst(strtolower($parts[0])) : 'General';
+                                                $obs = count($parts) > 1 ? ucfirst(strtolower($parts[1])) : ucfirst(strtolower($desc));
+                                                if ($isTipoA) {
+                                                    if (!isset($gruposTipoA[$grupo])) $gruposTipoA[$grupo] = [];
+                                                    $gruposTipoA[$grupo][] = $obs;
+                                                } else {
+                                                    $fallasTecnicas[] = $obs;
+                                                }
+                                            }
+                                        @endphp
+                                        
+                                        {{-- Defectos Tipo A agrupados --}}
+                                        @if(count($gruposTipoA) > 0)
+                                            <div style="margin-top: 5px; border-left: 2px solid #dc2626; padding-left: 5px;">
+                                                <div style="font-size: 7.5px; font-weight: bold; color: #991b1b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px;">▲ Defectos Tipo A</div>
+                                                @foreach($gruposTipoA as $grupo => $items)
+                                                    <div style="margin-bottom: 3px;">
+                                                        <span style="font-weight: bold; color: #7f1d1d; font-size: 8px;">{{ $grupo }}:</span>
+                                                        <span style="color: #9a3412; font-size: 8px;">{{ implode(', ', $items) }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        {{-- Fallas Técnicas --}}
+                                        @if(count($fallasTecnicas) > 0)
+                                            <div style="margin-top: 4px; border-left: 2px solid #64748b; padding-left: 5px;">
+                                                <div style="font-size: 7.5px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px;">Fallas Técnicas</div>
+                                                <div style="color: #374151; font-size: 8px;">{{ implode(', ', $fallasTecnicas) }}</div>
+                                            </div>
+                                        @endif
                                     </div>
-                                @else
+                                @endif
+                                
+                                @if(!($diag->rechazo && $diag->rechazo->motivo) && (!isset($diag->fallas_calculadas) || count($diag->fallas_calculadas) == 0))
                                     <div style="font-size: 9px; color: #991b1b; font-style: italic;">Sin detalle de fallo registrado</div>
                                 @endif
                                 <span class="badge badge-danger">NO APROBADO</span>
