@@ -248,22 +248,16 @@
                     allVehicles = data.vehiculos;
                     
                     const selectVehiculo = document.getElementById('idveh');
-                    selectVehiculo.innerHTML = '<option value="">Seleccione vehículo</option>';
-                    allVehicles.forEach(v => {
-                        selectVehiculo.innerHTML += `<option value="${v.idveh}">${v.placaveh} - ${v.empresa?.razsoem || 'Sin empresa'}</option>`;
-                    });
+                    selectVehiculo.innerHTML = '<option value="" disabled selected>Seleccione vehículo</option>' + 
+                        allVehicles.map(v => `<option value="${v.idveh}">${v.placaveh} - ${v.empresa?.razsoem || 'Sin empresa'}</option>`).join('');
 
                     const selectInsp = document.getElementById('idinsp');
-                    selectInsp.innerHTML = '<option value="">Seleccione inspector</option>';
-                    data.inspectores.forEach(i => {
-                        selectInsp.innerHTML += `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`;
-                    });
+                    selectInsp.innerHTML = '<option value="" disabled selected>Seleccione inspector</option>' + 
+                        data.inspectores.map(i => `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`).join('');
                     
                     const selectIng = document.getElementById('iding');
-                    selectIng.innerHTML = '<option value="">Seleccione ingeniero</option>';
-                    data.ingenieros.forEach(i => {
-                        selectIng.innerHTML += `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`;
-                    });
+                    selectIng.innerHTML = '<option value="" disabled selected>Seleccione ingeniero</option>' + 
+                        data.ingenieros.map(i => `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`).join('');
                     
                     modalAgendar.classList.remove('hidden');
                 } catch (error) {
@@ -296,21 +290,39 @@
                         const res = await fetch(formAgendar.action, {
                             method: 'POST',
                             body: formData,
-                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                            headers: { 
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
                         });
-                        if (res.ok) window.location.reload();
-                        else {
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Si la respuesta es exitosa, redirigimos a la URL proporcionada por el controlador
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            } else {
+                                window.location.reload();
+                            }
+                        } else {
                             const data = await res.json();
                             if (data.duplicate) {
                                 if (confirm(data.message + "\n\n¿Desea ir a EDITAR el diagnóstico existente para corregir valores?")) {
                                     window.location.href = `/${prefix}/diagnosticos/${data.iddia}/edit`;
                                 }
                             } else {
-                                alert(data.message || 'Error al guardar');
+                                // Manejo de errores de validación u otros
+                                let errorMsg = data.message || 'Error al guardar';
+                                if (data.errors) {
+                                    errorMsg += '\n' + Object.values(data.errors).flat().join('\n');
+                                }
+                                alert(errorMsg);
                             }
                         }
                     } catch (error) {
-                        console.error(error);
+                        console.error('Error en la petición:', error);
+                        alert('Error de conexión al servidor');
                     } finally {
                         submitBtn.disabled = false;
                     }

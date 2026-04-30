@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('diag', function (Blueprint $table) {
-            $table->string('tipo_formulario')->nullable()->after('idval_combu');
-        });
+        if (!Schema::hasColumn('diag', 'tipo_formulario')) {
+            Schema::table('diag', function (Blueprint $table) {
+                $table->string('tipo_formulario')->nullable()->after('idval_combu');
+            });
+        }
     }
 
     /**
@@ -22,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('diag', function (Blueprint $table) {
-            $table->dropColumn('tipo_formulario');
+            //
         });
     }
 };

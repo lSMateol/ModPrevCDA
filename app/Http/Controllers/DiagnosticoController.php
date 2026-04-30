@@ -62,10 +62,21 @@ class DiagnosticoController extends Controller
 
     public function dataForModal()
     {
-        $vehiculos = Vehiculo::with(['empresa', 'combustible'])->get();
-        $inspectores = Persona::where('idpef', 4)->get(); // idpef=4 = Inspector
-        $ingenieros = Persona::where('idpef', 5)->get();  // idpef=5 = Ingeniero
-        // Ya no necesitamos enviar todos los combustibles por separado al modal
+        $vehiculos = Vehiculo::select('idveh', 'placaveh', 'idemp', 'combuveh')
+            ->with([
+                'empresa:idemp,razsoem', 
+                'combustible:idval,nomval'
+            ])
+            ->get();
+
+        $inspectores = Persona::select('idper', 'nomper', 'apeper')
+            ->where('idpef', 4)
+            ->get(); 
+
+        $ingenieros = Persona::select('idper', 'nomper', 'apeper')
+            ->where('idpef', 5)
+            ->get();  
+
         return response()->json(compact('vehiculos', 'inspectores', 'ingenieros'));
     }
 
@@ -134,8 +145,17 @@ class DiagnosticoController extends Controller
         ]);
 
         $prefix = $this->getPrefix();
-        return redirect()->route($prefix . '.diagnosticos.edit', $diagnostico->iddia)
-            ->with('success', 'Servicio preventivo agendado. Complete los parámetros del diagnóstico.');
+        $redirectUrl = route($prefix . '.diagnosticos.edit', $diagnostico->iddia);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Servicio preventivo agendado correctamente.',
+                'redirect' => $redirectUrl
+            ]);
+        }
+
+        return redirect($redirectUrl)->with('success', 'Servicio preventivo agendado. Complete los parámetros del diagnóstico.');
     }
 
     public function edit($id)
