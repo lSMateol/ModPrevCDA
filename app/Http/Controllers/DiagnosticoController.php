@@ -272,7 +272,9 @@ class DiagnosticoController extends Controller
                 } else {
                     // Otros parámetros (Luces, Gases, etc.) se cuentan como fallas técnicas
                     $failed = false;
-                    if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
+                    if ($pMeta->nompar == 'dilusion_gasolina') {
+                        if (strtolower($v) == 'no') $failed = true;
+                    } elseif ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
                         if ($v < $pMeta->rini || $v > $pMeta->rfin) $failed = true;
                     } elseif ($pMeta->control == 'radio') {
                         if (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {

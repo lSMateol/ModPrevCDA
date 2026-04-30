@@ -48,7 +48,7 @@ class DynamicFieldsSeeder extends Seeder
         $configuraciones = [];
 
         // --- DIESEL (43) ---
-        $idsDiesel = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        $idsDiesel = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
         foreach($idsDiesel as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
             if($p) {

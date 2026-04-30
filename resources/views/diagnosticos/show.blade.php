@@ -33,7 +33,9 @@
             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
                 if ($val < $param->rini || $val > $param->rfin) $failed = true;
             } elseif ($param->control == 'radio') {
-                if (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
+                if ($param->nompar == 'dilusion_gasolina') {
+                    if (strtolower($val) == 'no') $failed = true;
+                } elseif (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
                     // Sección "Defectos" (No visual)
                     if (str_contains(strtolower($param->nompar), 'criterios')) {
                         if (!in_array(strtolower($val), ['si', 'na'])) $failed = true;
@@ -214,6 +216,17 @@
             <!-- Pestañas -->
             <div class="flex border-b border-outline-variant/10 bg-surface-container-low/30 overflow-x-auto no-scrollbar scroll-smooth">
                 @foreach($groupedParams as $tipo => $params)
+                @php
+                    $t = strtoupper($tipo);
+                    $formType = $diagnostico->tipo_formulario ?? '';
+                    $showTab = true;
+
+                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showTab = false;
+                    elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showTab = false;
+                    elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showTab = false;
+                    
+                    if (!$showTab) continue;
+                @endphp
                 <button 
                     @click="activeTab = '{{ $tipo }}'"
                     :class="activeTab === '{{ $tipo }}' ? 'border-[#001834] text-[#001834] bg-white opacity-100' : 'border-transparent text-on-surface-variant opacity-40 hover:opacity-80 font-bold'"
@@ -227,6 +240,17 @@
             <!-- Contenido de Tablas -->
             <div class="p-4 md:p-8 overflow-x-auto">
                 @foreach($groupedParams as $tipo => $params)
+                @php
+                    $t = strtoupper($tipo);
+                    $formType = $diagnostico->tipo_formulario ?? '';
+                    $showSection = true;
+
+                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showSection = false;
+                    elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showSection = false;
+                    elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showSection = false;
+                    
+                    if (!$showSection) continue;
+                @endphp
                 <div x-show="activeTab === '{{ $tipo }}'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" class="min-w-[600px] md:min-w-0">
                     <table class="w-full">
                         <thead>
@@ -292,7 +316,9 @@
                                     if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
                                         $cumple = ($val >= $param->rini && $val <= $param->rfin);
                                     } elseif ($param->control == 'radio') {
-                                        if ($esSeccionDefectos) {
+                                        if ($param->nompar == 'dilusion_gasolina') {
+                                            $cumple = in_array(strtolower($val), ['si', 'na']);
+                                        } elseif ($esSeccionDefectos) {
                                             if (str_contains(strtolower($param->nompar), 'criterios')) {
                                                 $cumple = in_array(strtolower($val), ['si', 'na']);
                                             } else {
@@ -362,7 +388,9 @@
                             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
                                 if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
-                                if (str_contains(strtoupper($tipo), 'DEFECTOS')) {
+                                if ($param->nompar == 'dilusion_gasolina') {
+                                    if (strtolower($val) == 'no') $sectionCumple = false;
+                                } elseif (str_contains(strtoupper($tipo), 'DEFECTOS')) {
                                     if (str_contains(strtolower($param->nompar), 'criterios')) {
                                         if (!in_array(strtolower($val), ['si', 'na'])) $sectionCumple = false;
                                     } else {
