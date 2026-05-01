@@ -485,7 +485,7 @@ class MupController extends Controller
                 'exists:perfil,idpef',
                 function ($attribute, $value, $fail) {
                     $perfil = Perfil::find($value);
-                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero'])) {
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa'])) {
                         $fail('El perfil seleccionado no es válido para este módulo.');
                     }
                 }
@@ -1023,7 +1023,7 @@ class MupController extends Controller
                 'exists:perfil,idpef',
                 function ($attribute, $value, $fail) {
                     $perfil = Perfil::find($value);
-                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero'])) {
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa'])) {
                         $fail('El perfil seleccionado no es válido para este módulo.');
                     }
                 }

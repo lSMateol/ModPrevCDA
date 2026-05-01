@@ -23,6 +23,8 @@
             'nompef' => $u->persona->perfil->nompef ?? 'Sin Rol',
             'idpef' => $u->persona->idpef ?? '',
             'nomdoc' => $u->persona->tipoDocumento->nomval ?? 'C.C.',
+            'idemp' => $u->idemp ?? $u->persona->idemp ?? '',
+            'nomemp' => $u->empresa->razsoem ?? $u->persona->empresa->razsoem ?? '',
         ];
     });
 @endphp
@@ -104,7 +106,8 @@
                                             'bg-purple-50 text-purple-600': u.nompef === 'Ingeniero',
                                             'bg-amber-50 text-amber-600': u.nompef === 'Digitador',
                                             'bg-emerald-50 text-emerald-600': u.nompef === 'Inspector',
-                                            'bg-gray-50 text-gray-400': !['Administrador','Ingeniero','Digitador','Inspector'].includes(u.nompef)
+                                            'bg-indigo-50 text-indigo-600': u.nompef === 'Empresa',
+                                            'bg-gray-50 text-gray-400': !['Administrador','Ingeniero','Digitador','Inspector','Empresa'].includes(u.nompef)
                                         }"
                                         x-text="u.nompef">
                                     </span>
@@ -114,6 +117,12 @@
                                     <span class="text-[10px] font-bold text-gray-500 truncate" x-text="u.username"></span>
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
                                     <span class="text-[10px] font-bold text-gray-400" x-text="u.nomdoc + ': ' + u.ndocper"></span>
+                                    <template x-if="u.nomemp">
+                                        <div class="flex items-center gap-1">
+                                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                            <span class="text-[9px] font-black text-indigo-500 truncate max-w-[80px]" x-text="u.nomemp"></span>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                             <iconify-icon icon="lucide:chevron-right" class="text-gray-300 group-hover:text-blue-500 transition-colors shrink-0"></iconify-icon>
@@ -211,6 +220,17 @@
                                             <p class="text-sm font-bold text-[#001834]" x-text="selectedUser.ndocper"></p>
                                         </div>
                                     </div>
+                                    <template x-if="selectedUser.nomemp">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-50">
+                                                <iconify-icon icon="lucide:building-2" class="text-xl"></iconify-icon>
+                                            </div>
+                                            <div>
+                                                <span class="block text-[9px] font-black text-gray-400 uppercase tracking-tighter">Empresa Vinculada</span>
+                                                <p class="text-sm font-bold text-indigo-600" x-text="selectedUser.nomemp"></p>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -346,9 +366,20 @@
 
                     <div class="sm:col-span-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol Operativo <span class="text-blue-500">*</span></label>
-                        <select name="idpef" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
-                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
-                                <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                        <select name="idpef" x-model="selectedIdPef" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            <option value="">Seleccione un perfil...</option>
+                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa']) as $perf)
+                                <option value="{{ $perf->idpef }}" data-nompef="{{ $perf->nompef }}">{{ $perf->nompef }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2" x-show="isEmpresaRole(selectedIdPef)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Empresa Asociada <span class="text-indigo-500">*</span></label>
+                        <select name="idemp" class="w-full bg-indigo-50/50 border-2 border-indigo-100 focus:border-indigo-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" :required="isEmpresaRole(selectedIdPef)">
+                            <option value="">Seleccione la empresa...</option>
+                            @foreach($empresas as $emp)
+                                <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -447,8 +478,18 @@
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol Operativo</label>
                         <select name="idpef" x-model="selectedUser.idpef" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
-                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero']) as $perf)
+                            @foreach($perfiles->whereIn('nompef', ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa']) as $perf)
                                 <option value="{{ $perf->idpef }}">{{ $perf->nompef }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2" x-show="isEmpresaRole(selectedUser.idpef)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Empresa Asociada <span class="text-amber-600">*</span></label>
+                        <select name="idemp" x-model="selectedUser.idemp" class="w-full bg-amber-50/50 border-2 border-amber-100 focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" :required="isEmpresaRole(selectedUser.idpef)">
+                            <option value="">Seleccione la empresa...</option>
+                            @foreach($empresas as $emp)
+                                <option value="{{ $emp->idemp }}">{{ $emp->razsoem }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -508,8 +549,10 @@ function usuariosManager() {
         deleteModal: false,
         selectedId: null,
         selectedUser: null,
+        selectedIdPef: '',
         usuarios: @json($usuariosData),
         tiposDoc: @json($tiposDoc->pluck('nomval', 'idval')),
+        perfilesMap: @json($perfiles->pluck('nompef', 'idpef')),
         password: '',
         password_confirmation: '',
         
@@ -535,6 +578,11 @@ function usuariosManager() {
         get passwordsMatch() {
             if (!this.password && !this.password_confirmation) return true;
             return this.password === this.password_confirmation;
+        },
+
+        isEmpresaRole(idpef) {
+            if (!idpef) return false;
+            return this.perfilesMap[idpef] === 'Empresa';
         },
 
         selectUser(u) {
