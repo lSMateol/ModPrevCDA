@@ -36,13 +36,7 @@ class HistorialController extends Controller
             if ($estado === 'aprobado') {
                 $query->where('aprobado', 1);
             } elseif ($estado === 'no_aprobado') {
-                $query->where('aprobado', 0)->whereDoesntHave('rechazo', function($q){
-                    $q->where('estadorec', 'Reasignado');
-                });
-            } elseif ($estado === 'reasignado') {
-                $query->where('aprobado', 0)->whereHas('rechazo', function($q) {
-                    $q->where('estadorec', 'Reasignado');
-                });
+                $query->where('aprobado', 0);
             } elseif ($estado === 'pendiente') {
                 $query->whereNull('aprobado');
             }
@@ -69,15 +63,7 @@ class HistorialController extends Controller
         $query = Diag::with([
                         'vehiculo.empresa',
                         'vehiculo.marca',
-                        'rechazo',
-                        // Solo cargamos parámetros con valor fallido para evitar memory crash
-                        'parametros' => function($q) {
-                            $q->whereIn('valor', ['no', 'no_funciona'])
-                              ->with(['parametro' => function($pq) {
-                                  $pq->select(['idpar', 'nompar']);
-                              }])
-                              ->select(['iddiapar', 'iddia', 'idpar', 'valor']);
-                        }
+                        'rechazo'
                     ])
                     ->orderBy('fecdia', 'desc');
 
@@ -102,15 +88,8 @@ class HistorialController extends Controller
             $query->whereDate('fecdia', '<=', $request->fecha_fin);
         }
 
-        // REGLA ESTRICTA: SOLO Aprobados y No Aprobados (sin Pendientes ni Reasignados)
-        $query->where(function($q) {
-            $q->where('aprobado', 1)
-              ->orWhere(function($sub) {
-                  $sub->where('aprobado', 0)->whereDoesntHave('rechazo', function($r) {
-                      $r->where('estadorec', 'Reasignado');
-                  });
-              });
-        });
+        // REGLA ESTRICTA: SOLO Aprobados y No Aprobados (sin Pendientes)
+        $query->whereNotNull('aprobado');
 
         // Filtro adicional por estado
         if ($request->filled('estado')) {
@@ -119,12 +98,82 @@ class HistorialController extends Controller
                 $query->where('aprobado', 1);
             } elseif ($estado === 'no_aprobado') {
                 $query->where('aprobado', 0);
-            } elseif ($estado === 'reasignado' || $estado === 'pendiente') {
+            } elseif ($estado === 'pendiente') {
                 $query->whereRaw('1 = 0');
             }
         }
 
         $diagnosticos = $query->limit(300)->get();
+
+        // Cargar parámetros fallidos de forma eficiente solo para los rechazados
+        $rechazados = $diagnosticos->where('aprobado', 0);
+        if ($rechazados->count() > 0) {
+            $rechazados->load(['parametros.parametro.tippar']);
+            foreach ($rechazados as $diag) {
+                $fallas = [];
+                if ($diag->parametros) {
+                    foreach ($diag->parametros as $p) {
+                        $pMeta = $p->parametro;
+                        if (!$pMeta) continue;
+
+                        $v = $p->valor;
+                        $nomTip = strtoupper(optional($pMeta->tippar)->nomtip ?? '');
+                        $failed = false;
+
+                        if ($pMeta->nompar == 'desc_inspeccion') {
+                            $data = @json_decode($v, true);
+                            $lista = is_array($data) ? ($data['list'] ?? $data) : [];
+                            foreach ($lista as $def) {
+                                if (($def['tipo'] ?? '') == 'Tipo A' || ($def['tipo'] ?? '') == 'Tipo B') {
+                                    $isTipoA = ($def['tipo'] ?? '') == 'Tipo A';
+                                    
+                                    $grupo = strtoupper($def['grupo'] ?? 'DEFECTO');
+                                    $obs = strtoupper($def['obs'] ?? ($def['desc'] ?? ($def['defecto'] ?? '')));
+                                    
+                                    $desc = $obs ? $grupo . ' - ' . $obs : $grupo . ' VISUAL (' . ($def['tipo'] ?? '') . ')';
+                                    
+                                    // Check if this desc is already added to avoid duplicates
+                                    $exists = false;
+                                    foreach ($fallas as $f) {
+                                        if ($f['desc'] === $desc) { $exists = true; break; }
+                                    }
+                                    if (!$exists) {
+                                        $fallas[] = ['desc' => $desc, 'is_tipo_a' => $isTipoA];
+                                    }
+                                }
+                            }
+                        } else {
+                            if ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
+                                if (is_numeric($v) && ($v < $pMeta->rini || $v > $pMeta->rfin)) $failed = true;
+                            } elseif ($pMeta->control == 'radio') {
+                                if (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
+                                    if (str_contains(strtolower($pMeta->nompar), 'criterios')) {
+                                        if (!in_array(strtolower($v), ['si', 'na'])) $failed = true;
+                                    } else {
+                                        if (strtolower($v) == 'si') $failed = true;
+                                    }
+                                } else {
+                                    if (in_array(strtolower($v), ['no', 'no_funciona'])) $failed = true;
+                                }
+                            }
+
+                            if ($failed) {
+                                $desc = strtoupper(str_replace('_', ' ', $pMeta->nompar));
+                                $exists = false;
+                                foreach ($fallas as $f) {
+                                    if ($f['desc'] === $desc) { $exists = true; break; }
+                                }
+                                if (!$exists) {
+                                    $fallas[] = ['desc' => $desc, 'is_tipo_a' => false];
+                                }
+                            }
+                        }
+                    }
+                }
+                $diag->fallas_calculadas = $fallas;
+                $diag->unsetRelation('parametros'); // Liberar memoria
+            }
+        }
 
         // Vehículos únicos dentro del resultado filtrado (siempre refleja el filtro activo)
         $totalVehiculos = $diagnosticos->pluck('idveh')->unique()->count();

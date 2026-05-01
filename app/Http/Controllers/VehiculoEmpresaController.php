@@ -22,14 +22,22 @@ class VehiculoEmpresaController extends Controller
     {
         $user = auth()->user();
 
-        $query = Vehiculo::with([
-            'empresa',
-            'marca',
-            'clase',
-            'propietario',
-            'conductor',
-            'combustible',
-        ])->whereNotNull('idemp'); // Solo vehículos con empresa
+        // Optimización masiva: Eliminamos la carga de propietarios y conductores en la lista principal.
+        // Ahora el JSON será ultraligero y el navegador no se bloqueará. Solo traemos los datos de empresa y vehículo básico.
+        $query = Vehiculo::select([
+                'idveh', 'placaveh', 'nordveh', 'idemp', 'linveh', 'clveh', 'modveh', 'colveh', 'cilveh'
+            ])
+            ->with([
+                'empresa' => function($q) {
+                    $q->select('idemp', 'razsoem', 'nonitem', 'direm', 'telem', 'nomger', 'emaem', 'abremp');
+                },
+                'marca' => function($q) {
+                    $q->select('idmar', 'nommarlin');
+                },
+                'clase' => function($q) {
+                    $q->select('idval', 'nomval');
+                }
+            ])->whereNotNull('idemp');
 
         // Filtrado por rol Empresa
         if ($user->hasRole('Empresa')) {
@@ -42,7 +50,7 @@ class VehiculoEmpresaController extends Controller
         if ($user->hasRole('Empresa') && $user->empresa) {
             $empresas = collect([$user->empresa]);
         } else {
-            $empresas = Empresa::orderBy('razsoem', 'ASC')->get();
+            $empresas = Empresa::select('idemp', 'razsoem', 'nonitem', 'direm', 'telem', 'nomger')->orderBy('razsoem', 'ASC')->get();
         }
 
         return view('vehiculos.vehiculos_empresa', compact('vehiculos', 'empresas'));
@@ -79,66 +87,46 @@ class VehiculoEmpresaController extends Controller
         $empresaStats = null;
         $ultimoDiagEmpresa = null;
         $historial = collect();
+        $conductores = [];
+        $propietarios = [];
 
         if ($vehiculo->empresa) {
             $emp = $vehiculo->empresa;
-
-            // Todos los vehículos de esta empresa
-            $vehiculosEmpresa = Vehiculo::where('idemp', $emp->idemp)->get();
+            $vehiculosEmpresa = Vehiculo::where('idemp', $emp->idemp)->select('idveh', 'prop', 'cond')->get();
             $idVehiculos = $vehiculosEmpresa->pluck('idveh')->toArray();
 
-            // ── Personas vinculadas (sin duplicados) ──
-            // Propietarios de los vehículos de la empresa
             $propIds = $vehiculosEmpresa->pluck('prop')->filter()->unique()->toArray();
-            // Conductores de los vehículos de la empresa
             $condIds = $vehiculosEmpresa->pluck('cond')->filter()->unique()->toArray();
-            // IDs únicos combinados (propietarios + conductores)
             $personaIds = collect(array_merge($propIds, $condIds))->unique()->values()->toArray();
-            // Contar personas únicas (no contamos nomger porque es solo texto, no FK)
-            $personasVinculadas = count($personaIds);
 
-            // ── Total diagnósticos de los vehículos de la empresa ──
-            $totalDiagnosticos = Diag::whereIn('idveh', $idVehiculos)->count();
-
-            // ── Último diagnóstico de la empresa (el más reciente entre todos sus vehículos) ──
-            $ultimoDiagEmpresa = Diag::whereIn('idveh', $idVehiculos)
-                ->with(['persona', 'inspector', 'ingeniero', 'vehiculo'])
-                ->latest('fecdia')
-                ->first();
+            $propietarios = Persona::whereIn('idper', $propIds)->select('idper', 'nomper', 'apeper', 'ndocper', 'telper')->get();
+            $conductores = Persona::whereIn('idper', $condIds)->select('idper', 'nomper', 'apeper', 'ndocper', 'telper')->get();
 
             $empresaStats = [
                 'vehiculos_vinculados' => count($idVehiculos),
-                'personas_vinculadas'  => $personasVinculadas,
-                'total_diagnosticos'   => $totalDiagnosticos,
+                'personas_vinculadas'  => count($personaIds),
+                'total_diagnosticos'   => Diag::whereIn('idveh', $idVehiculos)->count(),
             ];
 
-            // ── Reporte de Flota: Todos los diagnósticos de la empresa ──
-            $reporteFlota = Diag::whereIn('idveh', $idVehiculos)
-                ->with(['vehiculo.empresa', 'vehiculo.marca', 'persona', 'inspector', 'ingeniero', 'parametros.parametro.tippar', 'rechazo'])
+            $ultimoDiagEmpresa = Diag::whereIn('idveh', $idVehiculos)
+                ->with(['persona:idper,nomper,apeper', 'inspector:idper,nomper,apeper', 'ingeniero:idper,nomper,apeper', 'vehiculo:idveh,placaveh'])
                 ->latest('fecdia')
-                ->get();
+                ->first();
         }
 
         // ─── Historial: movimientos DEL VEHÍCULO SELECCIONADO ───
-        // Incluye: registros de tabla_ref='vehiculo' para ESTE vehículo
-        //        + registros de tabla_ref='diag' para diagnósticos de ESTE vehículo
         $diagIdsDelVehiculo = Diag::where('idveh', $vehiculo->idveh)->pluck('iddia')->toArray();
-
         $historial = Historial::where(function ($q) use ($vehiculo, $diagIdsDelVehiculo) {
             $q->where(function ($sub) use ($vehiculo) {
-                $sub->where('tabla_ref', 'vehiculo')
-                    ->where('id_ref', $vehiculo->idveh);
+                $sub->where('tabla_ref', 'vehiculo')->where('id_ref', $vehiculo->idveh);
             })->orWhere(function ($sub) use ($diagIdsDelVehiculo) {
                 if (!empty($diagIdsDelVehiculo)) {
-                    $sub->where('tabla_ref', 'diag')
-                        ->whereIn('id_ref', $diagIdsDelVehiculo);
+                    $sub->where('tabla_ref', 'diag')->whereIn('id_ref', $diagIdsDelVehiculo);
                 }
             });
         })
-            ->with('persona')
-            ->latest('created_at')
-            ->take(20)
-            ->get();
+        ->with('persona:idper,nomper,apeper')
+        ->latest('created_at')->take(10)->get();
 
         return response()->json([
             'vehiculo'            => $vehiculo,
@@ -146,8 +134,37 @@ class VehiculoEmpresaController extends Controller
             'ultimo_diag_empresa' => $ultimoDiagEmpresa,
             'historial'           => $historial,
             'empresa_stats'       => $empresaStats,
-            'reporte_flota'       => $reporteFlota ?? null,
+            'conductores'         => $conductores,
+            'propietarios'        => $propietarios,
+            // Quitamos 'reporte_flota' de aquí para que el primer clic sea instantáneo
         ]);
+    }
+
+    /**
+     * Obtener el reporte de flota de una empresa (Carga pesada diferida)
+     */
+    public function getReporteFlota($idemp)
+    {
+        $idVehiculos = Vehiculo::where('idemp', $idemp)->pluck('idveh')->toArray();
+
+        $reporteFlota = Diag::whereIn('idveh', $idVehiculos)
+            ->with([
+                'vehiculo:idveh,placaveh,linveh,modveh',
+                'vehiculo.marca:idmar,nommarlin',
+                'persona:idper,nomper,apeper',
+                'inspector:idper,nomper,apeper',
+                'ingeniero:idper,nomper,apeper',
+                'rechazo:idrec,iddia,motivo',
+                'parametros' => function($q) {
+                    // Solo traemos lo mínimo para el conteo de fallos en el frontend
+                    $q->select('iddiapar', 'iddia', 'idpar', 'valor')
+                      ->with(['parametro:idpar,control,rini,rfin']);
+                }
+            ])
+            ->latest('fecdia')
+            ->get();
+
+        return response()->json($reporteFlota);
     }
 
     /**
