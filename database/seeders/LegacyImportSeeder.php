@@ -316,6 +316,10 @@ class LegacyImportSeeder extends Seeder
                 $data['idval_combu'] = $this->vehiculoCombustible[$data['idveh']] ?? 43;
             }
 
+            // ── NUEVO: Asignar tipo_formulario según combustible ──
+            $combustible = $data['idval_combu'];
+            $data['tipo_formulario'] = ($combustible == 43) ? 'diesel_basico' : 'otto_completo';
+
             // Si el vehículo no existe en la BD destino, lamentablemente MySQL no dejará importarlo
             // a menos que insertemos un idveh válido. Por seguridad, lo omitiremos y mostraremos warning.
             if (!isset($vehiculosRealesValidos[$data['idveh']])) {
@@ -332,12 +336,18 @@ class LegacyImportSeeder extends Seeder
 
     private function importarDiapar()
     {
-        $this->command->info("  Importando Diapar...");
+        $this->command->info("  Importando Diapar (Filtro ESTRICTO, Agrupación y Anti-Duplicados)...");
+        
         $parametrosValidos = DB::table('param')->pluck('idpar', 'idpar')->toArray();
         $batchSize = 2500;
         $insertData = [];
         $procesados = []; 
         $total = 0;
+        $omitidos = 0;
+
+        // Almacenamiento temporal para agrupar
+        $inspeccionVisual = []; // [iddia => ['grupo' => val, 'tipo' => val, 'desc' => val]]
+        $defectos = [];         // [iddia => [10 => val, 11 => val]]
 
         // Obtenemos idper válidos y el de respaldo
         $personasRealesValidas = DB::table('persona')->pluck('idper', 'idper')->toArray();
@@ -346,51 +356,185 @@ class LegacyImportSeeder extends Seeder
             $idRespaldo = array_key_first($personasRealesValidas);
         }
 
-        // Fase 1: Generación de base (Luces, etc)
+        // =========================================================================
+        // FASE 1: GENERACIÓN OBLIGATORIA (Base para TODOS los vehículos)
+        // =========================================================================
+        $this->command->info("    -> Fase 1: Generando Luces y Motor Diesel...");
         $now = now()->toDateTimeString();
+
         foreach ($this->idsDiagImportados as $iddia => $idveh) {
-            foreach ([1, 2] as $idpar) {
-                $insertData[] = ['iddia' => $iddia, 'idpar' => $idpar, 'idper' => $idRespaldo, 'valor' => 'funciona', 'created_at' => $now, 'updated_at' => $now];
-                $procesados["$iddia-$idpar"] = true;
+            $combustible = $this->vehiculoCombustible[$idveh] ?? null;
+            $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
+            
+            // 1. LUCES (Aplica para todos)
+            foreach ([1, 2] as $idparLuces) {
+                $key = "{$iddia}-{$idparLuces}";
+                $procesados[$key] = true;
+                $insertData[] = [
+                    'iddia' => $iddia,
+                    'idpar' => $idparLuces,
+                    'idper' => $idRespaldo,
+                    'valor' => 'funciona',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
                 $total++;
             }
+            
+            // 2. MOTOR DIESEL (Exclusivo para vehículos Diesel)
+            if ($esDiesel) {
+                $rangosMotorDiesel = [
+                    3 => [71.00, 80.00],    // temp_c
+                    4 => [3500.00, 4200.00], // rpm
+                    5 => [3.00, 4.00],      // ciclo1
+                    6 => [2.80, 2.99],      // ciclo2
+                    7 => [2.50, 2.79],      // ciclo3
+                    8 => [2.30, 2.49],      // ciclo4
+                    9 => [0.00, 35.00],     // resultado_diesel
+                ];
+                
+                foreach ($rangosMotorDiesel as $idparDiesel => $r) {
+                    $key = "{$iddia}-{$idparDiesel}";
+                    $procesados[$key] = true;
+                    $valorRand = mt_rand($r[0] * 100, $r[1] * 100) / 100;
+                    
+                    $insertData[] = [
+                        'iddia' => $iddia,
+                        'idpar' => $idparDiesel,
+                        'idper' => $idRespaldo,
+                        'valor' => $valorRand,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $total++;
+                }
+            }
+            
             if (count($insertData) >= $batchSize) {
                 DB::table('diapar')->insert($insertData);
                 $insertData = [];
             }
         }
 
-        // Fase 2: Mapeo legacy
+        // =========================================================================
+        // FASE 2: MIGRACIÓN DESDE LEGACY (Agrupación de Visual y Defectos)
+        // =========================================================================
+        $this->command->info("    -> Fase 2: Procesando datos desde legacy (Agrupando Inspección y Defectos)...");
         $idsImportados = array_keys($this->idsDiagImportados);
+
         foreach (array_chunk($idsImportados, 2000) as $chunk) {
             $query = DB::connection('legacy')->table('diapar')
-                ->whereIn('iddia', $chunk);
+                ->join('diag', 'diapar.iddia', '=', 'diag.iddia')
+                ->select('diapar.*', 'diag.idveh')
+                ->whereIn('diapar.iddia', $chunk);
 
             foreach ($query->cursor() as $dp) {
-                $idpar = $dp->idpar;
-                if (in_array($idpar, [30, 31, 34, 35, 36])) continue; // Se procesan aparte o en el flujo dinámico
-                if (!isset($parametrosValidos[$idpar])) continue;
+                // A. DEFECTOS (Legacy 30 y 31)
+                if ($dp->idpar == 30 || $dp->idpar == 31) {
+                    $idparDestino = ($dp->idpar == 30) ? 10 : 11;
+                    $defectos[$dp->iddia][$idparDestino] = $dp->valor;
+                    continue;
+                }
                 
-                if (isset($procesados["$dp->iddia-$idpar"])) continue;
-                $procesados["$dp->iddia-$idpar"] = true;
+                // B. INSPECCIÓN VISUAL (Legacy 34, 35, 36)
+                if (in_array($dp->idpar, [34, 35, 36])) {
+                    if (!isset($inspeccionVisual[$dp->iddia])) {
+                        $inspeccionVisual[$dp->iddia] = ['grupo' => null, 'tipo' => null, 'desc' => null];
+                    }
+                    $v = trim($dp->valor ?? '');
+                    if ($v !== '') {
+                        if ($dp->idpar == 35) $inspeccionVisual[$dp->iddia]['grupo'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['grupo'], $v);
+                        elseif ($dp->idpar == 36) $inspeccionVisual[$dp->iddia]['tipo'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['tipo'], $v);
+                        elseif ($dp->idpar == 34) $inspeccionVisual[$dp->iddia]['desc'] = $this->concatenarValor($inspeccionVisual[$dp->iddia]['desc'], $v);
+                    }
+                    continue;
+                }
+                
+                // C. OTROS PARÁMETROS (Gases, etc)
+                $combustible = $this->vehiculoCombustible[$dp->idveh] ?? null;
+                $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
+                
+                if ($esDiesel) {
+                    $omitidos++;
+                    continue;
+                } else {
+                    if ($dp->idpar >= 3 && $dp->idpar <= 9) continue;
+                    if ($dp->idpar == 1 || $dp->idpar == 2) continue;
+                    
+                    $idparDestino = $dp->idpar;
+                    if (!isset($parametrosValidos[$idparDestino])) continue;
+                    
+                    if (isset($procesados["{$dp->iddia}-{$idparDestino}"])) continue;
+                    $procesados["{$dp->iddia}-{$idparDestino}"] = true;
+                    
+                    $idperMapeado = $this->mapaPersonas[$dp->idper] ?? $dp->idper;
+                    $idperFinal = isset($personasRealesValidas[$idperMapeado]) ? $idperMapeado : $idRespaldo;
 
-                $idperMapeado = $this->mapaPersonas[$dp->idper] ?? $dp->idper;
-                $idperFinal = isset($personasRealesValidas[$idperMapeado]) ? $idperMapeado : $idRespaldo;
+                    $insertData[] = [
+                        'iddia' => $dp->iddia,
+                        'idpar' => $idparDestino,
+                        'idper' => $idperFinal,
+                        'valor' => $dp->valor,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $total++;
+                    
+                    if (count($insertData) >= $batchSize) {
+                        DB::table('diapar')->insert($insertData);
+                        $insertData = [];
+                    }
+                }
+            }
+        }
 
+        // =========================================================================
+        // FASE 3: INSERCIÓN DE DEFECTOS E INSPECCIÓN VISUAL (Consolidados)
+        // =========================================================================
+        $this->command->info("    -> Fase 3: Insertando Defectos normalizados e Inspección Visual con Reglas de Negocio...");
+        
+        foreach ($defectos as $iddia => $defs) {
+            foreach ($defs as $idparDestino => $valor) {
+                if (isset($procesados["$iddia-$idparDestino"])) continue;
+                $procesados["$iddia-$idparDestino"] = true;
+                
                 $insertData[] = [
-                    'iddia' => $dp->iddia,
-                    'idpar' => $idpar,
-                    'idper' => $idperFinal,
-                    'valor' => $dp->valor,
-                    'created_at' => $now,
-                    'updated_at' => $now
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idRespaldo,
+                    'valor' => $this->normalizarDefecto($valor), 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;
-
-                if (count($insertData) >= $batchSize) {
-                    DB::table('diapar')->insert($insertData);
-                    $insertData = [];
+            }
+        }
+        
+        foreach ($inspeccionVisual as $iddia => $iv) {
+            $descOriginal = $iv['desc'] ?? '';
+            $tipoDetectado = $this->mapearTipoLegacy($iv['tipo'] ?? null);
+            $mapeoDestino = [];
+            
+            if ($tipoDetectado !== null) {
+                $descRaw = str_replace('|', ',', $descOriginal);
+                $descList = array_filter(array_map('trim', explode(',', $descRaw)));
+                $jsonList = [];
+                foreach ($descList as $item) {
+                    $jsonList[] = ['obs' => $item, 'grupo' => 'Otro', 'tipo' => $tipoDetectado];
                 }
+                $jsonPayload = count($jsonList) > 0 ? json_encode(['list' => $jsonList, 'obs' => ''], JSON_UNESCAPED_UNICODE) : 'SIN REGISTRO';
+                $mapeoDestino = [12 => 'Otro', 13 => $tipoDetectado, 14 => $jsonPayload];
+            } else {
+                if (trim($descOriginal) === '') continue;
+                $obsLimpia = str_replace('|', ', ', $descOriginal);
+                $jsonPayload = json_encode(['list' => [], 'obs' => $obsLimpia], JSON_UNESCAPED_UNICODE);
+                $mapeoDestino = [14 => $jsonPayload];
+            }
+            
+            foreach ($mapeoDestino as $idparDestino => $valor) {
+                if (isset($procesados["$iddia-$idparDestino"])) continue;
+                $procesados["$iddia-$idparDestino"] = true;
+                $insertData[] = [
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idRespaldo,
+                    'valor' => $valor, 'created_at' => $now, 'updated_at' => $now,
+                ];
+                $total++;
             }
         }
 
@@ -398,6 +542,33 @@ class LegacyImportSeeder extends Seeder
             DB::table('diapar')->insert($insertData);
         }
         $this->command->info("  Diapar: {$total} procesados.");
+    }
+
+    private function mapearTipoLegacy($tipoRaw)
+    {
+        if (!$tipoRaw) return null;
+        $tipos = array_map('trim', explode('|', $tipoRaw));
+        foreach ($tipos as $tipo) {
+            if ($tipo === '2') return 'Tipo A';
+            if ($tipo === '3') return 'Tipo B';
+        }
+        return null;
+    }
+
+    private function normalizarDefecto($valor)
+    {
+        $v = strtolower(trim($valor ?? ''));
+        if ($v === '' || $v === 'n/a' || $v === 'na' || $v === null) return 'na';
+        if (in_array($v, ['si', 'sí', 's', '1', 'true', 'cumple'])) return 'si';
+        if (in_array($v, ['no', 'n', '0', 'false', 'no cumple'])) return 'no';
+        return 'na';
+    }
+
+    private function concatenarValor($actual, $nuevo)
+    {
+        if (empty($actual)) return $nuevo;
+        if (strpos($actual, $nuevo) !== false) return $actual;
+        return $actual . ' | ' . $nuevo;
     }
 
     private function importarFotos()
