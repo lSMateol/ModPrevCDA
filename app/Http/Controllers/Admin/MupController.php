@@ -446,7 +446,7 @@ class MupController extends Controller
      */
     public function usuarios()
     {
-        $usuarios = User::with('persona.perfil', 'persona.tipoDocumento', 'empresa')
+        $usuarios = User::with('persona.perfil', 'persona.tipoDocumento', 'empresa.perfil')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -1010,11 +1010,28 @@ class MupController extends Controller
     public function updateUsuario(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        
+        // Determinar qué entidad actualizar
+        $idper = $user->idper;
+        $idemp = $user->idemp;
+        
+        // Reglas dinámicas de unicidad
+        if ($idper) {
+            $docUnique = 'unique:persona,ndocper,' . $idper . ',idper';
+            $emaUnique = 'unique:persona,emaper,' . $idper . ',idper';
+        } elseif ($idemp) {
+            $docUnique = 'unique:empresa,nonitem,' . $idemp . ',idemp';
+            $emaUnique = 'unique:empresa,emaem,' . $idemp . ',idemp';
+        } else {
+            $docUnique = 'unique:persona,ndocper';
+            $emaUnique = 'unique:persona,emaper';
+        }
+
         $request->validate([
             'nombre_completo' => 'required|string|max:100',
             'tdocper' => 'required',
-            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $user->idper . ',idper',
-            'emaper' => 'required|email|unique:persona,emaper,' . $user->idper . ',idper',
+            'ndocper' => ['required', 'numeric', $docUnique],
+            'emaper' => ['required', 'email', $emaUnique],
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
@@ -1038,24 +1055,33 @@ class MupController extends Controller
             $nomper = $parts[0];
             $apeper = $parts[1] ?? '';
 
-            // Update Persona
-            if (!$user->persona) {
-                throw new \RuntimeException('El usuario no tiene un registro de persona vinculado.');
+            // 1. Actualizar Entidad Vinculada (Persona o Empresa)
+            if ($user->persona) {
+                $user->persona->update([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'ndocper' => $request->ndocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'idpef' => $request->idpef,
+                    'idemp' => $request->idemp,
+                    'actper' => $request->actper,
+                ]);
+            } elseif ($user->empresa) {
+                $user->empresa->update([
+                    'razsoem' => $request->nombre_completo,
+                    'nonitem' => $request->ndocper,
+                    'emaem' => $request->emaper,
+                    'telem' => $request->telper ?? '',
+                    'idpef' => $request->idpef,
+                ]);
+            } else {
+                // Si por alguna razón no tiene ninguna, lanzamos error controlado
+                throw new \RuntimeException('El usuario no tiene un registro de persona o empresa vinculado.');
             }
 
-            $user->persona->update([
-                'nomper' => $nomper,
-                'apeper' => $apeper,
-                'tdocper' => $request->tdocper,
-                'ndocper' => $request->ndocper,
-                'emaper' => $request->emaper,
-                'telper' => $request->telper ?? '',
-                'idpef' => $request->idpef,
-                'idemp' => $request->idemp,
-                'actper' => $request->actper,
-            ]);
-
-            // Update User
+            // 2. Actualizar User
             $userData = [
                 'name' => $request->nombre_completo,
                 'username' => $request->username,
@@ -1067,7 +1093,7 @@ class MupController extends Controller
             }
             $user->update($userData);
 
-            // Sync Role
+            // 3. Sincronizar Rol (Spatie)
             $perfil = Perfil::find($request->idpef);
             if ($perfil) {
                 Role::firstOrCreate(['name' => $perfil->nompef]);
