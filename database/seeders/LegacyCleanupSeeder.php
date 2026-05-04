@@ -79,8 +79,9 @@ class LegacyCleanupSeeder extends Seeder
         }
 
         $unificaciones = [
-            ['origen' => '9999', 'destino' => '1091682308', 'rol' => 'Ingeniero'],
-            ['origen' => '3333', 'destino' => '10122437764', 'rol' => 'Inspector'],
+            ['origen' => '9999',  'destino' => '1091682308',  'rol' => 'Ingeniero'], // código genérico → Ingeniero principal
+            ['origen' => '825',   'destino' => '1091682308',  'rol' => 'Ingeniero'], // Angela María (shortcode) → Ingeniero principal
+            ['origen' => '3333',  'destino' => '10122437764', 'rol' => 'Inspector'], // Inspector placeholder → Inspector principal
         ];
 
         foreach ($unificaciones as $u) {

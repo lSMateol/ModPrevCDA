@@ -114,6 +114,7 @@ class LegacyImportSeeder extends Seeder
         $this->command->info('▸ [9/9] Importando Diapar, Fotos y asignando Roles...');
         $this->importarDiapar();
         $this->importarFotos();
+        $this->reconciliarUsuariosOperativos(); // Garantiza users para Ingenieros/Inspectores
         $this->asignarRoles();
 
         $this->command->info('');
@@ -238,6 +239,9 @@ class LegacyImportSeeder extends Seeder
 
                 if (($vP == 6 && $nP == 7) || ($vP == 7 && $nP == 6)) { $perFinal = 8; }
                 elseif (in_array(1, [$vP, $nP])) { $perFinal = 1; }
+                // Si el perfil entrante es operativo (Digitador/Ingeniero/Inspector) y el
+                // destino aún no tiene un perfil operativo, lo promovemos.
+                elseif (in_array($nP, [2, 4, 5]) && !in_array($vP, [1, 2, 4, 5])) { $perFinal = $nP; }
 
                 $updateData = ['idpef' => $perFinal];
                 if (empty($personaExistente->nliccon) && !empty($data['nliccon'])) {
@@ -253,14 +257,71 @@ class LegacyImportSeeder extends Seeder
             }
 
             $perFinal = DB::table('persona')->where('ndocper', $ndoc)->value('idpef');
-            $idReal = DB::table('persona')->where('ndocper', $ndoc)->value('idper');
+            $idReal   = DB::table('persona')->where('ndocper', $ndoc)->value('idper');
 
-            if (in_array($perFinal, [1, 2, 4, 5])) {
+            // Si el perfil en destino no es operativo, intentar con el perfil
+            // sanitizado que viene del legacy (ya corregido por LegacyCleanupSeeder).
+            // Esto cubre el caso donde corregirPerfilesIngenieros/Inspectores no
+            // encontró el documento por diferencias de formato (ej: 825 vs 825.0).
+            $perParaUser = in_array($perFinal, [1, 2, 4, 5]) ? $perFinal : null;
+            if ($perParaUser === null && in_array($data['idpef'], [1, 2, 4, 5])) {
+                $perParaUser = $data['idpef'];
+                // Sincronizar el perfil correcto en destino para consistencia
+                DB::table('persona')->where('ndocper', $ndoc)->update(['idpef' => $perParaUser]);
+            }
+
+            if ($perParaUser !== null) {
                 DB::table('users')->updateOrInsert(
                     ['email' => $data['emaper'] ?? "user_{$ndoc}@cda.com"],
                     ['name' => $data['nomper'] . ' ' . $data['apeper'], 'password' => Hash::make((string)$ndoc), 'idper' => $idReal, 'username' => (string)$ndoc]
                 );
             }
+        }
+    }
+
+    /**
+     * Pase de reconciliación: busca en persona todos los Ingenieros (idpef=4)
+     * e Inspectores (idpef=5) que no tienen un registro en users y los crea.
+     * Esto cubre casos donde la lógica inline de importarPersonas() no pudo
+     * crear el usuario por ambigüedad en el formato del ndocper o colisión de email.
+     */
+    private function reconciliarUsuariosOperativos(): void
+    {
+        $this->command->info('  Reconciliando usuarios de Ingenieros e Inspectores...');
+
+        $operativos = DB::table('persona')
+            ->whereIn('idpef', [4, 5])
+            ->get(['idper', 'ndocper', 'nomper', 'apeper', 'emaper', 'idpef']);
+
+        $creados = 0;
+        foreach ($operativos as $op) {
+            // Verificar si ya tiene un usuario vinculado
+            if (DB::table('users')->where('idper', $op->idper)->exists()) {
+                continue;
+            }
+
+            $ndoc  = (string) $op->ndocper;
+            $email = !empty($op->emaper) ? $op->emaper : "user_{$ndoc}@cda.com";
+            $nombre = trim($op->nomper . ' ' . ($op->apeper ?? ''));
+
+            DB::table('users')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'name'     => $nombre,
+                    'password' => Hash::make($ndoc),
+                    'idper'    => $op->idper,
+                    'username' => $ndoc,
+                ]
+            );
+
+            $this->command->info("    ✓ Usuario creado: {$nombre} (idpef={$op->idpef}, doc={$ndoc})");
+            $creados++;
+        }
+
+        if ($creados === 0) {
+            $this->command->info('    - Todos los Ingenieros/Inspectores ya tenían usuario.');
+        } else {
+            $this->command->info("    ✓ {$creados} usuario(s) de operativos reconciliados.");
         }
     }
 
