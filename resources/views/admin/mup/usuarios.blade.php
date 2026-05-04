@@ -31,7 +31,7 @@
 
 <div class="px-4 sm:px-10 pb-20 max-w-[1600px] mx-auto" x-data="usuariosManager()" x-init="init()" x-cloak>
     
-    <!-- HEADER & BENTO METRICS -->
+    <!-- ENCABEZADO Y MÉTRICAS BENTO -->
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8 mt-4">
         <div>
             <h1 class="font-headline font-black text-[#002D54] text-2xl md:text-3xl tracking-tight">Gestión de Accesos</h1>
@@ -62,10 +62,10 @@
 
 
 
-    <!-- MAIN CONTENT: MASTER-DETAIL SPLIT VIEW -->
+    <!-- CONTENIDO PRINCIPAL: VISTA DIVIDIDA MAESTRO-DETALLE -->
     <div class="grid grid-cols-12 gap-8 mt-6">
         
-        <!-- MASTER COLUMN: SEARCH & LIST -->
+        <!-- COLUMNA MAESTRA: BÚSQUEDA Y LISTADO -->
         <div class="col-span-12 lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
             
             <!-- Barra de Búsqueda Premium -->
@@ -83,7 +83,7 @@
                 </div>
             </div>
 
-            <!-- Listado de Usuarios (Scrollable) -->
+            <!-- Listado de Usuarios (Desplazable) -->
             <div class="flex flex-col gap-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
                 <template x-for="u in filteredUsuarios()" :key="u.id">
                     <div @click="selectUser(u)" 
@@ -140,13 +140,13 @@
             </div>
         </div>
 
-        <!-- DETAIL COLUMN: USER PROFILE & PERMISSIONS -->
+        <!-- COLUMNA DE DETALLE: PERFIL DE USUARIO Y PERMISOS -->
         <div class="col-span-12 lg:col-span-7 xl:col-span-8">
             
             <template x-if="selectedUser">
                 <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
                     
-                    <!-- Profile Header -->
+                    <!-- Encabezado del Perfil -->
                     <div class="p-6 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                             <div class="flex items-center gap-5">
@@ -180,7 +180,7 @@
                         </div>
                     </div>
 
-                    <!-- Profile Detail Body -->
+                    <!-- Cuerpo del Detalle del Perfil -->
                     <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Columna: Datos de Contacto -->
                         <div class="space-y-6">
@@ -609,9 +609,9 @@ function usuariosManager() {
         },
 
         getDocType(id) {
-            if (id === null || id === undefined || id === '') return 'N/A';
+            if (id === null || id === undefined || id === '') return 'N/D';
             const key = String(id);
-            return this.tiposDoc[key] || this.tiposDoc[id] || 'N/A';
+            return this.tiposDoc[key] || this.tiposDoc[id] || 'N/D';
         },
 
         exportCsv() {

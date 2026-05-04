@@ -42,6 +42,12 @@ class LegacyCleanupSeeder extends Seeder
         // ─── FASE 0: Unificación de Usuarios Duplicados ─────────────────────────────
         $this->command->info('▸ [FASE 0] Unificando registros de usuarios duplicados...');
         $this->unificarUsuariosDuplicados();
+        
+        // ─── FASE 0.5: Corrección de Perfiles (Inspectores, Ingenieros y Digitadores) ───────────
+        $this->command->info('▸ [FASE 0.5] Corrigiendo perfiles operativos específicos...');
+        $this->corregirPerfilesInspectores();
+        $this->corregirPerfilesIngenieros();
+        $this->corregirPerfilesDigitadores();
 
         // ─── FASE 1: Purga por fecha ───────────────────────────────────────
         $this->command->info('');
@@ -102,10 +108,61 @@ class LegacyCleanupSeeder extends Seeder
 
             $totalDiag = $afectadosDiagPer + $afectadosDiagInsp + $afectadosDiagIng;
 
+            // Asegurarnos de que el destino tenga el perfil correcto
+            $idpefDestino = ($u['rol'] === 'Ingeniero') ? 4 : 5;
+            $legacy->table('persona')->where('idper', $idDestino)->update(['idpef' => $idpefDestino]);
+
             $this->command->info("    ✓ {$u['rol']} unificado correctamente (de {$idOrigen} a {$idDestino}):");
             $this->command->info("      - Registros Diag actualizados: {$totalDiag}");
             $this->command->info("      - Registros Diapar actualizados: {$afectadosDiapar}");
+            $this->command->info("      - Perfil forzado a: " . ($idpefDestino === 4 ? 'Ingeniero (4)' : 'Inspector (5)'));
         }
+    }
+
+    private function actualizarPerfilPorDocumentoNormalizado(array $docsArray, int $idpefObjetivo, string $nombrePerfil): void
+    {
+        $legacy = DB::connection('legacy');
+        $todasPersonas = $legacy->table('persona')->get(['idper', 'ndocper']);
+        $mapaDocs = array_flip($docsArray); // Para búsqueda rápida O(1)
+        
+        $idsAfectados = [];
+        foreach ($todasPersonas as $p) {
+            $ndocNorm = preg_replace('/[^0-9]/', '', (string)$p->ndocper);
+            if (isset($mapaDocs[$ndocNorm])) {
+                $idsAfectados[] = $p->idper;
+            }
+        }
+
+        if (empty($idsAfectados)) {
+            $this->command->info("    - No se encontraron registros para actualizar a {$nombrePerfil} (ID {$idpefObjetivo}).");
+            return;
+        }
+
+        $afectados = $legacy->table('persona')
+            ->whereIn('idper', $idsAfectados)
+            ->update(['idpef' => $idpefObjetivo]);
+            
+        $this->command->info("    ✓ Perfiles de {$nombrePerfil} corregidos (ID {$idpefObjetivo}): {$afectados} registros.");
+    }
+
+    private function corregirPerfilesInspectores(): void
+    {
+        // Documentos de Inspectores (según LegacyCleanupData y manuales)
+        $docs = ["1073712304", "999", "3333", "3334", "3337", "87090252", "10122437764"];
+        $this->actualizarPerfilPorDocumentoNormalizado($docs, 5, 'Inspectores');
+    }
+
+    private function corregirPerfilesIngenieros(): void
+    {
+        // Documentos de Ingenieros (según LegacyCleanupData y principal)
+        $docs = ["9999", "1091682308", "825"];
+        $this->actualizarPerfilPorDocumentoNormalizado($docs, 4, 'Ingenieros');
+    }
+
+    private function corregirPerfilesDigitadores(): void
+    {
+        $docs = ["39670811", "1026268702"];
+        $this->actualizarPerfilPorDocumentoNormalizado($docs, 2, 'Digitadores');
     }
 
     private function purgarDiagnosticosPorFecha(): void
@@ -145,7 +202,7 @@ class LegacyCleanupSeeder extends Seeder
             ->where('ndocper', 'like', '%1091682308%')
             ->value('idper') ?? 825;
 
-        // 1. Procesar DocsPorPerfil
+        //1. Procesar DocsPorPerfil
         $this->command->info('  -- Evaluando lista: getDocsPorPerfil --');
         $docsPorPerfil = LegacyCleanupData::getDocsPorPerfil();
         $docsAEliminarPerfil = [];
@@ -181,49 +238,33 @@ class LegacyCleanupSeeder extends Seeder
             }
         }
 
-        if (empty($idsPersonasAEliminar)) {
-            $this->command->info("    - No se encontraron personas para eliminar en {$origen}.");
+        // Filtrar personas para NO eliminar aquellas que tienen historial (Evitar borrar o reasignar digitadores)
+        $idsSegurosParaEliminar = [];
+        foreach ($idsPersonasAEliminar as $idper) {
+            $hasDiag = $legacy->table('diag')->where('idper', $idper)->orWhere('idinsp', $idper)->orWhere('iding', $idper)->exists();
+            $hasDiapar = $legacy->table('diapar')->where('idper', $idper)->exists();
+            $hasVehicles = $legacy->table('vehiculo')->where('prop', $idper)->orWhere('cond', $idper)->exists();
+
+            if (!$hasDiag && !$hasDiapar && !$hasVehicles) {
+                $idsSegurosParaEliminar[] = $idper;
+            }
+        }
+
+        if (empty($idsSegurosParaEliminar)) {
+            $this->command->info("    - Las personas de la lista en {$origen} tienen registros históricos (Diagnósticos/Vehículos) y no pueden ser eliminadas para preservar la integridad.");
             $this->command->info('');
             return;
         }
 
-        $diaparEliminados = 0;
-        $fotosEliminadas  = 0;
-        $diagEliminados   = 0;
         $personasEliminadas = 0;
 
-        foreach (array_chunk($idsPersonasAEliminar, self::CHUNK_SIZE) as $chunk) {
-            // Buscamos diagnósticos de estas personas
-            $idsDiag = $legacy->table('diag')
-                ->where(function ($q) use ($chunk) {
-                    $q->whereIn('idper',  $chunk)
-                      ->orWhereIn('idinsp', $chunk)
-                      ->orWhereIn('iding',  $chunk);
-                })
-                ->pluck('iddia')
-                ->toArray();
-
-            if (!empty($idsDiag)) {
-                $diagEliminados += count($idsDiag);
-                foreach (array_chunk($idsDiag, self::CHUNK_SIZE) as $diagChunk) {
-                    $diaparEliminados += $legacy->table('diapar')->whereIn('iddia', $diagChunk)->delete();
-                    $fotosEliminadas  += $legacy->table('foto')->whereIn('iddia', $diagChunk)->delete();
-                    $legacy->table('diag')->whereIn('iddia', $diagChunk)->delete();
-                }
-            }
-            
-            // Evitar constraint 1451: si la persona (ej. Digitador) grabó parámetros 
-            // en diagnósticos que NO se borraron, reasignamos la autoría de esos diapar al Ingeniero Principal.
-            $legacy->table('diapar')->whereIn('idper', $chunk)->update(['idper' => $idIngenieroPrincipal]);
-
+        foreach (array_chunk($idsSegurosParaEliminar, self::CHUNK_SIZE) as $chunk) {
+            // Solo eliminamos relaciones secundarias sin impacto legal
             $legacy->table('proveh')->whereIn('idper', $chunk)->delete();
             $personasEliminadas += $legacy->table('persona')->whereIn('idper', $chunk)->delete();
         }
 
-        $this->command->info("    ✓ Personas eliminadas (Origen: {$origen}): {$personasEliminadas}");
-        $this->command->warn("      - [!] Diagnósticos eliminados en cascada: {$diagEliminados}");
-        $this->command->warn("      - [!] Parámetros eliminados (diapar): {$diaparEliminados}");
-        $this->command->warn("      - [!] Fotos eliminadas: {$fotosEliminadas}");
+        $this->command->info("    ✓ Personas eliminadas (Origen: {$origen}): {$personasEliminadas} (Se omitieron las que tenían historial de digitación o diagnósticos)");
         $this->command->info('');
     }
 

@@ -70,10 +70,9 @@ class MupController extends Controller
      */
     protected function personaIdsConductorGlobal(Perfil $perfilConductor): array
     {
-        // El perfil 8 es "Propietario / Conductor"
+        // Únicamente perfiles 7 (Conductor) y 8 (Propietario / Conductor)
         return Persona::query()
-            ->whereIn('idpef', [$perfilConductor->idpef, 8])
-            ->orWhereNotNull('nliccon')
+            ->whereIn('idpef', [7, 8])
             ->pluck('idper')
             ->toArray();
     }
@@ -92,7 +91,7 @@ class MupController extends Controller
     }
 
     /**
-     * Display the Conductores view.
+     * Muestra la vista de Conductores.
      */
     public function conductores()
     {
@@ -118,7 +117,7 @@ class MupController extends Controller
     }
 
     /**
-     * Store a new conductor.
+     * Almacena un nuevo conductor en el sistema.
      */
     public function storeConductor(Request $request)
     {
@@ -202,7 +201,7 @@ class MupController extends Controller
     }
 
     /**
-     * Update an existing conductor record.
+     * Actualiza el registro de un conductor existente.
      */
     public function updateConductor(Request $request, $id)
     {
@@ -264,7 +263,7 @@ class MupController extends Controller
     }
 
     /**
-     * Remove a conductor from the system.
+     * Elimina un conductor del sistema (Baja física con validación de integridad).
      */
     public function destroyConductor($id)
     {
@@ -312,7 +311,7 @@ class MupController extends Controller
     }
 
     /**
-     * Display the view for creating a new system profile.
+     * Muestra la vista para la creación de un nuevo perfil de sistema (Roles).
      */
     public function nuevoPerfil()
     {
@@ -321,7 +320,7 @@ class MupController extends Controller
     }
 
     /**
-     * Store a new system profile and its associated permissions.
+     * Almacena un nuevo perfil de sistema y sus permisos asociados.
      */
     public function storePerfil(Request $request)
     {
@@ -381,7 +380,7 @@ class MupController extends Controller
     }
 
     /**
-     * Update an existing profile and its permissions.
+     * Actualiza un perfil existente y sus permisos de acceso.
      */
     public function updatePerfil(Request $request, $id)
     {
@@ -442,7 +441,7 @@ class MupController extends Controller
     }
 
     /**
-     * Display the Users (MUP) main dashbaord.
+     * Muestra el panel principal de Gestión de Usuarios (MUP).
      */
     public function usuarios()
     {
@@ -468,7 +467,7 @@ class MupController extends Controller
     }
 
     /**
-     * Store a new User + Persona synchronized record.
+     * Registra un nuevo Usuario y Persona de forma sincronizada.
      */
     public function storeUsuario(Request $request)
     {
@@ -545,7 +544,7 @@ class MupController extends Controller
     }
 
     /**
-     * Display the Propietarios view.
+     * Muestra la vista de Propietarios.
      */
     public function propietarios()
     {
@@ -569,7 +568,7 @@ class MupController extends Controller
     }
 
     /**
-     * Store a new propietario.
+     * Registra un nuevo propietario en el sistema.
      */
     public function storePropietario(Request $request)
     {
@@ -655,7 +654,7 @@ class MupController extends Controller
     }
 
     /**
-     * Update an existing propietario.
+     * Actualiza los datos de un propietario existente.
      */
     public function updatePropietario(Request $request, $id)
     {
@@ -720,7 +719,7 @@ class MupController extends Controller
     }
 
     /**
-     * Delete a propietario.
+     * Elimina el registro de un propietario (Baja física controlada).
      */
     public function destroyPropietario($id)
     {
@@ -785,7 +784,7 @@ class MupController extends Controller
  
 
     /**
-     * Display the Empresas view.
+     * Muestra la vista de gestión de Empresas.
      */
     public function empresas()
     {
@@ -802,7 +801,7 @@ class MupController extends Controller
     }
 
     /**
-     * Store a new Empresa + Linked User.
+     * Registra una nueva Empresa y su Usuario de Acceso vinculado.
      */
     public function storeEmpresa(Request $request)
     {
@@ -869,7 +868,7 @@ class MupController extends Controller
     }
 
     /**
-     * Update an existing Empresa.
+     * Actualiza los datos de una Empresa existente.
      */
     public function updateEmpresa(Request $request, $id)
     {
@@ -961,7 +960,7 @@ class MupController extends Controller
     }
 
     /**
-     * Delete an Empresa.
+     * Elimina una Empresa del sistema (Baja física con validación de activos).
      */
     public function destroyEmpresa($id)
     {
@@ -1005,7 +1004,7 @@ class MupController extends Controller
     }
 
     /**
-     * Update an existing User + Persona.
+     * Actualiza un registro sincronizado de Usuario y Persona/Empresa.
      */
     public function updateUsuario(Request $request, $id)
     {
@@ -1046,6 +1045,13 @@ class MupController extends Controller
                 }
             ],
             'actper' => 'required|in:0,1',
+        ], [
+            'ndocper.unique' => 'Este número de documento ya está asignado a otra persona.',
+            'emaper.unique' => 'Este correo electrónico ya se encuentra registrado para otro usuario.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.confirmed' => 'Las contraseñas de confirmación no coinciden.',
         ]);
 
         try {
@@ -1110,7 +1116,7 @@ class MupController extends Controller
     }
 
     /**
-     * Physically delete a User + Persona.
+     * Elimina físicamente un Usuario y su Persona asociada (Baja de sistema).
      */
     public function destroyUsuario($id)
     {

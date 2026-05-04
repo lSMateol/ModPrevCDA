@@ -255,7 +255,7 @@ class LegacyImportSeeder extends Seeder
             $perFinal = DB::table('persona')->where('ndocper', $ndoc)->value('idpef');
             $idReal = DB::table('persona')->where('ndocper', $ndoc)->value('idper');
 
-            if (in_array($perFinal, [1, 2])) {
+            if (in_array($perFinal, [1, 2, 4, 5])) {
                 DB::table('users')->updateOrInsert(
                     ['email' => $data['emaper'] ?? "user_{$ndoc}@cda.com"],
                     ['name' => $data['nomper'] . ' ' . $data['apeper'], 'password' => Hash::make((string)$ndoc), 'idper' => $idReal, 'username' => (string)$ndoc]
@@ -504,6 +504,11 @@ class LegacyImportSeeder extends Seeder
                 ];
                 $total++;
             }
+
+            if (count($insertData) >= $batchSize) {
+                DB::table('diapar')->insert($insertData);
+                $insertData = [];
+            }
         }
         
         foreach ($inspeccionVisual as $iddia => $iv) {
@@ -535,6 +540,11 @@ class LegacyImportSeeder extends Seeder
                     'valor' => $valor, 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;
+            }
+
+            if (count($insertData) >= $batchSize) {
+                DB::table('diapar')->insert($insertData);
+                $insertData = [];
             }
         }
 
@@ -599,6 +609,8 @@ class LegacyImportSeeder extends Seeder
                 $perfil = DB::table('persona')->where('idper', $user->idper)->value('idpef');
                 if ($perfil == 1) $user->assignRole('Administrador');
                 if ($perfil == 2) $user->assignRole('Digitador');
+                if ($perfil == 4) $user->assignRole('Ingeniero');
+                if ($perfil == 5) $user->assignRole('Inspector');
             }
         }
     }
