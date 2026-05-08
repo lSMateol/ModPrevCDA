@@ -110,29 +110,33 @@
                 <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
                     
                     <!-- Detail Header -->
-                    <div class="p-6 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
+                    <div class="p-4 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                            <div class="flex items-center gap-5">
-                                <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-3xl font-black shadow-inner"
+                            <div class="flex items-center gap-4 sm:gap-5 w-full sm:w-auto">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl sm:text-3xl font-black shadow-inner"
                                     x-text="selectedEmpresa.abremp ? selectedEmpresa.abremp.substring(0,2) : selectedEmpresa.razsoem.substring(0,2).toUpperCase()">
                                 </div>
-                                <div>
-                                    <div class="flex items-center gap-3">
-                                        <h2 class="text-2xl font-black tracking-tight uppercase" x-text="selectedEmpresa.razsoem"></h2>
-                                        <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Activo Fiscal</span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                        <h2 class="text-xl sm:text-2xl font-black tracking-tight truncate uppercase" x-text="selectedEmpresa.razsoem"></h2>
+                                        <span class="w-fit bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Activo Fiscal</span>
                                     </div>
-                                    <p class="text-white/60 text-xs font-medium mt-1 flex items-center gap-2">
-                                        <iconify-icon icon="lucide:hash"></iconify-icon>
-                                        <span x-text="'NIT: ' + selectedEmpresa.nonitem"></span>
-                                        <span class="opacity-30">|</span>
-                                        <iconify-icon icon="lucide:user"></iconify-icon>
-                                        <span x-text="'Gerente: ' + selectedEmpresa.nomger"></span>
+                                    <p class="text-white/60 text-[10px] sm:text-xs font-medium mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <span class="flex items-center gap-1.5">
+                                            <iconify-icon icon="lucide:hash"></iconify-icon>
+                                            <span x-text="'NIT: ' + selectedEmpresa.nonitem"></span>
+                                        </span>
+                                        <span class="hidden sm:inline opacity-30">|</span>
+                                        <span class="flex items-center gap-1.5">
+                                            <iconify-icon icon="lucide:user"></iconify-icon>
+                                            <span class="truncate max-w-[150px] sm:max-w-none" x-text="'Gerente: ' + selectedEmpresa.nomger"></span>
+                                        </span>
                                     </p>
                                 </div>
                             </div>
                             
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                <button @click="openEdit(selectedEmpresa)" class="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border border-white/10">
+                            <div class="flex gap-2 w-full sm:w-auto pt-2 sm:pt-0">
+                                <button @click="openEdit(selectedEmpresa)" class="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-all border border-white/10">
                                     Editar Empresa
                                 </button>
                                 <button @click="openDelete(selectedEmpresa)" class="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/20">
@@ -143,21 +147,21 @@
                     </div>
 
                     <!-- Detail Tabs -->
-                    <div class="flex border-b border-gray-100 bg-gray-50/50 px-8">
+                    <div class="flex border-b border-gray-100 bg-gray-50/50 px-4 sm:px-8 overflow-x-auto no-scrollbar scroll-smooth">
                         <button @click="detailTab = 'info'" 
-                            class="px-6 py-4 text-[11px] font-black uppercase tracking-widest transition-all border-b-2"
+                            class="px-4 sm:px-6 py-4 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap"
                             :class="detailTab === 'info' ? 'border-blue-500 text-[#0d3b5a]' : 'border-transparent text-gray-400 hover:text-gray-600'">
                             Perfil Corporativo
                         </button>
                         <button @click="detailTab = 'flota'" 
-                            class="px-6 py-4 text-[11px] font-black uppercase tracking-widest transition-all border-b-2"
+                            class="px-4 sm:px-6 py-4 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap"
                             :class="detailTab === 'flota' ? 'border-blue-500 text-[#0d3b5a]' : 'border-transparent text-gray-400 hover:text-gray-600'">
                             Flota Vehicular
                         </button>
                     </div>
 
                     <!-- Detail Content -->
-                    <div class="p-8">
+                    <div class="p-4 sm:p-8">
                         <!-- TAB: INFO -->
                         <div x-show="detailTab === 'info'" class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-300">
                             <div class="space-y-6">

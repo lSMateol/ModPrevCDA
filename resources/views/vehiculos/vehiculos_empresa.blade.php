@@ -46,6 +46,15 @@
                 this.peRepCurrentPage = 1;
                 if (val === 'reporte') this.loadReporteFlota();
             });
+
+            // Lógica de inicialización de vista y auto-selección
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'perfil') {
+                this.activeView = 'perfil';
+            }
+            if (this.vehiculos.length > 0) {
+                this.selectVehiculo(this.vehiculos[0]);
+            }
         },
 
         /* ──── Flujo Perfil Empresa ──── */
@@ -64,7 +73,7 @@
         peFilterEstado: '',
         get peFilteredVehiculos() {
             if (!this.selectedVehiculo || !this.selectedVehiculo.empresa) return [];
-            let list = this.vehiculos.filter(v => v.idemp === this.selectedVehiculo.empresa.idemp);
+            let list = this.vehiculos.filter(v => Number(v.idemp) === Number(this.selectedVehiculo.empresa.idemp));
             
             if (this.peSearchTerm) {
                 const term = this.peSearchTerm.toLowerCase();
@@ -186,13 +195,13 @@
         },
         exportUrl(diagId) {
             const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-            return '/' + prefix + '/diagnosticos/' + diagId + '/export';
+            return prefix + '/diagnosticos/' + diagId + '/export';
         },
         exportarFlota() {
             const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
             const empresaId = this.selectedVehiculo?.empresa?.idemp;
             if (!empresaId) return;
-            let url = '/' + prefix + '/vehiculos-empresa/export-flota?empresa_id=' + empresaId;
+            let url = prefix + '/vehiculos-empresa/export-flota?empresa_id=' + empresaId;
             if (this.fechaInicio) url += '&fecha_inicio=' + this.fechaInicio;
             if (this.fechaFin)    url += '&fecha_fin='    + this.fechaFin;
             if (this.reportePlaca.trim()) url += '&placa=' + encodeURIComponent(this.reportePlaca.trim());
@@ -230,7 +239,7 @@
             this.perfilSaving = true;
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const res = await fetch('/' + prefix + '/vehiculos-empresa/perfil/' + this.perfilForm.idemp, {
+                const res = await fetch(prefix + '/vehiculos-empresa/perfil/' + this.perfilForm.idemp, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -373,7 +382,7 @@
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
                 
                 // 1. Obtener datos del vehículo (Rápido)
-                const res = await fetch('/' + prefix + '/vehiculos-empresa/' + v.idveh, {
+                const res = await fetch(prefix + '/vehiculos-empresa/' + v.idveh, {
                     headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                 });
                 const data = await res.json();
@@ -399,7 +408,7 @@
         },
 
         async loadReporteFlota() {
-            if (!this.selectedVehiculo?.idemp || this.reporteLoading) return;
+            if (!this.selectedVehiculo?.empresa?.idemp || this.reporteLoading) return;
             
             // Si ya tenemos el reporte para esta empresa, no recargar
             if (this.detailData?.reporte_flota) return;
@@ -407,19 +416,31 @@
             this.reporteLoading = true;
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const res = await fetch('/' + prefix + '/vehiculos-empresa/reporte/' + this.selectedVehiculo.idemp, {
+                const empresaId = this.selectedVehiculo.empresa.idemp;
+                const url = prefix + '/vehiculos-empresa/reporte/' + empresaId;
+                console.log('[loadReporteFlota] Fetching:', url);
+                const res = await fetch(url, {
                     headers: { 'Accept': 'application/json' }
                 });
+                console.log('[loadReporteFlota] Response status:', res.status);
+                if (!res.ok) {
+                    console.error('[loadReporteFlota] HTTP error:', res.status, res.statusText);
+                    const errorText = await res.text();
+                    console.error('[loadReporteFlota] Response body:', errorText.substring(0, 500));
+                    return;
+                }
                 const reportes = await res.json();
+                console.log('[loadReporteFlota] Reportes recibidos:', reportes.length);
                 
                 // Guardar en cache para que otros vehículos de la misma empresa no tengan que recargar
-                this.companyCache[this.selectedVehiculo.idemp] = { reporte_flota: reportes };
+                this.companyCache[empresaId] = { reporte_flota: reportes };
 
                 if (this.detailData) {
-                    this.detailData.reporte_flota = reportes;
+                    // Usar desestructuración para forzar reactividad en Alpine.js al inyectar una propiedad nueva
+                    this.detailData = { ...this.detailData, reporte_flota: reportes };
                 }
             } catch(e) {
-                console.error('Error cargando reporte de flota:', e);
+                console.error('[loadReporteFlota] Error:', e);
             } finally {
                 this.reporteLoading = false;
             }
@@ -435,7 +456,7 @@
             this.editSaving = true;
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const res = await fetch('/' + prefix + '/vehiculos-empresa/' + this.selectedVehiculo.idveh + '/vinculo', {
+                const res = await fetch(prefix + '/vehiculos-empresa/' + this.selectedVehiculo.idveh + '/vinculo', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -455,17 +476,6 @@
             } catch(e) { console.error('Error:', e); }
             finally { this.editSaving = false; }
         },
-
-        /* ──── Init ──── */
-        init() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('view') === 'perfil') {
-                this.activeView = 'perfil';
-            }
-            if (this.vehiculos.length > 0) {
-                this.selectVehiculo(this.vehiculos[0]);
-            }
-        }
     }">
 
     <style>
@@ -1338,7 +1348,7 @@
                                     <iconify-icon icon="lucide:activity" class="info-item-icon" style="color: var(--primary)"></iconify-icon>
                                     <div class="info-item-content">
                                         <span class="info-item-label">Total Diagnósticos</span>
-                                        <span class="info-item-value" style="color: var(--primary); font-weight: 600;" x-text="detailData.empresa_stats.total_diagnosticos"></span>
+                                        <span class="info-item-value" style="color: var(--primary); font-weight: 600;" x-text="detailData?.empresa_stats?.total_diagnosticos ?? 0"></span>
                                     </div>
                                 </div>
                             </div>
@@ -1371,7 +1381,7 @@
                         <div class="card-header">
                             <div class="tabs">
                                 <button class="tab" :class="{ 'active': peSubTab === 'vehiculos' }" @click="peSubTab = 'vehiculos'">
-                                    Vehículos Asignados (<span x-text="vehiculos.filter(v => v.idemp === selectedVehiculo.empresa.idemp).length"></span>)
+                                    Vehículos Asignados (<span x-text="vehiculos.filter(v => Number(v.idemp) === Number(selectedVehiculo.empresa.idemp)).length"></span>)
                                 </button>
                                 <button class="tab" :class="{ 'active': peSubTab === 'propietarios' }" @click="peSubTab = 'propietarios'">
                                     Propietarios (<span x-text="pePropietarios.length"></span>)
@@ -1506,7 +1516,7 @@
                                                 <td x-text="c.telper || 'N/A'"></td>
                                                 <td>
                                                     <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 250px;">
-                                                        <template x-for="v in vehiculos.filter(vh => vh.idemp === selectedVehiculo.empresa.idemp && vh.cond === c.idper)">
+                                                        <template x-for="v in vehiculos.filter(vh => Number(vh.idemp) === Number(selectedVehiculo.empresa.idemp) && Number(vh.cond) === Number(c.idper))">
                                                             <span class="plate-badge" style="font-size: 11px; padding: 2px 6px;" x-text="v.placaveh"></span>
                                                         </template>
                                                     </div>
@@ -1574,7 +1584,7 @@
                                                 <td x-text="p.telper || 'N/A'"></td>
                                                 <td>
                                                     <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 250px;">
-                                                        <template x-for="v in vehiculos.filter(vh => vh.idemp === selectedVehiculo.empresa.idemp && vh.prop === p.idper)">
+                                                        <template x-for="v in vehiculos.filter(vh => Number(vh.idemp) === Number(selectedVehiculo.empresa.idemp) && Number(vh.prop) === Number(p.idper))">
                                                             <span class="plate-badge" style="font-size: 11px; padding: 2px 6px;" x-text="v.placaveh"></span>
                                                         </template>
                                                     </div>

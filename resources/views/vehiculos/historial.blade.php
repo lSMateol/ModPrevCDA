@@ -214,10 +214,10 @@
                                         <td>
                                             <div class="actions-cell">
                                                 @hasanyrole('Administrador|Digitador')
-                                                    <a :href="'/' + '{{ str_replace('.', '', $rolePrefix) }}' + '/diagnosticos/' + diag.iddia + '/edit'" class="icon-btn" title="Editar">
+                                                    <a :href="document.querySelector('meta[name=url-prefix]')?.content + '/diagnosticos/' + diag.iddia + '/edit'" class="icon-btn" title="Editar">
                                                         <iconify-icon icon="lucide:edit-2"></iconify-icon>
                                                     </a>
-                                                    <a :href="'/' + '{{ str_replace('.', '', $rolePrefix) }}' + '/diagnosticos/' + diag.iddia" class="icon-btn" title="Ver Detalles">
+                                                    <a :href="document.querySelector('meta[name=url-prefix]')?.content + '/diagnosticos/' + diag.iddia" class="icon-btn" title="Ver Detalles">
                                                         <iconify-icon icon="lucide:eye"></iconify-icon>
                                                     </a>
                                                 @endhasanyrole

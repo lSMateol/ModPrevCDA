@@ -6,15 +6,12 @@
 @endphp
 <div class="px-8 py-6 space-y-8">
     <!-- Encabezado -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+        <!-- Título -->
         <div>
             <h1 class="font-headline font-black text-3xl text-[#001834] tracking-tight">Vehículos Rechazados</h1>
             <p class="text-sm text-gray-500 font-medium">Gestione los vehículos que no superaron la inspección técnica.</p>
         </div>
-        <button class="bg-[#001834] text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm">download</span>
-            Descargar informe de rechazados
-        </button>
     </div>
 
     <!-- Filtros -->

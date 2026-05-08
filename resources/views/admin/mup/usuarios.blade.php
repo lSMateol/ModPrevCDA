@@ -147,30 +147,36 @@
                 <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
                     
                     <!-- Encabezado del Perfil -->
-                    <div class="p-6 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
+                    <div class="p-4 sm:p-8 bg-gradient-to-r from-[#001834] to-[#0d3b5a] text-white">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                            <div class="flex items-center gap-5">
-                                <div class="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-3xl font-black shadow-inner border-4 border-white/20"
+                            <div class="flex items-center gap-4 sm:gap-5 w-full sm:w-auto">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl sm:text-3xl font-black shadow-inner border-4 border-white/20"
                                     x-text="getInitials(selectedUser.name)">
                                 </div>
-                                <div>
-                                    <div class="flex items-center gap-3">
-                                        <h2 class="text-2xl font-black tracking-tight uppercase" x-text="selectedUser.name"></h2>
-                                        <span x-show="selectedUser.actper" class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Cuenta Activa</span>
-                                        <span x-show="!selectedUser.actper" class="bg-red-500/20 text-red-300 text-[10px] font-black px-3 py-1 rounded-full border border-red-500/30 uppercase tracking-widest">Bloqueado</span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                        <h2 class="text-xl sm:text-2xl font-black tracking-tight truncate uppercase" x-text="selectedUser.name"></h2>
+                                        <div class="flex gap-2">
+                                            <span x-show="selectedUser.actper" class="bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Activa</span>
+                                            <span x-show="!selectedUser.actper" class="bg-red-500/20 text-red-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-red-500/30 uppercase tracking-widest">Bloqueado</span>
+                                        </div>
                                     </div>
-                                    <p class="text-white/60 text-xs font-medium mt-1 flex items-center gap-2">
-                                        <iconify-icon icon="lucide:shield-check"></iconify-icon>
-                                        <span x-text="'Perfil: ' + selectedUser.nompef"></span>
-                                        <span class="opacity-30">|</span>
-                                        <iconify-icon icon="lucide:fingerprint"></iconify-icon>
-                                        <span x-text="'ID: USR-' + String(selectedUser.id).padStart(3, '0')"></span>
+                                    <p class="text-white/60 text-[10px] sm:text-xs font-medium mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <span class="flex items-center gap-1.5">
+                                            <iconify-icon icon="lucide:shield-check"></iconify-icon>
+                                            <span x-text="'Perfil: ' + selectedUser.nompef"></span>
+                                        </span>
+                                        <span class="hidden sm:inline opacity-30">|</span>
+                                        <span class="flex items-center gap-1.5">
+                                            <iconify-icon icon="lucide:fingerprint"></iconify-icon>
+                                            <span x-text="'ID: USR-' + String(selectedUser.id).padStart(3, '0')"></span>
+                                        </span>
                                     </p>
                                 </div>
                             </div>
                             
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                <button @click="openEdit(selectedUser)" class="flex-1 sm:flex-none bg-white text-[#001834] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:bg-blue-50">
+                            <div class="flex gap-2 w-full sm:w-auto pt-2 sm:pt-0">
+                                <button @click="openEdit(selectedUser)" class="flex-1 sm:flex-none bg-white text-[#001834] px-5 py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all hover:bg-blue-50">
                                     Editar Perfil
                                 </button>
                                 <button @click="openDelete(selectedUser)" class="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/20">

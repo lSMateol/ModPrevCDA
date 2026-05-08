@@ -153,7 +153,7 @@
             
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const url = '/' + prefix + '/vehiculos/' + v.idveh;
+                const url = prefix + '/vehiculos/' + v.idveh;
                 const res = await fetch(url, {
                     method: 'DELETE',
                     headers: {
@@ -193,7 +193,7 @@
             this.vinculoSaving = true;
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const url = '/' + prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/vinculos';
+                const url = prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/vinculos';
                 const res = await fetch(url, {
                     method: 'PUT',
                     headers: {
@@ -240,7 +240,7 @@
             this.docSaving = true;
             try {
                 const prefix = document.querySelector('meta[name=url-prefix]')?.content || '';
-                const url = '/' + prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/edicion-rapida';
+                const url = prefix + '/vehiculos/' + this.selectedVehiculo.idveh + '/edicion-rapida';
                 const res = await fetch(url, {
                     method: 'PUT',
                     headers: {
@@ -457,7 +457,7 @@
                             <td x-text="vehiculo.combustible?.nomval || 'N/A'"></td>
                             @if(!auth()->user()->hasRole('Empresa'))
                             <td style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px;">
-                                <a class="icon-btn" title="Editar en formulario" :href="'/' + '{{ $prefix }}' + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a class="icon-btn" title="Editar en formulario" :href="document.querySelector('meta[name=url-prefix]')?.content + '/vehiculos/' + vehiculo.idveh + '/editar'" @click.stop style="text-decoration:none;"><i class="fa-solid fa-pen-to-square"></i></a>
                                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
                                 <button class="icon-btn" title="Eliminar" style="color: #ef4444;" @click.stop="deleteVehiculo(vehiculo)"><i class="fa-solid fa-trash-can"></i></button>
                                 @endif

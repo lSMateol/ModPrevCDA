@@ -110,14 +110,16 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-10 border-t border-gray-50">
-                    <div class="flex items-center gap-3 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center md:text-left">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8 pt-10 border-t border-gray-50">
+                    <div class="flex items-center gap-3 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center md:text-left opacity-60">
                         <div class="hidden md:block w-2 h-2 rounded-full bg-[#ffba20] animate-pulse"></div>
-                        Confirmación iniciará un nuevo formulario de inspección
+                        <span>Confirmación iniciará un nuevo formulario de inspección</span>
                     </div>
-                    <div class="flex w-full md:w-auto gap-4">
-                        <a href="{{ route($prefix . '.rechazados') }}" class="flex-1 md:flex-none text-center px-8 py-4 rounded-xl border border-gray-100 font-black text-[10px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Cancelar</a>
-                        <button type="submit" class="flex-1 md:flex-none bg-[#ffba20] text-[#001834] px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-[#ffba20]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <div class="flex flex-col sm:flex-row w-full md:w-auto gap-3 sm:gap-4">
+                        <a href="{{ route($prefix . '.rechazados') }}" class="w-full sm:w-auto text-center px-8 py-4 rounded-xl border border-gray-100 font-black text-[10px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all order-2 sm:order-1">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="w-full sm:w-auto bg-[#ffba20] text-[#001834] px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-[#ffba20]/20 hover:scale-[1.02] active:scale-[0.98] transition-all order-1 sm:order-2">
                             Confirmar
                         </button>
                     </div>

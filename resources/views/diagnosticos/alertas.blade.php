@@ -100,9 +100,6 @@
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Mostrando <span class="text-[#001834]">{{ $alertas->firstItem() ?? 0 }}</span> - <span class="text-[#001834]">{{ $alertas->lastItem() ?? 0 }}</span> de <span class="text-[#001834]">{{ $alertas->total() }}</span> Resultados
                 </p>
-                <button class="w-full sm:w-auto bg-[#001834] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[#002d54] transition-all shadow-xl shadow-[#001834]/10">
-                    Exportar Reporte
-                </button>
             </div>
         </div>
 
@@ -137,28 +134,37 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     @foreach($alerta['documentos'] as $tipo => $doc)
-                    <div class="p-5 rounded-3xl transition-all duration-300 {{ $doc['estado'] === 'vencido' ? 'bg-red-50/50 border-l-4 border-red-500' : 'bg-gray-50 border-l-4 border-[#ffba20]' }}">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">{{ $tipo === 'soat' ? 'SOAT' : 'Tecnomecánica' }}</p>
-                        <p class="text-lg font-black {{ $doc['estado'] === 'vencido' ? 'text-red-600' : 'text-[#001834]' }}">
-                            {{ $doc['fecha']->format('M d, Y') }}
-                        </p>
-                        <p class="text-[10px] font-bold mt-1 {{ $doc['estado'] === 'vencido' ? 'text-red-400' : 'text-[#ffba20]' }}">
-                            {{ $doc['estado'] === 'vencido' ? 'Vencido hace ' . abs($doc['dias']) . ' días' : 'Vence en ' . $doc['dias'] . ' días' }}
-                        </p>
-                    </div>
+                        @php
+                            $label = match($tipo) {
+                                'soat' => 'SOAT',
+                                'tecno' => 'Tecnomecánica',
+                                'contractual' => 'Responsabilidad Contractual',
+                                'operacion' => 'Licencia de Tránsito',
+                                default => ucfirst($tipo)
+                            };
+                            $borderColor = match($tipo) {
+                                'soat', 'tecno' => 'border-[#ffba20]',
+                                'contractual', 'operacion' => 'border-blue-500',
+                                default => 'border-gray-300'
+                            };
+                            if ($doc['estado'] === 'vencido') $borderColor = 'border-red-500';
+                        @endphp
+                        <div class="p-5 rounded-3xl transition-all duration-300 {{ $doc['estado'] === 'vencido' ? 'bg-red-50/50' : 'bg-gray-50' }} border-l-4 {{ $borderColor }}">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">{{ $label }}</p>
+                            <p class="text-lg font-black {{ $doc['estado'] === 'vencido' ? 'text-red-600' : 'text-[#001834]' }}">
+                                {{ $doc['fecha']->format('M d, Y') }}
+                            </p>
+                            <p class="text-[10px] font-bold mt-1 {{ $doc['estado'] === 'vencido' ? 'text-red-400' : ($doc['estado'] === 'por_vencer' ? 'text-[#ffba20]' : 'text-blue-400') }}">
+                                @if($doc['dias'] < 0)
+                                    Vencido hace {{ abs($doc['dias']) }} días
+                                @elseif($doc['dias'] == 0)
+                                    Vence HOY
+                                @else
+                                    Vence en {{ $doc['dias'] }} días
+                                @endif
+                            </p>
+                        </div>
                     @endforeach
-
-                    <!-- Otros documentos estáticos para completar el diseño -->
-                    <div class="p-5 bg-gray-50 rounded-3xl border-l-4 border-blue-500">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Responsabilidad Contractual</p>
-                        <p class="text-lg font-black text-[#001834] opacity-50">Vigente</p>
-                        <span class="inline-block mt-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">ACTIVO</span>
-                    </div>
-                    <div class="p-5 bg-gray-50 rounded-3xl border-l-4 border-blue-500">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Licencia de Tránsito</p>
-                        <p class="text-lg font-black text-[#001834] opacity-50">Permanente</p>
-                        <span class="inline-block mt-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">OK</span>
-                    </div>
                 </div>
             </div>
             @endforeach

@@ -87,7 +87,7 @@ class VehiculoController extends Controller
         $user = auth()->user();
         $prefix = $user->hasRole('Administrador') ? 'admin' : 'digitador';
 
-        return redirect("/{$prefix}/vehiculos")
+        return redirect()->route("{$prefix}.vehiculos.index")
             ->with('success', 'Vehículo creado exitosamente.');
     }
 
@@ -133,7 +133,7 @@ class VehiculoController extends Controller
 
         $prefix = $user->hasRole('Administrador') ? 'admin' : ($user->hasRole('Digitador') ? 'digitador' : 'empresa');
 
-        return redirect("/{$prefix}/vehiculos")
+        return redirect()->route("{$prefix}.vehiculos.index")
             ->with('success', 'Vehículo actualizado exitosamente.');
     }
 

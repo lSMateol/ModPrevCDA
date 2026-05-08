@@ -1,15 +1,21 @@
 <!-- Modal de Modificación de Asignación -->
-<div id="modal-edit-asignacion" class="fixed inset-0 bg-[#001c3b]/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4 overflow-y-auto transition-all duration-300">
+<div id="modal-edit-asignacion" class="fixed inset-0 bg-[#001c3b]/60 backdrop-blur-sm z-[100] flex items-start justify-center hidden p-4 overflow-y-auto transition-all duration-300 py-10 md:py-20">
     <div class="relative w-full max-w-lg transition-transform duration-300 scale-95" id="modal-edit-content">
-        <!-- Botón Cerrar -->
-        <button id="close-edit-asignacion" class="absolute -top-12 right-0 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center gap-2 group">
-            <span class="material-symbols-outlined text-sm">close</span> Cerrar
-        </button>
-        
         <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl border border-outline-variant/10 relative z-10 w-full">
-            <div class="mb-8 text-center">
-                <h1 class="font-headline font-extrabold text-2xl text-[#001834] tracking-tight mb-1">Modificar Asignación</h1>
-                <p class="text-on-surface-variant text-xs font-medium uppercase tracking-widest opacity-70">Ajuste técnico del servicio</p>
+            <div class="mb-8">
+                <!-- Fila del Botón Cerrar (Independiente) -->
+                <div class="flex justify-center mb-6">
+                    <button id="close-edit-asignacion" class="bg-[#ffba20] text-[#001834] px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-lg hover:bg-white hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group">
+                        <span class="material-symbols-outlined text-sm">close</span> 
+                        <span>Cerrar Ventana</span>
+                    </button>
+                </div>
+
+                <!-- Títulos -->
+                <div class="text-center">
+                    <h1 class="font-headline font-extrabold text-2xl text-[#001834] tracking-tight mb-1">Modificar Asignación</h1>
+                    <p class="text-on-surface-variant text-xs font-medium uppercase tracking-widest opacity-70">Ajuste técnico del servicio</p>
+                </div>
             </div>
 
             <form id="form-edit-asignacion" action="{{ route($prefix . '.diagnosticos.update-asignacion', $diagnostico->iddia) }}" method="POST" class="space-y-6">

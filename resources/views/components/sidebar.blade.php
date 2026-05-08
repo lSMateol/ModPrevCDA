@@ -82,11 +82,11 @@
                 </button>
                 
                 <div x-show="(openMenu === 'operacion') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="space-y-1 mt-1">
-                    <a href="{{ url($prefix . '/diagnosticos') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/diagnosticos') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ route($prefix . '.diagnosticos.index') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/diagnosticos') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/diagnosticos') ? 'bg-blue-400' : '' }}"></div>
                         Diagnóstico
                     </a>
-                    <a href="{{ $currentId ? url($prefix . '/diagnosticos/' . $currentId) : '#' }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/diagnosticos/*') && !Request::is('*/edit') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ $currentId ? route($prefix . '.diagnosticos.show', $currentId) : '#' }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/diagnosticos/*') && !Request::is('*/edit') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/diagnosticos/*') && !Request::is('*/edit') ? 'bg-blue-400' : '' }}"></div>
                         Detalle
                     </a>
@@ -116,6 +116,20 @@
             </div>
             @endrole
 
+            {{-- MI PERFIL PARA ADMIN/DIGITADOR --}}
+            @hasanyrole('Administrador|Digitador')
+            <div class="space-y-1">
+                <a href="{{ route($prefix . '.mi-perfil') }}" 
+                   class="sidebar-item w-full flex items-center py-3 px-3 rounded-xl group transition-all duration-200 {{ Request::routeIs('*.mi-perfil') ? 'bg-white/5 text-white' : 'hover:bg-white/[0.03] hover:text-white' }}">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <iconify-icon icon="lucide:user-circle" class="text-xl shrink-0 transition-transform group-hover:scale-110 {{ Request::routeIs('*.mi-perfil') ? 'text-blue-400' : 'text-slate-500' }}"></iconify-icon>
+                        <span x-show="!sidebarCollapsed || mobileMenuOpen" class="text-[11px] font-black uppercase tracking-widest truncate">Mi Perfil</span>
+                        <span x-show="sidebarCollapsed && !mobileMenuOpen" class="collapsed-tooltip">Mi Panel Personal</span>
+                    </div>
+                </a>
+            </div>
+            @endhasanyrole
+
             {{-- 2. GESTIÓN VEHICULAR --}}
             @hasanyrole('Administrador|Digitador|Empresa')
             <div class="space-y-1">
@@ -131,20 +145,20 @@
                 </button>
                 
                 <div x-show="(openMenu === 'gestion') && (!sidebarCollapsed || mobileMenuOpen)" x-collapse class="space-y-1 mt-1">
-                    <a href="{{ url($prefix . '/vehiculos') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ route($prefix . '.vehiculos.index') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/vehiculos') && Request::query('view') != 'perfil' ? 'bg-blue-400' : '' }}"></div>
                         Vehículos
                     </a>
-                    <a href="{{ url($prefix . '/vehiculos-empresa') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos-empresa*') && Request::query('view') !== 'perfil' ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ route($prefix . '.vehiculos-empresa.index') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/vehiculos-empresa*') && Request::query('view') !== 'perfil' ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/vehiculos-empresa*') && Request::query('view') !== 'perfil' ? 'bg-blue-400' : '' }}"></div>
                         Vehículos Empresa
                     </a>
-                    <a href="{{ url($prefix . '/historial') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/historial*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ route($prefix . '.historial.index') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/historial*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/historial*') ? 'bg-blue-400' : '' }}"></div>
                         Historial Mantenimiento
                     </a>
                     @hasanyrole('Administrador|Digitador')
-                    <a href="{{ url($prefix . '/marcas') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/marcas*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
+                    <a href="{{ route($prefix . '.marcas.index') }}" class="flex items-center gap-3 py-2.5 px-10 text-[10px] font-bold uppercase tracking-widest transition group {{ Request::is('*/marcas*') ? 'text-white' : 'text-slate-500 hover:text-white' }}">
                         <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-400 transition-colors {{ Request::is('*/marcas*') ? 'bg-blue-400' : '' }}"></div>
                         Marca
                     </a>

@@ -386,26 +386,30 @@ class DiagnosticoController extends Controller
 
         $alertas = $vehiculos->map(function($v) use ($hoy, $fechaInicio, $fechaFin) {
             $docs = [];
+            $hoyClean = $hoy->copy()->startOfDay();
             
-            // SOAT
-            if ($v->fecvens) {
-                $fec = \Carbon\Carbon::parse($v->fecvens);
-                $docs['soat'] = [
+            // Helper para procesar documentos
+            $procesarDoc = function($fecha, $label) use ($hoyClean) {
+                if (!$fecha) return null;
+                $fec = \Carbon\Carbon::parse($fecha)->startOfDay();
+                return [
                     'fecha' => $fec,
-                    'dias' => $hoy->diffInDays($fec, false),
-                    'estado' => $hoy->gt($fec) ? 'vencido' : ($hoy->diffInDays($fec) < 15 ? 'por_vencer' : 'activo')
+                    'dias' => (int) $hoyClean->diffInDays($fec, false),
+                    'estado' => $hoyClean->gt($fec) ? 'vencido' : ($hoyClean->diffInDays($fec) < 15 ? 'por_vencer' : 'activo')
                 ];
-            }
+            };
+
+            // SOAT
+            if ($d = $procesarDoc($v->fecvens, 'soat')) $docs['soat'] = $d;
             
             // Tecnomecánica
-            if ($v->fecvent) {
-                $fec = \Carbon\Carbon::parse($v->fecvent);
-                $docs['tecno'] = [
-                    'fecha' => $fec,
-                    'dias' => $hoy->diffInDays($fec, false),
-                    'estado' => $hoy->gt($fec) ? 'vencido' : ($hoy->diffInDays($fec) < 15 ? 'por_vencer' : 'activo')
-                ];
-            }
+            if ($d = $procesarDoc($v->fecvent, 'tecno')) $docs['tecno'] = $d;
+
+            // Responsabilidad Contractual
+            if ($d = $procesarDoc($v->fecvenc, 'contractual')) $docs['contractual'] = $d;
+
+            // Tarjeta de Operación (Opcional, pero útil para alertas)
+            if ($d = $procesarDoc($v->fecvenr, 'operacion')) $docs['operacion'] = $d;
 
             // Filtrar por Rango de Vencimiento
             if ($fechaInicio || $fechaFin) {

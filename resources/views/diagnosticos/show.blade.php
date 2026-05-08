@@ -135,9 +135,9 @@
     }
 @endphp
 
-<div class="px-6 pb-20 max-w-[1400px] mx-auto" x-data="{ activeTab: '{{ $groupedParams->keys()->first() }}' }">
+<div class="px-4 sm:px-6 lg:px-10 pb-20 max-w-[1400px] mx-auto" x-data="{ activeTab: '{{ $groupedParams->keys()->first() }}' }">
     <!-- Main Header -->
-    <header class="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-8 mt-2 md:mt-0 px-2 sm:px-0">
+    <header class="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-8 mt-2 md:mt-0">
         <div class="w-full md:w-auto">
             <div class="flex flex-wrap items-center gap-3">
                 <h1 class="text-2xl md:text-3xl font-black text-[#002D54] tracking-tight">Detalle Diagnóstico</h1>
@@ -478,7 +478,7 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="mt-12 space-y-4 px-2 sm:px-0" x-data="{ editingStatus: false }">
+    <div class="mt-12 space-y-4" x-data="{ editingStatus: false }">
         @if(count($missingFields) > 0)
             <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-2xl shadow-sm mb-6">
                 <div class="flex items-center gap-3">

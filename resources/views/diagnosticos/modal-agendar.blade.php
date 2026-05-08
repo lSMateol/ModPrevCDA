@@ -3,37 +3,45 @@
 @endphp
 
 <!-- Modal de Agendamiento con Diseño Premium -->
-<div id="modal-agendar" class="fixed inset-0 bg-[#001c3b]/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4 overflow-y-auto transition-all duration-300">
+<div id="modal-agendar" class="fixed inset-0 bg-[#001c3b]/60 backdrop-blur-sm z-[100] flex items-start justify-center hidden p-4 overflow-y-auto transition-all duration-300 py-10 md:py-20">
     
     <div class="relative w-full max-w-lg transition-transform duration-300 scale-95" id="modal-content">
-        <!-- Botón Cerrar Flotante Mejorado -->
-        <button id="close-agendar" class="absolute -top-12 right-0 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-[#ffba20]/30 hover:bg-white hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group">
-            <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-90">close</span> 
-            <span>Cerrar</span>
-        </button>
-        
         <!-- Tarjeta de Formulario -->
-        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_64px_-12px_rgba(0,28,59,0.2)] border border-outline-variant/10 relative z-10 w-full">
+        <div class="bg-surface-container-lowest rounded-2xl p-5 md:p-8 shadow-[0_32px_64px_-12px_rgba(0,28,59,0.2)] border border-outline-variant/10 relative z-10 w-full">
             
             <!-- Encabezado del Modal -->
-            <div class="mb-8 text-center">
-                <h1 class="font-headline font-extrabold text-2xl text-on-surface tracking-tight mb-1">Asignación de Servicio</h1>
-                <p class="text-on-surface-variant text-xs font-medium uppercase tracking-widest opacity-70">Módulo Preventivo de Inspección</p>
+            <div class="mb-8">
+                <!-- Fila del Botón Cerrar (Independiente) -->
+                <div class="flex justify-center mb-6">
+                    <button id="close-agendar" class="bg-[#ffba20] text-[#001834] px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-[#ffba20]/20 hover:bg-white hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group">
+                        <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-90">close</span> 
+                        <span>Cerrar Ventana</span>
+                    </button>
+                </div>
+                
+                <!-- Títulos -->
+                <div class="text-center">
+                    <h1 class="font-headline font-extrabold text-2xl text-on-surface tracking-tight mb-1">Asignación de Servicio</h1>
+                    <p class="text-on-surface-variant text-xs font-medium uppercase tracking-widest opacity-70">Módulo Preventivo de Inspección</p>
+                </div>
             </div>
 
             <form id="form-agendar" action="{{ route($prefix . '.diagnosticos.store') }}" method="POST" class="space-y-6">
                 @csrf
                 
-                <!-- Vehículo -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Vehículo</label>
+                <!-- Vehículo (Grilla con Z-index alto para evitar solapamiento inferior) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-[100]">
+                    <div class="space-y-2 relative z-[60]" id="vehiculo-autocomplete-container">
+                        <label class="font-label text-[0.65rem] uppercase tracking-wider text-on-surface-variant font-bold">Vehículo (Placa o Empresa)</label>
                         <div class="relative group">
-                            <select name="idveh" id="idveh" required class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-primary-fixed-dim focus:ring-0 rounded-t-xl px-4 py-3 appearance-none text-on-surface font-semibold text-sm transition-all group-hover:bg-surface-container-highest cursor-pointer">
-                                <option value="" disabled selected>Seleccione placa o interno</option>
-                                <option value="">Cargando...</option>
-                            </select>
-                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant transition-transform group-hover:translate-y-[-40%]">expand_more</span>
+                            <input type="text" id="vehiculo_search" placeholder="Escriba placa para buscar..." autocomplete="off" 
+                                   class="w-full bg-surface-container-high border-b-2 border-outline-variant/20 focus:border-primary-fixed-dim focus:ring-0 rounded-t-xl px-4 py-3 text-on-surface font-semibold text-sm transition-all group-hover:bg-surface-container-highest">
+                            <input type="hidden" name="idveh" id="idveh" required>
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">search</span>
+                        </div>
+                        <!-- Lista de resultados flotante (Z-index muy alto para no ser tapado) -->
+                        <div id="vehiculo_results" class="absolute left-0 right-0 top-[calc(100%-4px)] bg-surface-container-lowest border border-outline-variant/30 rounded-b-xl shadow-[0_20px_40px_-12px_rgba(0,28,59,0.6)] z-[500] max-h-64 overflow-y-auto hidden scrollbar-thin">
+                            <!-- Items dinámicos -->
                         </div>
                     </div>
 

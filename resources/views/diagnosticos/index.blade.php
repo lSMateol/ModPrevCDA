@@ -220,26 +220,49 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Prefijo global
-        const prefix = '{{ Auth::user()->hasRole("Administrador") ? "admin" : "digitador" }}';
+    // URLs generadas por Laravel (adaptable a Laragon local o Cpanel)
+    const routeDataModal = '{{ route(Auth::user()->hasRole("Administrador") ? "admin.diagnosticos.data" : "digitador.diagnosticos.data") }}';
+    @php
+        $rolePrefix = Auth::user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $currentPath = request()->getPathInfo();
+        $rolePos = strpos($currentPath, '/' . $rolePrefix);
+        $fotosBase = ($rolePos !== false) ? substr($currentPath, 0, $rolePos) . '/' . $rolePrefix : '/' . $rolePrefix;
+    @endphp
+    const routeFotosBase = '{{ $fotosBase }}';
+    const routeEditBase = routeFotosBase;
+    let allVehicles = []; // Variable global para la búsqueda
 
-        // ==========================================
-        // LÓGICA DE AGENDAR
-        // ==========================================
+    function selectVehicleAutocomplete(id, plate, combustible) {
+        document.getElementById('idveh').value = id;
+        document.getElementById('vehiculo_search').value = plate;
+        document.getElementById('vehiculo_results').classList.add('hidden');
+        const display = document.getElementById('combu_display');
+        if (display) display.value = combustible;
+        const event = new Event('change', { bubbles: true });
+        document.getElementById('idveh').dispatchEvent(event);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const prefix = '{{ Auth::user()->hasRole("Administrador") ? "admin" : "digitador" }}';
+        
+        // Elementos Agendar
         const btnAgendar = document.getElementById('btn-agendar');
         const modalAgendar = document.getElementById('modal-agendar');
         const closeAgendar = document.getElementById('close-agendar');
         const formAgendar = document.getElementById('form-agendar');
+        const inputSearch = document.getElementById('vehiculo_search');
+        const resultsBox = document.getElementById('vehiculo_results');
 
         if (btnAgendar && modalAgendar) {
             btnAgendar.addEventListener('click', async () => {
                 try {
-                    document.getElementById('idveh').innerHTML = '<option value="">Cargando vehículos...</option>';
-                    document.getElementById('idinsp').innerHTML = '<option value="">Cargando inspectores...</option>';
-                    document.getElementById('iding').innerHTML = '<option value="">Cargando ingenieros...</option>';
-                    
-                    const res = await fetch(`/${prefix}/diagnosticos/data`, {
+                    // Reset UI
+                    document.getElementById('idveh').value = '';
+                    inputSearch.value = '';
+                    resultsBox.classList.add('hidden');
+                    document.getElementById('combu_display').value = '';
+
+                    const res = await fetch(routeDataModal, {
                         method: 'GET',
                         headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                     });
@@ -247,10 +270,6 @@
                     const data = await res.json();
                     allVehicles = data.vehiculos;
                     
-                    const selectVehiculo = document.getElementById('idveh');
-                    selectVehiculo.innerHTML = '<option value="" disabled selected>Seleccione vehículo</option>' + 
-                        allVehicles.map(v => `<option value="${v.idveh}">${v.placaveh} - ${v.empresa?.razsoem || 'Sin empresa'}</option>`).join('');
-
                     const selectInsp = document.getElementById('idinsp');
                     selectInsp.innerHTML = '<option value="" disabled selected>Seleccione inspector</option>' + 
                         data.inspectores.map(i => `<option value="${i.idper}">${i.nomper} ${i.apeper}</option>`).join('');
@@ -265,74 +284,80 @@
                 }
             });
 
-            const selectVehiculo = document.getElementById('idveh');
-            if (selectVehiculo) {
-                selectVehiculo.addEventListener('change', (e) => {
-                    const veh = allVehicles.find(v => v.idveh == e.target.value);
-                    const display = document.getElementById('combu_display');
-                    if (veh && display) {
-                        display.value = veh.combustible?.nomval || 'NO DEFINIDO';
+            // Lógica Autocomplete
+            if (inputSearch) {
+                inputSearch.addEventListener('input', (e) => {
+                    const term = e.target.value.toLowerCase().trim();
+                    if (term.length < 1) { resultsBox.classList.add('hidden'); return; }
+
+                    const filtered = allVehicles.filter(v => 
+                        v.placaveh.toLowerCase().includes(term) || 
+                        (v.empresa?.razsoem || '').toLowerCase().includes(term)
+                    ).slice(0, 10);
+
+                    if (filtered.length > 0) {
+                        resultsBox.innerHTML = filtered.map(v => `
+                            <div class="px-4 py-3 hover:bg-primary-fixed-dim/10 cursor-pointer border-b border-outline-variant/10 last:border-0 flex flex-col gap-0.5" 
+                                 onclick="selectVehicleAutocomplete(${v.idveh}, '${v.placaveh}', '${v.combustible?.nomval || 'Otto'}')">
+                                <span class="font-bold text-on-surface-sm">${v.placaveh}</span>
+                                <span class="text-[10px] text-on-surface-variant uppercase tracking-wider">${v.empresa?.razsoem || 'Independiente'}</span>
+                            </div>
+                        `).join('');
+                        resultsBox.classList.remove('hidden');
+                    } else {
+                        resultsBox.innerHTML = '<div class="px-4 py-3 text-xs text-on-surface-variant italic">No se encontraron resultados</div>';
+                        resultsBox.classList.remove('hidden');
                     }
                 });
             }
 
             if (closeAgendar) closeAgendar.onclick = () => modalAgendar.classList.add('hidden');
             modalAgendar.onclick = (e) => { if (e.target === modalAgendar) modalAgendar.classList.add('hidden'); };
-
-            if (formAgendar) {
-                formAgendar.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(formAgendar);
-                    const submitBtn = formAgendar.querySelector('button[type="submit"]');
-                    submitBtn.disabled = true;
-                    
-                    try {
-                        const res = await fetch(formAgendar.action, {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-
-                        if (res.ok) {
-                            const data = await res.json();
-                            // Si la respuesta es exitosa, redirigimos a la URL proporcionada por el controlador
-                            if (data.redirect) {
-                                window.location.href = data.redirect;
-                            } else {
-                                window.location.reload();
-                            }
-                        } else {
-                            const data = await res.json();
-                            if (data.duplicate) {
-                                if (confirm(data.message + "\n\n¿Desea ir a EDITAR el diagnóstico existente para corregir valores?")) {
-                                    window.location.href = `/${prefix}/diagnosticos/${data.iddia}/edit`;
-                                }
-                            } else {
-                                // Manejo de errores de validación u otros
-                                let errorMsg = data.message || 'Error al guardar';
-                                if (data.errors) {
-                                    errorMsg += '\n' + Object.values(data.errors).flat().join('\n');
-                                }
-                                alert(errorMsg);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error en la petición:', error);
-                        alert('Error de conexión al servidor');
-                    } finally {
-                        submitBtn.disabled = false;
-                    }
-                });
-            }
+            
+            // Cerrar autocomplete al click fuera
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('vehiculo-autocomplete-container');
+                if (container && !container.contains(e.target)) resultsBox.classList.add('hidden');
+            });
         }
 
-        // ==========================================
-        // LÓGICA DE CAPTURA DE FOTOS (WebP)
-        // ==========================================
+        // Envío de Formulario
+        if (formAgendar) {
+            formAgendar.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(formAgendar);
+                const submitBtn = formAgendar.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                
+                try {
+                    const res = await fetch(formAgendar.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.redirect) window.location.href = data.redirect;
+                        else window.location.reload();
+                    } else {
+                        const data = await res.json();
+                        if (data.duplicate) {
+                            if (confirm(data.message + "\n\n¿Desea ir a EDITAR el diagnóstico existente?")) {
+                                window.location.href = `${routeEditBase}/diagnosticos/${data.iddia}/edit`;
+                            }
+                        } else {
+                            alert(data.message || 'Error al guardar');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error de conexión al servidor');
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        }
         const modalFotos = document.getElementById('modal-fotos');
         const closeFotos = document.getElementById('close-fotos');
         const fotoDiagId = document.getElementById('foto-diag-id');
@@ -360,7 +385,7 @@
                 
                 // Cargar fotos existentes
                 try {
-                    const res = await fetch(`/${prefix}/diagnosticos/${id}/fotos`);
+                    const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`);
                     existingPhotos = await res.json();
                     newPhotos = [];
                     idsAEliminar = [];
@@ -495,7 +520,7 @@
             btnSaveFotos.innerText = 'Sincronizando...';
 
             try {
-                const res = await fetch(`/${prefix}/diagnosticos/${id}/fotos`, {
+                const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
@@ -523,5 +548,14 @@
             document.getElementById('filter-form').submit();
         }, 600);
     }
+
+    // Auto-abrir modal si viene de un acceso directo
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'agendar') {
+            const btn = document.getElementById('btn-agendar');
+            if (btn) setTimeout(() => btn.click(), 500);
+        }
+    });
 </script>
 @endpush

@@ -100,10 +100,10 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     // Vehículos por Empresa
     Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
     Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
-    Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
     Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
-    Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
     Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+    Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+    Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
     Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
@@ -128,6 +128,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     Route::delete('/catalogos/param/{idpar}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyParam'])->name('catalogos.param.destroy');
 
     // Aquí irán tus rutas de usuarios, roles y configuración global
+    Route::get('/mi-perfil', [ProfileController::class, 'dashboard'])->name('mi-perfil');
 });
 
 // RUTAS DIGITADOR (Operativo + Control de Rutas)
@@ -206,6 +207,8 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
         Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
         Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
     });
+
+    Route::get('/mi-perfil', [ProfileController::class, 'dashboard'])->name('mi-perfil');
 });
 
 // RUTAS EMPRESA (Restringido + Control de Rutas)
