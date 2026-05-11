@@ -285,4 +285,15 @@ use App\Http\Controllers\MarcaController;
         }
     });
     
+    Route::get('/log', function () {
+        if (!auth()->check()) return 'No autenticado';
+        $path = storage_path('logs/laravel.log');
+        if (!file_exists($path)) return 'No hay logs';
+        // Leer últimas 100 líneas
+        $lines = file($path);
+        $lastLines = array_slice($lines, -100);
+        return '<pre>' . implode('', $lastLines) . '</pre>';
+    });
+
+    
     require __DIR__.'/auth.php';

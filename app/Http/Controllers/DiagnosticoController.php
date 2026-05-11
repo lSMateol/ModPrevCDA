@@ -612,61 +612,57 @@ class DiagnosticoController extends Controller
 
     public function uploadFotos(Request $request, $id)
     {
+        $start = microtime(true);
+        session()->save(); // Liberar el bloqueo de sesión lo antes posible
         try {
+
+            \Illuminate\Support\Facades\Log::debug("--- Iniciando uploadFotos ID: {$id} ---");
+
             $request->validate([
-                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max por foto
+                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
                 'ids_a_eliminar' => 'nullable|string'
             ]);
+            \Illuminate\Support\Facades\Log::debug("Validación completada en: " . (microtime(true) - $start) . "s");
 
             $diagnostico = Diag::findOrFail($id);
             
-            // Organizar por Año, Mes y Día
             $fecha = \Carbon\Carbon::parse($diagnostico->fecdia);
-            $year = $fecha->format('Y');
-            $month = $fecha->format('m');
-            $day = $fecha->format('d');
-            $basePath = "fotos_diagnosticos/{$year}/{$month}/{$day}";
+            $basePath = "fotos_diagnosticos/{$fecha->format('Y')}/{$fecha->format('m')}/{$fecha->format('d')}";
 
-            // 1. Eliminar fotos
             if ($request->has('ids_a_eliminar')) {
                 $ids = json_decode($request->ids_a_eliminar);
                 if (!empty($ids)) {
                     $fotosAEliminar = $diagnostico->fotos()->whereIn('idfot', $ids)->get();
+
                     foreach ($fotosAEliminar as $f) {
                         \Illuminate\Support\Facades\Storage::disk('public')->delete($f->rutafoto);
                         $f->delete();
                     }
                 }
             }
+            \Illuminate\Support\Facades\Log::debug("Eliminación de fotos completada en: " . (microtime(true) - $start) . "s");
 
-            // 2. Guardar nuevas fotos
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $file) {
-                    if (!$file->isValid()) {
-                        throw new \Exception("Archivo no válido: " . $file->getErrorMessage());
-                    }
+                    if (!$file->isValid()) throw new \Exception("Archivo no válido: " . $file->getErrorMessage());
                     
+                    $storeStart = microtime(true);
                     $path = $file->store($basePath, 'public');
-                    if (!$path) {
-                        throw new \Exception("No se pudo guardar el archivo en el storage.");
-                    }
+                    \Illuminate\Support\Facades\Log::debug("Archivo guardado en disk en: " . (microtime(true) - $storeStart) . "s");
 
-                    $diagnostico->fotos()->create([
-                        'rutafoto' => $path
-                    ]);
+                    if (!$path) throw new \Exception("No se pudo guardar el archivo en el storage.");
+
+                    $dbStart = microtime(true);
+                    $diagnostico->fotos()->create(['rutafoto' => $path]);
+                    \Illuminate\Support\Facades\Log::debug("Registro en DB creado en: " . (microtime(true) - $dbStart) . "s");
                 }
             }
 
+            \Illuminate\Support\Facades\Log::debug("--- uploadFotos completado en: " . (microtime(true) - $start) . "s ---");
             return response()->json(['success' => true, 'message' => 'Fotos actualizadas correctamente'], 201);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error en uploadFotos (ID {$id}): " . $e->getMessage(), [
-                'exception' => $e,
-                'request' => $request->all()
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al procesar la carga: ' . $e->getMessage()
-            ], 500);
+            \Illuminate\Support\Facades\Log::error("Error en uploadFotos (ID {$id}) tras " . (microtime(true) - $start) . "s: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 
