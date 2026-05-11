@@ -1,0 +1,290 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DiagnosticoController;
+use App\Http\Controllers\VehiculoController;
+use App\Http\Controllers\VehiculoEmpresaController;
+use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\MarcaController;
+
+// ==========================================
+// REDIRECCIÓN INICIAL (Seguridad)
+// ==========================================
+
+// ENVOLVER TODO EN ESTE GRUPO:
+Route::prefix('modprev')->group(function () {
+    
+    Route::get('/clear-all', function() {
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    return "Caché de Laravel limpia (rutas, config, cache, vistas)";
+    });
+    
+    Route::get('/', function () {
+        return redirect()->route('login');
+    });
+    
+    // ==========================================
+    // RUTA BASE (Distribuidor Inteligente)
+    // ==========================================
+    Route::get('/dashboard', function () {
+        $user = request()->user();
+        
+        if ($user->hasRole('Administrador')) return redirect()->route('admin.mi-perfil');
+        if ($user->hasRole('Digitador')) return redirect()->route('digitador.mi-perfil');
+        if ($user->hasRole('Empresa')) return redirect()->route('empresa.vehiculos-empresa.index');
+        
+        return view('dashboard');
+    })->middleware(['auth', 'verified'])->name('dashboard');
+    
+    // RUTAS ADMINISTRADOR (Acceso Total + Control de Rutas)
+    // ==========================================
+    Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('dashboard'); 
+        })->name('dashboard');
+    
+        // CRUD de Diagnósticos para Administrador
+        Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+        Route::get('/diagnosticos/params/{idval}', [DiagnosticoController::class, 'getParametersByCombustible'])->name('diagnosticos.params-by-type');
+        Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+        
+        // Rutas de Rechazados
+        Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
+        Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
+        Route::put('/rechazados/{id}', [DiagnosticoController::class, 'updateRechazo'])->name('rechazados.update');
+        Route::get('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'reasignar'])->name('rechazados.reasignar');
+        Route::post('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'storeReasignacion'])->name('rechazados.store-reasignacion');
+    
+        Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
+        Route::get('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'getFotos'])->name('diagnosticos.get-fotos');
+        Route::post('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'uploadFotos'])->name('diagnosticos.upload-fotos');
+        Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
+        Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
+        Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
+        Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
+        
+        // Módulo MUP (Entidades)
+        Route::prefix('entidades/mup')->name('mup.')->group(function () {
+            Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores.index');
+            Route::get('/conductores/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.conductores.index'); });
+            Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+            Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
+            Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
+            
+            // Perfiles
+            Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
+            Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+            Route::get('/perfil/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.usuarios.index'); });
+            Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
+    
+            // Usuarios (Master Dash)
+            Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios.index');
+            Route::get('/usuarios/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.usuarios.index'); });
+            Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
+            Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
+            Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
+    
+            // Propietarios
+            Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios.index');
+            Route::get('/propietarios/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.propietarios.index'); });
+            Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+            Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
+            Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
+    
+            // Empresas
+            Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas.index');
+            Route::get('/empresas/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.empresas.index'); });
+            Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
+            Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
+            Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
+        });
+    
+        
+        // Gestión Vehicular para Administrador
+        Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+        Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+        Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+        Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+        Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+        Route::delete('/vehiculos/{id}', [VehiculoController::class, 'destroy'])->name('vehiculos.destroy');
+        Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+        Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
+    
+        // Vehículos por Empresa
+        Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+        Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
+        Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+        Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
+        Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
+        Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+    
+        Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+        Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
+        Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
+    
+        // Gestión de Catálogos (Dominios y Parámetros)
+        Route::get('/catalogos', [\App\Http\Controllers\Admin\CatalogoController::class, 'index'])->name('catalogos.index');
+        Route::post('/catalogos/dominio', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeDominio'])->name('catalogos.dominio.store');
+        Route::put('/catalogos/dominio/{iddom}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateDominio'])->name('catalogos.dominio.update');
+        Route::delete('/catalogos/dominio/{iddom}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyDominio'])->name('catalogos.dominio.destroy');
+        
+        Route::post('/catalogos/valor', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeValor'])->name('catalogos.valor.store');
+        Route::put('/catalogos/valor/{idval}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateValor'])->name('catalogos.valor.update');
+        Route::delete('/catalogos/valor/{idval}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyValor'])->name('catalogos.valor.destroy');
+    
+        Route::post('/catalogos/tippar', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeTippar'])->name('catalogos.tippar.store');
+        Route::put('/catalogos/tippar/{idtip}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateTippar'])->name('catalogos.tippar.update');
+        Route::delete('/catalogos/tippar/{idtip}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyTippar'])->name('catalogos.tippar.destroy');
+    
+        Route::post('/catalogos/param', [\App\Http\Controllers\Admin\CatalogoController::class, 'storeParam'])->name('catalogos.param.store');
+        Route::put('/catalogos/param/{idpar}', [\App\Http\Controllers\Admin\CatalogoController::class, 'updateParam'])->name('catalogos.param.update');
+        Route::delete('/catalogos/param/{idpar}', [\App\Http\Controllers\Admin\CatalogoController::class, 'destroyParam'])->name('catalogos.param.destroy');
+    
+        // Aquí irán tus rutas de usuarios, roles y configuración global
+        Route::get('/mi-perfil', [ProfileController::class, 'dashboard'])->name('mi-perfil');
+    });
+    
+    // RUTAS DIGITADOR (Operativo + Control de Rutas)
+    // ==========================================
+    Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador')->name('digitador.')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('dashboard'); 
+        })->name('dashboard');
+        
+        // CRUD de Diagnósticos para Digitador
+        Route::get('/diagnosticos/data', [DiagnosticoController::class, 'dataForModal'])->name('diagnosticos.data');
+        Route::get('/diagnosticos/params/{idval}', [DiagnosticoController::class, 'getParametersByCombustible'])->name('diagnosticos.params-by-type');
+        Route::get('/alertas', [DiagnosticoController::class, 'alertas'])->name('alertas');
+    
+        // Rutas de Rechazados
+        Route::get('/rechazados', [DiagnosticoController::class, 'rechazados'])->name('rechazados');
+        Route::get('/rechazados/{id}/edit', [DiagnosticoController::class, 'editRechazo'])->name('rechazados.edit');
+        Route::put('/rechazados/{id}', [DiagnosticoController::class, 'updateRechazo'])->name('rechazados.update');
+        Route::get('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'reasignar'])->name('rechazados.reasignar');
+        Route::post('/rechazados/{id}/reasignar', [DiagnosticoController::class, 'storeReasignacion'])->name('rechazados.store-reasignacion');
+    
+        Route::resource('diagnosticos', DiagnosticoController::class)->names('diagnosticos');
+        Route::get('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'getFotos'])->name('diagnosticos.get-fotos');
+        Route::post('/diagnosticos/{id}/fotos', [DiagnosticoController::class, 'uploadFotos'])->name('diagnosticos.upload-fotos');
+        Route::post('/diagnosticos/{id}/aprobar', [DiagnosticoController::class, 'approve'])->name('diagnosticos.approve');
+        Route::post('/diagnosticos/{id}/rechazar', [DiagnosticoController::class, 'reject'])->name('diagnosticos.reject');
+        Route::post('/diagnosticos/{id}/asignacion', [DiagnosticoController::class, 'updateAsignacion'])->name('diagnosticos.update-asignacion');
+        Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
+        // Aquí irán tus rutas de vehículos y diagnósticos
+        
+        // Gestión Vehicular para Digitador
+        Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+        Route::get('/vehiculos/crear', [VehiculoController::class, 'create'])->name('vehiculos.create');
+        Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+        Route::get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit'])->name('vehiculos.edit');
+        Route::put('/vehiculos/{id}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+        Route::delete('/vehiculos/{id}', [VehiculoController::class, 'destroy'])->name('vehiculos.destroy');
+        Route::put('/vehiculos/{id}/vinculos', [VehiculoController::class, 'updateVinculos'])->name('vehiculos.vinculos');
+        Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
+    
+        // Vehículos por Empresa
+        Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+        Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
+        Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+        Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
+        Route::put('/vehiculos-empresa/{id}/vinculo', [VehiculoEmpresaController::class, 'updateVinculoEmpresa'])->name('vehiculos-empresa.update-vinculo');
+        Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+    
+        Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+        Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
+        Route::resource('marcas', MarcaController::class)->except(['create', 'show', 'edit']);
+    
+        // Módulo MUP (Entidades) para Digitador
+        Route::prefix('entidades/mup')->name('mup.')->group(function () {
+            Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores.index');
+            Route::get('/conductores/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.conductores.index'); });
+            Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
+            Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
+            Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
+    
+            Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios.index');
+            Route::get('/usuarios/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.usuarios.index'); });
+            Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
+            Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
+            Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
+    
+            Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios.index');
+            Route::get('/propietarios/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.propietarios.index'); });
+            Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
+            Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
+            Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
+    
+            Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas.index');
+            Route::get('/empresas/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.empresas.index'); });
+            Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
+            Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
+            Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
+    
+            Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
+            Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+            Route::get('/perfil/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.usuarios.index'); });
+            Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
+        });
+    
+        Route::get('/mi-perfil', [ProfileController::class, 'dashboard'])->name('mi-perfil');
+    });
+    
+    // RUTAS EMPRESA (Restringido + Control de Rutas)
+    // ==========================================
+    Route::middleware(['auth', 'role:Empresa', 'check.routes'])->prefix('empresa')->name('empresa.')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('dashboard'); 
+        })->name('dashboard');
+        
+        // Gestión Vehicular para Empresa (filtrado automático por idemp)
+        Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+        Route::put('/vehiculos/{id}/edicion-rapida', [VehiculoController::class, 'quickUpdate'])->name('vehiculos.quick-update');
+    
+        // Vehículos por Empresa (solo lectura)
+        Route::get('/vehiculos-empresa', [VehiculoEmpresaController::class, 'index'])->name('vehiculos-empresa.index');
+        Route::get('/vehiculos-empresa/export-flota', [VehiculoEmpresaController::class, 'exportFlota'])->name('vehiculos-empresa.export-flota');
+        Route::get('/vehiculos-empresa/reporte/{idemp}', [VehiculoEmpresaController::class, 'getReporteFlota'])->name('vehiculos-empresa.reporte');
+        Route::get('/vehiculos-empresa/{id}', [VehiculoEmpresaController::class, 'show'])->name('vehiculos-empresa.show');
+        Route::put('/vehiculos-empresa/perfil/{id}', [VehiculoEmpresaController::class, 'updatePerfil'])->name('vehiculos-empresa.perfil.update');
+    
+        // Exportar diagnósticos individuales (lectura)
+        Route::get('/diagnosticos/{id}/export', [DiagnosticoController::class, 'export'])->name('diagnosticos.export');
+    
+        Route::get('/historial', [HistorialController::class, 'index'])->name('historial.index');
+        Route::get('/historial/reporte', [HistorialController::class, 'exportarReporte'])->name('historial.reporte');
+        Route::resource('marcas', MarcaController::class)->only(['index']);
+    
+        // Aquí irán las rutas para que la empresa vea sus certificados
+    });
+    
+    // ==========================================
+    // RUTAS DE PERFIL (Comunes a todos)
+    // ==========================================
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
+    
+    Route::get('/storage-fallback/{path}', [DiagnosticoController::class, 'serveFile'])->where('path', '.*')->name('storage.fallback');
+    
+    // ==========================================
+    // RUTA TEMPORAL PARA STORAGE (Paso 7)
+    // ==========================================
+    // Una vez que lo uses y veas que las fotos cargan, puedes borrarlo
+    Route::get('/link-storage', function () {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('storage:link');
+            return 'Enlace de almacenamiento creado con éxito en staging';
+        } catch (\Exception $e) {
+            return 'Error al crear el enlace: ' . $e->getMessage();
+        }
+    });
+    
+    require __DIR__.'/auth.php';
+    
+}); // FIN DEL GRUPO modprev

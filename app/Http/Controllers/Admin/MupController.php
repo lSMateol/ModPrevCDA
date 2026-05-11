@@ -1,0 +1,1290 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Persona;
+use App\Models\Perfil;
+use App\Models\Valor;
+use App\Models\Pagina;
+use App\Models\User;
+use App\Models\Empresa;
+use App\Models\Vehiculo;
+use App\Support\LicenciaConduccion;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+
+class MupController extends Controller
+{
+    /**
+     * Validación: licencia (catcon, nliccon, fvencon) todo null o los tres informados.
+     */
+    protected function rulesLicenciaTriada(Request $request, $mandatory = false): array
+    {
+        // Solo consideramos presente si el valor no es nulo y no es una cadena vacía
+        $licenciaPresente = ($request->filled('catcon') && $request->catcon !== '')
+            || ($request->filled('nliccon') && $request->nliccon !== '')
+            || ($request->filled('fvencon') && $request->fvencon !== '');
+
+        $rule = ($mandatory || $licenciaPresente) ? 'required' : 'nullable';
+
+        return [
+            'catcon' => [
+                $rule,
+                'string',
+                'max:5',
+                Rule::in(LicenciaConduccion::CATEGORIAS),
+            ],
+            'nliccon' => [
+                $rule,
+                'string',
+                'max:20',
+            ],
+            'fvencon' => [
+                $rule,
+                'date',
+            ],
+        ];
+    }
+
+    protected function normalizedLicencia(Request $request): array
+    {
+        if (!$request->filled('catcon') && !$request->filled('nliccon') && !$request->filled('fvencon')) {
+            return ['catcon' => null, 'nliccon' => null, 'fvencon' => null];
+        }
+
+        return [
+            'catcon' => $request->catcon,
+            'nliccon' => $request->nliccon,
+            'fvencon' => $request->fvencon,
+        ];
+    }
+
+    /**
+     * Personas conductor en todo el sistema: perfil Conductor O asignadas en vehículo (cond).
+     */
+    protected function personaIdsConductorGlobal(Perfil $perfilConductor): array
+    {
+        // Únicamente perfiles 7 (Conductor) y 8 (Propietario / Conductor)
+        return Persona::query()
+            ->whereIn('idpef', [7, 8])
+            ->pluck('idper')
+            ->toArray();
+    }
+
+    /**
+     * Personas propietario en todo el sistema: perfil Propietario O asignadas en vehículo (prop).
+     */
+    protected function personaIdsPropietarioGlobal(Perfil $perfilPropietario): array
+    {
+        // Incluimos perfil 6 (Propietario) y perfil 8 (Propietario / Conductor)
+        return Persona::query()
+            ->whereIn('idpef', [$perfilPropietario->idpef, 8])
+            ->orWhereHas('vehiculosPropios')
+            ->pluck('idper')
+            ->toArray();
+    }
+
+    /**
+     * Muestra la vista de Conductores.
+     */
+    public function conductores()
+    {
+        // PerfilSeeder: Conductor = idpef 7
+        $perfilConductor = Perfil::firstOrCreate(
+            ['nompef' => 'Conductor'],
+            ['idpef' => 7, 'pagpri' => null]
+        );
+
+        $ids = $this->personaIdsConductorGlobal($perfilConductor);
+        $conductores = $ids === []
+            ? collect()
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'tipoDocumento'])
+                ->whereIn('idper', $ids)
+                ->orderBy('idper', 'desc')
+                ->get();
+
+        // 3. Tipos de documento y categorías fijas de licencia (texto)
+        $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
+        $licenciaCategorias = LicenciaConduccion::CATEGORIAS;
+
+        return view('admin.mup.conductores', compact('conductores', 'tiposDoc', 'licenciaCategorias'));
+    }
+
+    /**
+     * Almacena un nuevo conductor en el sistema.
+     */
+    public function storeConductor(Request $request)
+    {
+        $request->validate(array_merge([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'actper' => 'required|in:0,1',
+        ], $this->rulesLicenciaTriada($request, true)), [
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 7, 'pagpri' => null]);
+            $lic = $this->normalizedLicencia($request);
+
+            // Sincronización Inteligente: Si ya existe por documento, actualizamos sus datos y licencia
+            $persona = Persona::where('ndocper', $request->ndocper)->first();
+
+            if ($persona) {
+                // Sincronización de Perfiles Operativos (Auditoría Crítica)
+                // Si es Propietario (6) y tiene licencia, le asignamos el perfil combinado (8)
+                if ($persona->idpef == 6 && !empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
+                } elseif (in_array($persona->idpef, [7]) || is_null($persona->idpef)) {
+                    $persona->idpef = $perfilConductor->idpef;
+                }
+
+                $persona->update(array_merge([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'actper' => $request->actper,
+                ], $lic));
+                
+                // Determinamos el mensaje basado en el perfil anterior
+                if ($persona->idpef == 6) {
+                    $msg = "¡Sincronización de Perfil! Se ha detectado un registro previo en el directorio de Propietarios y se ha habilitado exitosamente su rol como Conductor.";
+                } else {
+                    $msg = "Actualización Exitosa: La información del conductor ha sido sincronizada, ya que contaba con un registro previo en el sistema.";
+                }
+            } else {
+                Persona::create(array_merge([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'ndocper' => $request->ndocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'actper' => $request->actper,
+                    'idpef' => $perfilConductor->idpef,
+                    'codubi' => 1,
+                ], $lic));
+                
+                $msg = "¡Registro Exitoso! El nuevo conductor ha sido incorporado correctamente al sistema y está habilitado para la operación.";
+            }
+
+            DB::commit();
+
+            // Sincronización de Perfiles Duales (Persona + Usuario de Acceso)
+            $this->syncUserAccount($persona);
+
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('success', $msg);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error registrando conductor: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('error', $this->friendlyError($e, 'registrar el conductor'))->withInput();
+        }
+    }
+
+    /**
+     * Actualiza el registro de un conductor existente.
+     */
+    public function updateConductor(Request $request, $id)
+    {
+        $persona = Persona::findOrFail($id);
+
+        $perfilConductor = Perfil::firstOrCreate(['nompef' => 'Conductor'], ['idpef' => 7, 'pagpri' => null]);
+        if (! in_array((int) $id, array_map('intval', $this->personaIdsConductorGlobal($perfilConductor)), true)) {
+            abort(404);
+        }
+
+        $request->validate(array_merge([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'actper' => 'required|in:0,1',
+        ], $this->rulesLicenciaTriada($request, true)), [
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $lic = $this->normalizedLicencia($request);
+ 
+            // Sincronización de Perfiles Operativos
+            if ($persona->idpef > 4 || is_null($persona->idpef)) {
+                if ($persona->idpef == 6 && !empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
+                } elseif (in_array($persona->idpef, [7]) || is_null($persona->idpef)) {
+                    $persona->idpef = $perfilConductor->idpef;
+                }
+            }
+
+            $persona->update(array_merge([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'actper' => $request->actper,
+            ], $lic));
+
+            DB::commit();
+
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('success', '¡Actualización Completada! Los datos del conductor han sido validados y guardados satisfactoriamente en el registro maestro.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando conductor: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('error', $this->friendlyError($e, 'actualizar el conductor'));
+        }
+    }
+
+    /**
+     * Elimina un conductor del sistema (Baja física con validación de integridad).
+     */
+    public function destroyConductor($id)
+    {
+        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $routeName = "{$rolePrefix}.mup.conductores.index";
+
+        try {
+            DB::beginTransaction();
+            $persona = Persona::findOrFail($id);
+
+            $diagCount = DB::table('diag')->where('idper', $id)->orWhere('idinsp', $id)->orWhere('iding', $id)->count();
+            $histCount = DB::table('historial')->where('idper', $id)->count();
+
+            if ($diagCount > 0 || $histCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este conductor tiene diagnósticos legales o historial de auditoría que debe preservarse por ley.");
+            }
+
+            $vVinculadosCount = Vehiculo::where('cond', $id)->orWhere('prop', $id)->count();
+            if ($vVinculadosCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este perfil porque se encuentra vinculado a {$vVinculadosCount} vehículo(s). Por favor, desvincule o reasigne los activos antes de proceder.");
+            }
+
+            DB::table('diapar')->where('idper', $id)->delete();
+            DB::table('documento')->where('idper', $id)->delete();
+            DB::table('proveh')->where('idper', $id)->delete();
+            DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->delete();
+
+            User::where('idper', $id)->delete();
+            $persona->delete();
+
+            DB::commit();
+            return redirect()->route($routeName)->with('success', "¡Proceso de Baja Completado! El registro del conductor ha sido removido satisfactoriamente del sistema.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error crítico eliminando conductor: " . $e->getMessage());
+            
+            if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existen procesos operativos (fotos o diagnósticos legales) vinculados a esta persona.");
+            }
+
+            return redirect()->route($routeName)->with('error', "No se pudo eliminar el perfil debido a vínculos operativos detectados.");
+        }
+    }
+
+    /**
+     * Muestra la vista para la creación de un nuevo perfil de sistema (Roles).
+     */
+    public function nuevoPerfil()
+    {
+        $modulos = Pagina::orderBy('ordpag')->get();
+        return view('admin.mup.nuevo-perfil', compact('modulos'));
+    }
+
+    /**
+     * Almacena un nuevo perfil de sistema y sus permisos asociados.
+     */
+    public function storePerfil(Request $request)
+    {
+        $request->validate([
+            'nompef' => 'required|string|max:255|unique:perfil,nompef',
+            'tipo_pef' => 'required|string|max:50',
+            'des_pef' => 'nullable|string',
+            'permisos' => 'nullable|array',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $perfil = Perfil::create([
+                'nompef' => $request->nompef,
+                'tipo_pef' => $request->tipo_pef,
+                'des_pef' => $request->des_pef,
+                'pagpri' => null,
+            ]);
+
+            $role = Role::firstOrCreate(['name' => $request->nompef]);
+
+            if ($request->has('permisos')) {
+                foreach ($request->permisos as $nompag => $actions) {
+                    $pagina = Pagina::where('nompag', $nompag)->first();
+                    if (!$pagina) continue;
+
+                    $baseRoute = $this->mapPaginaToRoute($nompag);
+                    if (!$baseRoute) continue;
+
+                    foreach ($actions as $action => $status) {
+                        if ($status === 'on') {
+                            $routeNames = $this->getRouteNamesForAction($baseRoute, $action);
+                            
+                            foreach ($routeNames as $rn) {
+                                $permission = Permission::firstOrCreate(['name' => $rn]);
+                                $role->givePermissionTo($permission);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ($request->has('permisos')) {
+                $paginasIds = Pagina::whereIn('nompag', array_keys($request->permisos))->pluck('idpag');
+                $perfil->paginas()->sync($paginasIds);
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.mup.conductores')->with('success', 'Perfil creado exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error creando perfil: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', 'Ocurrió un error al crear el perfil: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Actualiza un perfil existente y sus permisos de acceso.
+     */
+    public function updatePerfil(Request $request, $id)
+    {
+        $perfil = Perfil::findOrFail($id);
+        
+        $request->validate([
+            'nompef' => 'required|string|max:255|unique:perfil,nompef,' . $id . ',idpef',
+            'des_pef' => 'nullable|string',
+            'permisos' => 'nullable|array',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $perfil->update([
+                'nompef' => $request->nompef,
+                'des_pef' => $request->des_pef,
+            ]);
+
+            $role = Role::firstOrCreate(['name' => $request->nompef]);
+            
+            if ($role->name !== $request->nompef) {
+                $role->update(['name' => $request->nompef]);
+            }
+
+            $role->syncPermissions([]);
+
+            if ($request->has('permisos')) {
+                foreach ($request->permisos as $nompag => $actions) {
+                    $baseRoute = $this->mapPaginaToRoute($nompag);
+                    if (!$baseRoute) continue;
+
+                    foreach ($actions as $action => $status) {
+                        if ($status === 'on') {
+                            $routeNames = $this->getRouteNamesForAction($baseRoute, $action);
+                            foreach ($routeNames as $rn) {
+                                $permission = Permission::firstOrCreate(['name' => $rn]);
+                                $role->givePermissionTo($permission);
+                            }
+                        }
+                    }
+                }
+
+                $paginasIds = Pagina::whereIn('nompag', array_keys($request->permisos))->pluck('idpag');
+                $perfil->paginas()->sync($paginasIds);
+            } else {
+                $perfil->paginas()->detach();
+            }
+
+            DB::commit();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', 'Perfil "' . $perfil->nompef . '" actualizado correctamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando perfil: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', 'No se pudo actualizar el perfil: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Muestra el panel principal de Gestión de Usuarios (MUP).
+     */
+    public function usuarios()
+    {
+        $usuarios = User::with('persona.perfil', 'persona.tipoDocumento', 'empresa.perfil')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $perfilesRaw = Perfil::withCount('personas')
+            ->with(['paginas'])
+            ->orderBy('idpef')
+            ->get();
+
+        $perfiles = $perfilesRaw->map(function($p) {
+            $role = \Spatie\Permission\Models\Role::where('name', $p->nompef)->first();
+            $p->permission_names = $role ? $role->permissions->pluck('name')->toArray() : [];
+            return $p;
+        });
+
+        $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
+        $empresas = Empresa::orderBy('razsoem')->get();
+
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
+    }
+
+    /**
+     * Registra un nuevo Usuario y Persona de forma sincronizada.
+     */
+    public function storeUsuario(Request $request)
+    {
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required',
+            'ndocper' => 'required|numeric|unique:persona,ndocper',
+            'emaper' => 'required|email|unique:persona,emaper',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'username' => 'required|string|unique:users,username',
+            'password' => 'required|string|min:6|confirmed',
+            'idpef' => [
+                'required',
+                'exists:perfil,idpef',
+                function ($attribute, $value, $fail) {
+                    $perfil = Perfil::find($value);
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa'])) {
+                        $fail('El perfil seleccionado no es válido para este módulo.');
+                    }
+                }
+            ],
+        ], [
+            'ndocper.unique' => 'Ya existe un usuario con este número de documento.',
+            'emaper.unique' => 'Ya existe un usuario con este correo electrónico.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $persona = Persona::create([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'idpef' => $request->idpef,
+                'idemp' => $request->idemp,
+                'codubi' => 1,
+                'actper' => 1,
+            ]);
+
+            $user = User::create([
+                'name' => $request->nombre_completo,
+                'username' => $request->username,
+                'email' => $request->emaper,
+                'password' => Hash::make($request->password),
+                'idper' => $persona->idper,
+                'idemp' => $request->idemp,
+            ]);
+
+            $perfil = Perfil::find($request->idpef);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->assignRole($perfil->nompef);
+            }
+
+            DB::commit();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', '¡Usuario creado con éxito! Las credenciales de acceso y el perfil operativo han sido configurados correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error registrando usuario: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', $this->friendlyError($e, 'registrar el usuario'))->withInput();
+        }
+    }
+
+    /**
+     * Muestra la vista de Propietarios.
+     */
+    public function propietarios()
+    {
+        $perfil = Perfil::firstOrCreate(
+            ['nompef' => 'Propietario'],
+            ['idpef' => 6, 'pagpri' => null]
+        );
+
+        $ids = $this->personaIdsPropietarioGlobal($perfil);
+        $propietarios = $ids === []
+            ? collect()
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'tipoDocumento'])
+                ->whereIn('idper', $ids)
+                ->orderBy('idper', 'desc')
+                ->get();
+
+        $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
+        $licenciaCategorias = LicenciaConduccion::CATEGORIAS;
+
+        return view('admin.mup.propietarios', compact('propietarios', 'tiposDoc', 'licenciaCategorias'));
+    }
+
+    /**
+     * Registra un nuevo propietario en el sistema.
+     */
+    public function storePropietario(Request $request)
+    {
+        $request->validate(array_merge([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'actper' => 'required|in:0,1',
+            'dirper' => 'nullable|string|max:150',
+            'ciuper' => 'nullable|string|max:50',
+        ], $this->rulesLicenciaTriada($request)), [
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
+            $lic = $this->normalizedLicencia($request);
+            $persona = Persona::where('ndocper', $request->ndocper)->first();
+
+            if ($persona) {
+                if ($persona->idpef > 4) {
+                    if (!empty($lic['nliccon'])) {
+                        $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                        $persona->idpef = $perfilAmbos->idpef;
+                    } elseif (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
+                        $persona->idpef = $perfilPropietario->idpef;
+                    }
+                }
+
+                $persona->update(array_merge([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'dirper' => $request->dirper,
+                    'ciuper' => $request->ciuper,
+                    'actper' => $request->actper,
+                ], $lic));
+                
+                if ($persona->idpef == 7) {
+                    $msg = "¡Sincronización de Perfil! Se ha detectado un registro previo en el directorio de Conductores y se ha habilitado exitosamente su rol como Propietario.";
+                } else {
+                    $msg = "Actualización Exitosa: La información del propietario ha sido sincronizada, ya que contaba con un registro previo en el sistema.";
+                }
+            } else {
+                $persona = Persona::create(array_merge([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'ndocper' => $request->ndocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'dirper' => $request->dirper,
+                    'ciuper' => $request->ciuper,
+                    'actper' => $request->actper,
+                    'idpef' => !empty($lic['nliccon']) 
+                        ? Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8])->idpef 
+                        : $perfilPropietario->idpef,
+                    'codubi' => 1,
+                ], $lic));
+                
+                $msg = "¡Registro Exitoso! El nuevo propietario ha sido incorporado correctamente al sistema y está listo para la vinculación de activos.";
+            }
+
+            DB::commit();
+
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('success', $msg);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error registrando propietario: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('error', $this->friendlyError($e, 'registrar el propietario'))->withInput();
+        }
+    }
+
+    /**
+     * Actualiza los datos de un propietario existente.
+     */
+    public function updatePropietario(Request $request, $id)
+    {
+        $persona = Persona::findOrFail($id);
+
+        $request->validate(array_merge([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required|exists:valor,idval',
+            'ndocper' => 'required|numeric|unique:persona,ndocper,' . $id . ',idper',
+            'emaper' => 'required|email|max:60',
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'actper' => 'required|in:0,1',
+            'dirper' => 'nullable|string|max:150',
+            'ciuper' => 'nullable|string|max:50',
+        ], $this->rulesLicenciaTriada($request)), [
+            'catcon.in' => 'Seleccione una categoría de licencia válida (A1–C3).',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
+            if (! in_array((int) $id, array_map('intval', $this->personaIdsPropietarioGlobal($perfilPropietario)), true)) {
+                abort(404);
+            }
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            $lic = $this->normalizedLicencia($request);
+
+            if ($persona->idpef > 4) {
+                if (!empty($lic['nliccon'])) {
+                    $perfilAmbos = Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8]);
+                    $persona->idpef = $perfilAmbos->idpef;
+                } elseif (in_array($persona->idpef, [6, 7]) || is_null($persona->idpef)) {
+                    $persona->idpef = $perfilPropietario->idpef;
+                }
+            }
+
+            $persona->update(array_merge([
+                'nomper' => $nomper,
+                'apeper' => $apeper,
+                'tdocper' => $request->tdocper,
+                'ndocper' => $request->ndocper,
+                'emaper' => $request->emaper,
+                'telper' => $request->telper ?? '',
+                'actper' => $request->actper,
+                'dirper' => $request->dirper,
+                'ciuper' => $request->ciuper,
+            ], $lic));
+
+            DB::commit();
+
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('success', '¡Actualización Completada! Los datos del propietario han sido validados y guardados exitosamente en el registro maestro.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando propietario: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('error', $this->friendlyError($e, 'actualizar el propietario'))->withInput();
+        }
+    }
+
+    /**
+     * Elimina el registro de un propietario (Baja física controlada).
+     */
+    public function destroyPropietario($id)
+    {
+        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $routeName = "{$rolePrefix}.mup.propietarios.index";
+
+        try {
+            DB::beginTransaction();
+            $persona = Persona::findOrFail($id);
+
+            // Verificación de perfil (Seguridad)
+            $perfilPropietario = Perfil::firstOrCreate(['nompef' => 'Propietario'], ['idpef' => 6, 'pagpri' => null]);
+            if (! in_array((int) $id, array_map('intval', $this->personaIdsPropietarioGlobal($perfilPropietario)), true)) {
+                abort(404);
+            }
+
+            // 1. Bloqueo por Propiedad (CRÍTICO)
+            // Según requerimiento: Propietarios -> lógica estricta (no pueden eliminarse si tienen propiedad)
+            $vPropiosCount = Vehiculo::where('prop', $id)->count();
+            if ($vPropiosCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este perfil porque figura como propietario de {$vPropiosCount} vehículo(s). Para proceder, primero debe realizar el traspaso o desvinculación de estos activos.");
+            }
+
+            // 2. Bloqueo por Trazabilidad Legal (Diagnósticos e Historial)
+            // No se permite eliminación si existen registros legales que deben preservarse
+            $diagCount = DB::table('diag')->where('idper', $id)->orWhere('idinsp', $id)->orWhere('iding', $id)->count();
+            $histCount = DB::table('historial')->where('idper', $id)->count();
+
+            if ($diagCount > 0 || $histCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Este perfil cuenta con registros legales que deben preservarse.");
+            }
+
+            // 3. Flexibilidad Controlada (Limpieza Automática de registros secundarios)
+            // Se eliminan automáticamente documentos, rechazos y relaciones operativas
+            DB::table('diapar')->where('idper', $id)->delete();
+            DB::table('documento')->where('idper', $id)->delete();
+            DB::table('proveh')->where('idper', $id)->delete();
+            DB::table('rechazo')->where('idper_ant', $id)->orWhere('idper_nvo', $id)->delete();
+
+            // Desvincular como conductor si aplica (Safe)
+            Vehiculo::where('cond', $id)->update(['cond' => null]);
+
+            // 4. Eliminación de cuenta y perfil (Atómico)
+            User::where('idper', $id)->delete();
+            $persona->delete();
+
+            DB::commit();
+            return redirect()->route($routeName)->with('success', "¡Eliminación Confirmada! El registro del propietario y sus datos asociados han sido removidos del sistema de forma permanente.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error crítico eliminando propietario: " . $e->getMessage());
+
+            if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existen procesos operativos vinculados a esta persona que impiden el borrado.");
+            }
+
+            return redirect()->route($routeName)->with('error', "No se pudo procesar la eliminación debido a vínculos operativos detectados.");
+        }
+    }
+ 
+
+    /**
+     * Muestra la vista de gestión de Empresas.
+     */
+    public function empresas()
+    {
+        // 1. Asegurar perfil 'Empresa' respetando estructura actual
+        $perfil = Perfil::firstOrCreate(
+            ['nompef' => 'Empresa'],
+            ['pagpri' => null]
+        );
+        
+        // 2. Obtener listado real desde BD
+        $empresas = Empresa::with(['perfil', 'vehiculos'])->orderBy('idemp', 'desc')->get();
+
+        return view('admin.mup.empresas', compact('empresas'));
+    }
+
+    /**
+     * Registra una nueva Empresa y su Usuario de Acceso vinculado.
+     */
+    public function storeEmpresa(Request $request)
+    {
+        $request->validate([
+            'razsoem' => 'required|string|max:100',
+            'nonitem' => 'required|numeric|unique:empresa,nonitem',
+            'abremp' => 'nullable|string|max:10',
+            'direm' => 'required|string|max:100',
+            'ciudeem' => 'nullable|string|max:50',
+            'nomger' => 'required|string|max:100',
+            'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
+            'emaem' => 'required|email|max:60',
+            'username' => 'required|string|unique:users,username',
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'nonitem.unique' => 'El NIT de esta empresa ya se encuentra registrado.',
+            'username.unique' => 'El nombre de usuario ya está asignado a otra entidad o usuario.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'telem.max' => 'El teléfono no puede superar los 20 caracteres.',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $perfilEmpresa = Perfil::firstOrCreate(['nompef' => 'Empresa'], ['pagpri' => null]);
+
+            // 1. Crear Empresa
+            $empresa = Empresa::create([
+                'razsoem' => $request->razsoem,
+                'nonitem' => $request->nonitem,
+                'abremp' => $request->abremp,
+                'direm' => $request->direm,
+                'ciudeem' => $request->ciudeem,
+                'telem' => $request->telem,
+                'emaem' => $request->emaem,
+                'nomger' => $request->nomger,
+                'idpef' => $perfilEmpresa->idpef,
+                'codubi' => 1,
+                'usuaemp' => $request->username,
+                'passemp' => Hash::make($request->password), 
+            ]);
+
+            // 2. Crear User vinculado
+            $user = User::create([
+                'name' => $request->razsoem,
+                'username' => $request->username,
+                'email' => $request->emaem,
+                'password' => Hash::make($request->password),
+                'idemp' => $empresa->idemp,
+            ]);
+
+            // 3. Asignar rol
+            Role::firstOrCreate(['name' => $perfilEmpresa->nompef]);
+            $user->assignRole($perfilEmpresa->nompef);
+
+            DB::commit();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('success', '¡Registro Corporativo Exitoso! La empresa y su cuenta de acceso han sido incorporadas correctamente al sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error registrando empresa: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('error', $this->friendlyError($e, 'registrar la empresa'))->withInput();
+        }
+    }
+
+    /**
+     * Actualiza los datos de una Empresa existente.
+     */
+    public function updateEmpresa(Request $request, $id)
+    {
+        $empresa = Empresa::findOrFail($id);
+
+        $request->validate([
+            'razsoem' => 'required|string|max:100',
+            'nonitem' => 'required|numeric|unique:empresa,nonitem,' . $id . ',idemp',
+            'abremp' => 'nullable|string|max:10',
+            'direm' => 'required|string|max:100',
+            'ciudeem' => 'nullable|string|max:50',
+            'nomger' => 'required|string|max:100',
+            'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
+            'emaem' => 'required|email|max:60',
+            'username' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $empresa->update([
+                'razsoem' => $request->razsoem,
+                'nonitem' => $request->nonitem,
+                'abremp' => $request->abremp,
+                'direm' => $request->direm,
+                'ciudeem' => $request->ciudeem,
+                'telem' => $request->telem,
+                'emaem' => $request->emaem,
+                'nomger' => $request->nomger,
+            ]);
+
+            // Sync empresa + usuario de acceso asociado
+            $linkedUser = User::where('idemp', $id)->first();
+            if ($linkedUser) {
+                if ($request->filled('username')) {
+                    $request->validate([
+                        'username' => 'unique:users,username,' . $linkedUser->id,
+                    ]);
+                }
+
+                $userData = [
+                    'name' => $request->razsoem,
+                    'email' => $request->emaem,
+                ];
+
+                if ($request->filled('username')) {
+                    $userData['username'] = $request->username;
+                    $empresa->usuaemp = $request->username;
+                }
+
+                if ($request->filled('password')) {
+                    $userData['password'] = Hash::make($request->password);
+                    $empresa->passemp = Hash::make($request->password);
+                }
+
+                $linkedUser->update($userData);
+                $empresa->save();
+            } elseif ($request->filled('username') && $request->filled('password')) {
+                $request->validate([
+                    'username' => 'unique:users,username',
+                ]);
+
+                $newUser = User::create([
+                    'name' => $request->razsoem,
+                    'username' => $request->username,
+                    'email' => $request->emaem,
+                    'password' => Hash::make($request->password),
+                    'idemp' => $empresa->idemp,
+                ]);
+
+                $perfilNombre = optional($empresa->perfil)->nompef ?? 'Empresa';
+                Role::firstOrCreate(['name' => $perfilNombre]);
+                $newUser->assignRole($perfilNombre);
+
+                $empresa->usuaemp = $request->username;
+                $empresa->passemp = Hash::make($request->password);
+                $empresa->save();
+            }
+
+            DB::commit();
+            DB::commit();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('success', '¡Actualización Corporativa Completada! Los datos de la entidad y sus credenciales han sido sincronizados satisfactoriamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando empresa: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('error', $this->friendlyError($e, 'actualizar la empresa'));
+        }
+    }
+
+    /**
+     * Elimina una Empresa del sistema (Baja física con validación de activos).
+     */
+    public function destroyEmpresa($id)
+    {
+        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $routeName = "{$rolePrefix}.mup.empresas.index";
+
+        try {
+            DB::beginTransaction();
+            $empresa = Empresa::findOrFail($id);
+            
+            // 1. Bloqueo por Vehículos Vinculados
+            $vCount = Vehiculo::where('idemp', $id)->count();
+            if ($vCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar esta empresa porque se encuentra vinculada a {$vCount} vehículo(s). Por favor, desvincule o reasigne la flota antes de proceder.");
+            }
+
+            // 2. Bloqueo por Personal Vinculado
+            $pCount = Persona::where('idemp', $id)->count();
+            if ($pCount > 0) {
+                DB::rollBack();
+                return redirect()->route($routeName)->with('error', "Restricción de Seguridad: La empresa tiene {$pCount} integrante(s) de personal vinculados. Mueva el personal a otra entidad primero.");
+            }
+
+            // 3. Limpiar usuarios de acceso y borrar empresa
+            User::where('idemp', $id)->delete();
+            $empresa->delete();
+
+            DB::commit();
+            return redirect()->route($routeName)->with('success', '¡Proceso de Baja Completado! La empresa y sus cuentas asociadas han sido removidas satisfactoriamente del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error crítico eliminando empresa: " . $e->getMessage());
+            
+            if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                return redirect()->route($routeName)->with('error', "No se puede eliminar la empresa: Existen registros históricos, documentos o vehículos que dependen de esta entidad.");
+            }
+
+            return redirect()->route($routeName)->with('error', "No se pudo eliminar la empresa debido a vínculos operativos detectados.");
+        }
+    }
+
+    /**
+     * Actualiza un registro sincronizado de Usuario y Persona/Empresa.
+     */
+    public function updateUsuario(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Determinar qué entidad actualizar
+        $idper = $user->idper;
+        $idemp = $user->idemp;
+        
+        // Reglas dinámicas de unicidad
+        if ($idper) {
+            $docUnique = 'unique:persona,ndocper,' . $idper . ',idper';
+            $emaUnique = 'unique:persona,emaper,' . $idper . ',idper';
+        } elseif ($idemp) {
+            $docUnique = 'unique:empresa,nonitem,' . $idemp . ',idemp';
+            $emaUnique = 'unique:empresa,emaem,' . $idemp . ',idemp';
+        } else {
+            $docUnique = 'unique:persona,ndocper';
+            $emaUnique = 'unique:persona,emaper';
+        }
+
+        $request->validate([
+            'nombre_completo' => 'required|string|max:100',
+            'tdocper' => 'required',
+            'ndocper' => ['required', 'numeric', $docUnique],
+            'emaper' => ['required', 'email', $emaUnique],
+            'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'username' => 'required|string|unique:users,username,' . $user->id,
+            'password' => 'nullable|string|min:6|confirmed',
+            'idpef' => [
+                'required',
+                'exists:perfil,idpef',
+                function ($attribute, $value, $fail) {
+                    $perfil = Perfil::find($value);
+                    if ($perfil && !in_array($perfil->nompef, ['Administrador', 'Digitador', 'Inspector', 'Ingeniero', 'Empresa'])) {
+                        $fail('El perfil seleccionado no es válido para este módulo.');
+                    }
+                }
+            ],
+            'actper' => 'required|in:0,1',
+        ], [
+            'ndocper.unique' => 'Este número de documento ya está asignado a otra persona.',
+            'emaper.unique' => 'Este correo electrónico ya se encuentra registrado para otro usuario.',
+            'emaper.email' => 'El formato del correo electrónico no es válido.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.confirmed' => 'Las contraseñas de confirmación no coinciden.',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $parts = explode(' ', $request->nombre_completo, 2);
+            $nomper = $parts[0];
+            $apeper = $parts[1] ?? '';
+
+            // 1. Actualizar Entidad Vinculada (Persona o Empresa)
+            if ($user->persona) {
+                $user->persona->update([
+                    'nomper' => $nomper,
+                    'apeper' => $apeper,
+                    'tdocper' => $request->tdocper,
+                    'ndocper' => $request->ndocper,
+                    'emaper' => $request->emaper,
+                    'telper' => $request->telper ?? '',
+                    'idpef' => $request->idpef,
+                    'idemp' => $request->idemp,
+                    'actper' => $request->actper,
+                ]);
+            } elseif ($user->empresa) {
+                $user->empresa->update([
+                    'razsoem' => $request->nombre_completo,
+                    'nonitem' => $request->ndocper,
+                    'emaem' => $request->emaper,
+                    'telem' => $request->telper ?? '',
+                    'idpef' => $request->idpef,
+                ]);
+            } else {
+                // Si por alguna razón no tiene ninguna, lanzamos error controlado
+                throw new \RuntimeException('El usuario no tiene un registro de persona o empresa vinculado.');
+            }
+
+            // 2. Actualizar User
+            $userData = [
+                'name' => $request->nombre_completo,
+                'username' => $request->username,
+                'email' => $request->emaper,
+                'idemp' => $request->idemp,
+            ];
+            if ($request->filled('password')) {
+                $userData['password'] = Hash::make($request->password);
+            }
+            $user->update($userData);
+
+            // 3. Sincronizar Rol (Spatie)
+            $perfil = Perfil::find($request->idpef);
+            if ($perfil) {
+                Role::firstOrCreate(['name' => $perfil->nompef]);
+                $user->syncRoles([$perfil->nompef]);
+            }
+
+            DB::commit();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', '¡Actualización de Usuario Completada! El perfil y los permisos de acceso han sido sincronizados satisfactoriamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error actualizando usuario: " . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', $this->friendlyError($e, 'actualizar el usuario'));
+        }
+    }
+
+    /**
+     * Elimina físicamente un Usuario y su Persona asociada (Baja de sistema).
+     */
+    public function destroyUsuario($id)
+    {
+        $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+        $routeName = "{$rolePrefix}.mup.usuarios.index";
+
+        try {
+            DB::beginTransaction();
+            $user = User::findOrFail($id);
+            $idper = $user->idper;
+
+            if ($idper) {
+                // 1. Bloqueo por Trazabilidad Legal CRÍTICA
+                $diagCount = DB::table('diag')->where('idper', $idper)->orWhere('idinsp', $idper)->orWhere('iding', $idper)->count();
+                $histCount = DB::table('historial')->where('idper', $idper)->count();
+
+                if ($diagCount > 0 || $histCount > 0) {
+                    DB::rollBack();
+                    return redirect()->route($routeName)->with('error', "Restricción de Seguridad: No es posible eliminar este usuario porque tiene diagnósticos legales o historial de auditoría registrado. Se recomienda inactivar la cuenta en lugar de eliminarla.");
+                }
+
+                // 2. Desvincular vehículos automáticamente (Propiedad y Conducción)
+                Vehiculo::where('prop', $idper)->update(['prop' => null]);
+                Vehiculo::where('cond', $idper)->update(['cond' => null]);
+
+                // 3. Limpieza de perfiles y cuenta
+                DB::table('proveh')->where('idper', $idper)->delete();
+                DB::table('documento')->where('idper', $idper)->delete();
+                DB::table('rechazo')->where('idper_ant', $idper)->orWhere('idper_nvo', $idper)->delete();
+                DB::table('diapar')->where('idper', $idper)->delete();
+            }
+
+            // Eliminar User y luego Persona
+            $user->delete();
+            if ($idper) {
+                Persona::where('idper', $idper)->delete();
+            }
+
+            DB::commit();
+            return redirect()->route($routeName)->with('success', '¡Proceso de Baja Completado! El usuario y sus perfiles asociados han sido removidos satisfactoriamente del sistema.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error eliminando usuario: " . $e->getMessage());
+            return redirect()->route($routeName)->with('error', "No se pudo eliminar el usuario debido a vínculos operativos detectados.");
+        }
+    }
+
+
+    /**
+     * Mapea el nombre de la página (Módulo) al nombre base de la ruta en web.php
+     */
+    private function mapPaginaToRoute($nompag)
+    {
+        $map = [
+            'Dashboard'      => 'admin.dashboard',
+            'Diagnóstico'    => 'admin.diagnosticos',
+            'Vehículos'      => 'admin.vehiculos',
+            'Alertas'        => 'admin.alertas',
+            'Mantenimiento'  => 'admin.dashboard', // Fallback si no hay ruta dedicada
+            'Empresas'       => 'admin.mup.empresas',
+            'Usuarios'       => 'admin.mup.usuarios',
+            'Conductores'    => 'admin.mup.conductores',
+            'Propietarios'   => 'admin.mup.propietarios',
+            'Rechazados'     => 'admin.rechazados',
+        ];
+
+        return $map[$nompag] ?? null;
+    }
+
+    /**
+     * Retorna los nombres de rutas específicos para una acción CRUD
+     */
+    private function getRouteNamesForAction($baseRoute, $action)
+    {
+        switch ($action) {
+            case 'ver':
+                if (in_array($baseRoute, ['admin.dashboard', 'admin.alertas', 'admin.rechazados'])) {
+                    return [$baseRoute];
+                }
+                return [$baseRoute . '.index', $baseRoute . '.show'];
+            
+            case 'crear':
+                return [$baseRoute . '.create', $baseRoute . '.store'];
+            
+            case 'editar':
+                return [$baseRoute . '.edit', $baseRoute . '.update'];
+            
+            case 'eliminar':
+                return [$baseRoute . '.destroy'];
+            
+            default:
+                return [];
+        }
+    }
+
+    /**
+     * Traduce excepciones de base de datos a mensajes amigables para el usuario.
+     */
+    private function friendlyError(\Exception $e, string $accion): string
+    {
+        $msg = $e->getMessage();
+
+        // Duplicación de registro (email, NIT, documento, username)
+        if (str_contains($msg, 'Duplicate entry')) {
+            if (str_contains($msg, 'email_unique') || str_contains($msg, 'emaper')) {
+                return 'No se pudo ' . $accion . ': el correo electrónico ya está registrado en el sistema.';
+            }
+            if (str_contains($msg, 'username')) {
+                return 'No se pudo ' . $accion . ': el nombre de usuario ya está en uso.';
+            }
+            if (str_contains($msg, 'ndocper') || str_contains($msg, 'documento')) {
+                return 'No se pudo ' . $accion . ': el número de documento ya está registrado.';
+            }
+            if (str_contains($msg, 'nonitem') || str_contains($msg, 'nit')) {
+                return 'No se pudo ' . $accion . ': el NIT ya se encuentra registrado.';
+            }
+            return 'No se pudo ' . $accion . ': ya existe un registro con datos duplicados. Verifica correo, documento o usuario.';
+        }
+
+        // Dato demasiado largo para la columna
+        if (str_contains($msg, 'Data too long')) {
+            if (str_contains($msg, 'telem')) {
+                return 'No se pudo ' . $accion . ': el número de teléfono es demasiado largo. Máximo 20 caracteres.';
+            }
+            return 'No se pudo ' . $accion . ': uno de los campos ingresados excede la longitud máxima permitida. Revisa los datos e intenta nuevamente.';
+        }
+
+        // Columna ausente en BD (p. ej. ciuper no migrada)
+        if (str_contains($msg, 'Unknown column') && str_contains($msg, 'ciuper')) {
+            return 'No se pudo ' . $accion . ': la base de datos no tiene la columna de ciudad (ciuper). Ejecute en el servidor: php artisan migrate';
+        }
+
+        if (str_contains($msg, 'Unknown column')) {
+            // Intentar extraer el nombre de la columna para mayor claridad
+            preg_match("/Unknown column '([^']+)'/", $msg, $matches);
+            $col = isset($matches[1]) ? " ({$matches[1]})" : "";
+            return "No se pudo {$accion}: la estructura de la base de datos no coincide con la aplicación. Falta la columna{$col}. Ejecute php artisan migrate y vuelva a intentar.";
+        }
+
+        // Restricción de clave foránea
+        if (str_contains($msg, 'foreign key constraint') || str_contains($msg, 'Cannot add or update a child row')) {
+            return 'No se pudo ' . $accion . ': verifique que el tipo de documento exista y que el código de ubicación (ciudad) sea válido en el sistema.';
+        }
+
+        // Error de conexión
+        if (str_contains($msg, 'Connection refused') || str_contains($msg, 'SQLSTATE[HY000]')) {
+            return 'Error de conexión con la base de datos. Por favor, intenta nuevamente en unos minutos.';
+        }
+
+        // Error genérico
+        return 'Ocurrió un error inesperado al ' . $accion . '. Por favor, contacta al administrador del sistema.';
+    }
+}

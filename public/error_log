@@ -1,0 +1,151 @@
+[08-May-2026 17:02:14 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[08-May-2026 17:03:26 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[08-May-2026 17:06:14 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[08-May-2026 17:06:28 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[08-May-2026 17:10:58 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[08-May-2026 12:46:41 America/Bogota] PHP Fatal error:  Cannot use Illuminate\Support\Facades\URL as URL because the name is already in use in /home/cdarastr/public_html/staging/modprev/app/Providers/AppServiceProvider.php on line 15
+[08-May-2026 12:46:46 America/Bogota] PHP Fatal error:  Cannot use Illuminate\Support\Facades\URL as URL because the name is already in use in /home/cdarastr/public_html/staging/modprev/app/Providers/AppServiceProvider.php on line 15
+[08-May-2026 12:47:13 America/Bogota] PHP Fatal error:  Cannot use Illuminate\Support\Facades\URL as URL because the name is already in use in /home/cdarastr/public_html/staging/modprev/app/Providers/AppServiceProvider.php on line 15
+[08-May-2026 12:49:27 America/Bogota] PHP Fatal error:  Cannot use Illuminate\Support\Facades\URL as URL because the name is already in use in /home/cdarastr/public_html/staging/modprev/app/Providers/AppServiceProvider.php on line 15
+[09-May-2026 15:46:47 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:47:01 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:47:01 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:56:38 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:56:41 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:56:53 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[09-May-2026 15:57:56 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[10-May-2026 20:36:02 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[10-May-2026 21:02:40 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[10-May-2026 21:02:42 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[10-May-2026 21:02:42 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[10-May-2026 21:02:42 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[11-May-2026 03:03:15 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[11-May-2026 03:05:10 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[11-May-2026 03:05:12 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
+[11-May-2026 03:05:18 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.1.34. in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/cdarastr/public_html/staging/modprev/vendor/composer/autoload_real.php(25): require()
+#1 /home/cdarastr/public_html/staging/modprev/vendor/autoload.php(22): ComposerAutoloaderInitc57754c93ae34ac3b9b716a0fd2f2149::getLoader()
+#2 /home/cdarastr/public_html/staging/modprev/public/index.php(14): require('/home/cdarastr/...')
+#3 {main}
+  thrown in /home/cdarastr/public_html/staging/modprev/vendor/composer/platform_check.php on line 22
