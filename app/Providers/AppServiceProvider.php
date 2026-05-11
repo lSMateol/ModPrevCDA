@@ -33,6 +33,13 @@ class AppServiceProvider extends ServiceProvider
             if (str_contains(config('app.url'), 'https://')) {
                 URL::forceScheme('https');
             }
+
+            // Truco maestro: Corregir el SCRIPT_NAME para que Laravel entienda el subdirectorio
+            // sin necesidad de usar Route::prefix('modprev')
+            $path = parse_url(config('app.url'), PHP_URL_PATH);
+            if ($path) {
+                $this->app['request']->server->set('SCRIPT_NAME', rtrim($path, '/') . '/index.php');
+            }
         }
 
         Vehiculo::observe(VehiculoObserver::class);
