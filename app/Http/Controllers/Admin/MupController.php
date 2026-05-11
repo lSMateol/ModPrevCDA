@@ -192,11 +192,13 @@ class MupController extends Controller
             // Sincronización de Perfiles Duales (Persona + Usuario de Acceso)
             $this->syncUserAccount($persona);
 
-            return redirect()->back()->with('success', $msg);
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el conductor'))->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('error', $this->friendlyError($e, 'registrar el conductor'))->withInput();
         }
     }
 
@@ -254,11 +256,13 @@ class MupController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', '¡Actualización Completada! Los datos del conductor han sido validados y guardados satisfactoriamente en el registro maestro.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('success', '¡Actualización Completada! Los datos del conductor han sido validados y guardados satisfactoriamente en el registro maestro.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando conductor: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el conductor'));
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.conductores.index")->with('error', $this->friendlyError($e, 'actualizar el conductor'));
         }
     }
 
@@ -303,10 +307,10 @@ class MupController extends Controller
             Log::error("Error crítico eliminando conductor: " . $e->getMessage());
             
             if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
-                return redirect()->back()->with('error', "No se puede eliminar: Existen procesos operativos (fotos o diagnósticos legales) vinculados a esta persona.");
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existen procesos operativos (fotos o diagnósticos legales) vinculados a esta persona.");
             }
 
-            return redirect()->back()->with('error', "No se pudo eliminar el perfil debido a vínculos operativos detectados.");
+            return redirect()->route($routeName)->with('error', "No se pudo eliminar el perfil debido a vínculos operativos detectados.");
         }
     }
 
@@ -375,7 +379,8 @@ class MupController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error creando perfil: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Ocurrió un error al crear el perfil: ' . $e->getMessage())->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', 'Ocurrió un error al crear el perfil: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -431,12 +436,14 @@ class MupController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Perfil "' . $perfil->nompef . '" actualizado correctamente.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', 'Perfil "' . $perfil->nompef . '" actualizado correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando perfil: " . $e->getMessage());
-            return redirect()->back()->with('error', 'No se pudo actualizar el perfil: ' . $e->getMessage());
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', 'No se pudo actualizar el perfil: ' . $e->getMessage());
         }
     }
 
@@ -534,12 +541,13 @@ class MupController extends Controller
             }
 
             DB::commit();
-
-            return redirect()->back()->with('success', '¡Usuario creado con éxito! Las credenciales de acceso y el perfil operativo han sido configurados correctamente.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', '¡Usuario creado con éxito! Las credenciales de acceso y el perfil operativo han sido configurados correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el usuario'))->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', $this->friendlyError($e, 'registrar el usuario'))->withInput();
         }
     }
 
@@ -645,11 +653,13 @@ class MupController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', $msg);
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar el propietario'))->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('error', $this->friendlyError($e, 'registrar el propietario'))->withInput();
         }
     }
 
@@ -710,11 +720,13 @@ class MupController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', '¡Actualización Completada! Los datos del propietario han sido validados y guardados exitosamente en el registro maestro.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('success', '¡Actualización Completada! Los datos del propietario han sido validados y guardados exitosamente en el registro maestro.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando propietario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el propietario'))->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.propietarios.index")->with('error', $this->friendlyError($e, 'actualizar el propietario'))->withInput();
         }
     }
 
@@ -775,10 +787,10 @@ class MupController extends Controller
             Log::error("Error crítico eliminando propietario: " . $e->getMessage());
 
             if (str_contains($e->getMessage(), 'foreign key constraint fails')) {
-                return redirect()->back()->with('error', "No se puede eliminar: Existen procesos operativos vinculados a esta persona que impiden el borrado.");
+                return redirect()->route($routeName)->with('error', "No se puede eliminar: Existen procesos operativos vinculados a esta persona que impiden el borrado.");
             }
 
-            return redirect()->back()->with('error', "No se pudo procesar la eliminación debido a vínculos operativos detectados.");
+            return redirect()->route($routeName)->with('error', "No se pudo procesar la eliminación debido a vínculos operativos detectados.");
         }
     }
  
@@ -859,11 +871,13 @@ class MupController extends Controller
             $user->assignRole($perfilEmpresa->nompef);
 
             DB::commit();
-            return redirect()->back()->with('success', '¡Registro Corporativo Exitoso! La empresa y su cuenta de acceso han sido incorporadas correctamente al sistema.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('success', '¡Registro Corporativo Exitoso! La empresa y su cuenta de acceso han sido incorporadas correctamente al sistema.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error registrando empresa: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'registrar la empresa'))->withInput();
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('error', $this->friendlyError($e, 'registrar la empresa'))->withInput();
         }
     }
 
@@ -951,11 +965,13 @@ class MupController extends Controller
 
             DB::commit();
             DB::commit();
-            return redirect()->back()->with('success', '¡Actualización Corporativa Completada! Los datos de la entidad y sus credenciales han sido sincronizados satisfactoriamente.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('success', '¡Actualización Corporativa Completada! Los datos de la entidad y sus credenciales han sido sincronizados satisfactoriamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando empresa: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar la empresa'));
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.empresas.index")->with('error', $this->friendlyError($e, 'actualizar la empresa'));
         }
     }
 
@@ -1107,11 +1123,13 @@ class MupController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', '¡Actualización de Usuario Completada! El perfil y los permisos de acceso han sido sincronizados satisfactoriamente.');
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('success', '¡Actualización de Usuario Completada! El perfil y los permisos de acceso han sido sincronizados satisfactoriamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error actualizando usuario: " . $e->getMessage());
-            return redirect()->back()->with('error', $this->friendlyError($e, 'actualizar el usuario'));
+            $rolePrefix = auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador';
+            return redirect()->route("{$rolePrefix}.mup.usuarios.index")->with('error', $this->friendlyError($e, 'actualizar el usuario'));
         }
     }
 

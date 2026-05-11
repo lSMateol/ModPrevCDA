@@ -21,9 +21,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $user = request()->user();
     
-    if ($user->hasRole('Administrador')) return redirect()->route('admin.dashboard');
-    if ($user->hasRole('Digitador')) return redirect()->route('digitador.dashboard');
-    if ($user->hasRole('Empresa')) return redirect()->route('empresa.dashboard');
+    if ($user->hasRole('Administrador')) return redirect()->route('admin.mi-perfil');
+    if ($user->hasRole('Digitador')) return redirect()->route('digitador.mi-perfil');
+    if ($user->hasRole('Empresa')) return redirect()->route('empresa.vehiculos-empresa.index');
     
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
     // Módulo MUP (Entidades)
     Route::prefix('entidades/mup')->name('mup.')->group(function () {
         Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores.index');
+        Route::get('/conductores/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.conductores.index'); });
         Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
         Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
         Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
@@ -65,22 +66,26 @@ Route::middleware(['auth', 'role:Administrador', 'check.routes'])->prefix('admin
         // Perfiles
         Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
         Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+        Route::get('/perfil/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.usuarios.index'); });
         Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
 
         // Usuarios (Master Dash)
         Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios.index');
+        Route::get('/usuarios/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.usuarios.index'); });
         Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
         Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
         Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
 
         // Propietarios
         Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios.index');
+        Route::get('/propietarios/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.propietarios.index'); });
         Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
         Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
         Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
 
         // Empresas
         Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas.index');
+        Route::get('/empresas/{id}', function() { request()->session()->reflash(); return redirect()->route('admin.mup.empresas.index'); });
         Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
         Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
         Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
@@ -184,27 +189,32 @@ Route::middleware(['auth', 'role:Digitador', 'check.routes'])->prefix('digitador
     // Módulo MUP (Entidades) para Digitador
     Route::prefix('entidades/mup')->name('mup.')->group(function () {
         Route::get('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'conductores'])->name('conductores.index');
+        Route::get('/conductores/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.conductores.index'); });
         Route::post('/conductores', [\App\Http\Controllers\Admin\MupController::class, 'storeConductor'])->name('conductores.store');
         Route::put('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateConductor'])->name('conductores.update');
         Route::delete('/conductores/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyConductor'])->name('conductores.destroy');
 
         Route::get('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'usuarios'])->name('usuarios.index');
+        Route::get('/usuarios/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.usuarios.index'); });
         Route::post('/usuarios', [\App\Http\Controllers\Admin\MupController::class, 'storeUsuario'])->name('usuarios.store');
         Route::put('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateUsuario'])->name('usuarios.update');
         Route::delete('/usuarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyUsuario'])->name('usuarios.destroy');
 
         Route::get('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'propietarios'])->name('propietarios.index');
+        Route::get('/propietarios/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.propietarios.index'); });
         Route::post('/propietarios', [\App\Http\Controllers\Admin\MupController::class, 'storePropietario'])->name('propietarios.store');
         Route::put('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePropietario'])->name('propietarios.update');
         Route::delete('/propietarios/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyPropietario'])->name('propietarios.destroy');
 
         Route::get('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'empresas'])->name('empresas.index');
+        Route::get('/empresas/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.empresas.index'); });
         Route::post('/empresas', [\App\Http\Controllers\Admin\MupController::class, 'storeEmpresa'])->name('empresas.store');
         Route::put('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updateEmpresa'])->name('empresas.update');
         Route::delete('/empresas/{id}', [\App\Http\Controllers\Admin\MupController::class, 'destroyEmpresa'])->name('empresas.destroy');
 
         Route::get('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'nuevoPerfil'])->name('perfil.nuevo');
         Route::post('/perfil/nuevo', [\App\Http\Controllers\Admin\MupController::class, 'storePerfil'])->name('perfil.store');
+        Route::get('/perfil/{id}', function() { request()->session()->reflash(); return redirect()->route('digitador.mup.usuarios.index'); });
         Route::put('/perfil/{id}', [\App\Http\Controllers\Admin\MupController::class, 'updatePerfil'])->name('perfil.update');
     });
 

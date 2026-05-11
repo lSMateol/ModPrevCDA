@@ -243,9 +243,6 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="margin-top: 20px; text-align: center;">
-                    <a href="{{ url(auth()->user()->hasRole('Administrador') ? 'admin' : 'digitador', 'diagnosticos') }}" class="text-[12px] font-bold text-accent hover:underline">Ver todos los diagnósticos →</a>
-                </div>
             </div>
         </div>
     </div>

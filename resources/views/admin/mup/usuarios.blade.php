@@ -503,6 +503,10 @@
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Nueva Contraseña</label>
                         <input type="password" name="password" x-model="password" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Vacío para no cambiar">
                     </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Confirmar Contraseña</label>
+                        <input type="password" name="password_confirmation" x-model="password_confirmation" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Confirme nueva contraseña">
+                    </div>
                 </div>
 
                 <div class="mt-10 flex gap-4">

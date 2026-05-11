@@ -555,7 +555,8 @@ class DiagnosticoController extends Controller
         // Restricción: No duplicar si ya hay uno pendiente
         $existente = Diag::where('idveh', $diagnosticoAnterior->idveh)->whereNull('aprobado')->first();
         if ($existente) {
-            return redirect()->back()->with('error', "El vehículo ya tiene una inspección PENDIENTE (ID-#{$existente->iddia}). Debe completarla o eliminarla antes de crear una nueva.");
+            $prefix = $this->getPrefix();
+            return redirect()->route($prefix . '.rechazados')->with('error', "El vehículo ya tiene una inspección PENDIENTE (ID-#{$existente->iddia}). Debe completarla o eliminarla antes de crear una nueva.");
         }
 
         $nuevoDiagnostico = DB::transaction(function () use ($request, $diagnosticoAnterior) {
