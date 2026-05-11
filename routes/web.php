@@ -12,8 +12,8 @@ use App\Http\Controllers\MarcaController;
 // REDIRECCIÓN INICIAL (Seguridad)
 // ==========================================
 
-// ENVOLVER TODO EN ESTE GRUPO:
-Route::prefix('modprev')->group(function () {
+// RUTAS TEMPORALES
+
     
     Route::get('/clear-all', function() {
     \Illuminate\Support\Facades\Artisan::call('route:clear');
@@ -286,5 +286,3 @@ Route::prefix('modprev')->group(function () {
     });
     
     require __DIR__.'/auth.php';
-    
-}); // FIN DEL GRUPO modprev
