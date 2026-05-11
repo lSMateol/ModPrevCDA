@@ -8,16 +8,8 @@
         $urlPrefix = '';
         if (auth()->check()) {
             $role = auth()->user()->hasRole('Administrador') ? 'admin' : (auth()->user()->hasRole('Digitador') ? 'digitador' : 'empresa');
-            // Detectamos el prefijo a partir de la URL actual del request
-            // Esto funciona tanto en local (127.0.0.1:8000/admin) como en Cpanel (dominio.com/modprev/admin)
-            $currentPath = request()->getPathInfo(); // ej: /admin/vehiculos-empresa o /modprev/admin/vehiculos-empresa
-            $rolePos = strpos($currentPath, '/' . $role);
-            if ($rolePos !== false) {
-                // Todo lo que viene antes del /role es el prefijo base (puede ser vac¨ªo o /modprev)
-                $urlPrefix = substr($currentPath, 0, $rolePos) . '/' . $role;
-            } else {
-                $urlPrefix = '/' . $role;
-            }
+            // Usar helper url() que ya respeta el APP_URL y el AppServiceProvider
+            $urlPrefix = url($role);
         }
     @endphp
     <meta name="url-prefix" content="{{ $urlPrefix }}" data-role="{{ auth()->check() ? $role ?? '' : '' }}">
