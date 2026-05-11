@@ -612,39 +612,62 @@ class DiagnosticoController extends Controller
 
     public function uploadFotos(Request $request, $id)
     {
-        $diagnostico = Diag::findOrFail($id);
-        
-        // Organizar por Año, Mes y Día
-        $fecha = \Carbon\Carbon::parse($diagnostico->fecdia);
-        $year = $fecha->format('Y');
-        $month = $fecha->format('m');
-        $day = $fecha->format('d');
-        $basePath = "fotos_diagnosticos/{$year}/{$month}/{$day}";
+        try {
+            $request->validate([
+                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max por foto
+                'ids_a_eliminar' => 'nullable|string'
+            ]);
 
-        // 1. Eliminar fotos que ya no están en la lista (si se enviara una lista de IDs a mantener)
-        if ($request->has('ids_a_eliminar')) {
-            $ids = json_decode($request->ids_a_eliminar);
-            if (!empty($ids)) {
-                $fotosAEliminar = $diagnostico->fotos()->whereIn('idfot', $ids)->get();
-                foreach ($fotosAEliminar as $f) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($f->rutafoto);
-                    $f->delete();
+            $diagnostico = Diag::findOrFail($id);
+            
+            // Organizar por Año, Mes y Día
+            $fecha = \Carbon\Carbon::parse($diagnostico->fecdia);
+            $year = $fecha->format('Y');
+            $month = $fecha->format('m');
+            $day = $fecha->format('d');
+            $basePath = "fotos_diagnosticos/{$year}/{$month}/{$day}";
+
+            // 1. Eliminar fotos
+            if ($request->has('ids_a_eliminar')) {
+                $ids = json_decode($request->ids_a_eliminar);
+                if (!empty($ids)) {
+                    $fotosAEliminar = $diagnostico->fotos()->whereIn('idfot', $ids)->get();
+                    foreach ($fotosAEliminar as $f) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($f->rutafoto);
+                        $f->delete();
+                    }
                 }
             }
-        }
 
-        // 2. Guardar nuevas fotos
-        if ($request->hasFile('fotos')) {
-            foreach ($request->file('fotos') as $file) {
-                // El archivo ya viene como .webp desde el cliente
-                $path = $file->store($basePath, 'public');
-                $diagnostico->fotos()->create([
-                    'rutafoto' => $path
-                ]);
+            // 2. Guardar nuevas fotos
+            if ($request->hasFile('fotos')) {
+                foreach ($request->file('fotos') as $file) {
+                    if (!$file->isValid()) {
+                        throw new \Exception("Archivo no válido: " . $file->getErrorMessage());
+                    }
+                    
+                    $path = $file->store($basePath, 'public');
+                    if (!$path) {
+                        throw new \Exception("No se pudo guardar el archivo en el storage.");
+                    }
+
+                    $diagnostico->fotos()->create([
+                        'rutafoto' => $path
+                    ]);
+                }
             }
-        }
 
-        return response()->json(['message' => 'Fotos actualizadas correctamente'], 201);
+            return response()->json(['success' => true, 'message' => 'Fotos actualizadas correctamente'], 201);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error en uploadFotos (ID {$id}): " . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar la carga: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function approve($id)

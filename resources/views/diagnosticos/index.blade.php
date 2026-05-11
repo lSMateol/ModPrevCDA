@@ -218,16 +218,11 @@
 @push('scripts')
 <script>
     // URLs generadas por Laravel (adaptable a Laragon local o Cpanel)
-    const routeDataModal = '{{ route(Auth::user()->hasRole("Administrador") ? "admin.diagnosticos.data" : "digitador.diagnosticos.data") }}';
-    @php
-        $rolePrefix = Auth::user()->hasRole('Administrador') ? 'admin' : 'digitador';
-        $fotosBase = url(env('APP_URL_PREFIX', 'modprev') . '/' . $rolePrefix);
-        if (str_contains(request()->url(), '/' . $rolePrefix) && !str_contains(request()->url(), '/modprev/' . $rolePrefix)) {
-            $fotosBase = url($rolePrefix);
-        }
-    @endphp
-    const routeFotosBase = '{{ $fotosBase }}';
+    // URLs base estandarizadas desde el layout
+    const routeFotosBase = document.querySelector('meta[name="url-prefix"]').content;
+    const routeDataModal = `${routeFotosBase}/diagnosticos/data`;
     const routeEditBase = routeFotosBase;
+
     let allVehicles = []; // Variable global para la búsqueda
 
     function selectVehicleAutocomplete(id, plate, combustible) {
@@ -532,28 +527,66 @@
 
         btnSaveFotos.onclick = async () => {
             const id = fotoDiagId.innerText;
+            if (!id) {
+                alert('ID de diagnóstico no encontrado.');
+                return;
+            }
+
             const formData = new FormData();
-            
-            newPhotos.forEach((blob, i) => formData.append(`fotos[]`, blob, `evid_${id}_new_${i}.webp`));
+            newPhotos.forEach((blob, i) => {
+                formData.append(`fotos[]`, blob, `evid_${id}_new_${i}.webp`);
+            });
             formData.append('ids_a_eliminar', JSON.stringify(idsAEliminar));
 
             btnSaveFotos.disabled = true;
+            const originalText = btnSaveFotos.innerText;
             btnSaveFotos.innerText = 'Sincronizando...';
+
+            const startTime = Date.now();
+            console.log(`[uploadFotos] Iniciando carga para ID: ${id}`, {
+                nuevas: newPhotos.length,
+                eliminar: idsAEliminar.length,
+                url: `${routeFotosBase}/diagnosticos/${id}/fotos`
+            });
 
             try {
                 const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`, {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    headers: { 
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
                 });
+
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                console.log(`[uploadFotos] Respuesta recibida en ${duration}s. Status: ${res.status}`);
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    const text = await res.text();
+                    console.error('[uploadFotos] Error al parsear JSON. Respuesta cruda:', text);
+                    throw new Error('Respuesta del servidor no es JSON válido');
+                }
+
                 if (res.ok) {
-                    alert('Evidencias actualizadas');
+                    alert('Evidencias actualizadas correctamente.');
                     modalFotos.classList.add('hidden');
-                } else alert('Error al guardar');
+                    // Opcional: recargar solo el item o la página
+                    // window.location.reload(); 
+                } else {
+                    console.error('[uploadFotos] Error del Servidor:', data);
+                    alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+                }
             } catch (err) {
-                alert('Error de red');
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                console.error(`[uploadFotos] Error de red o ejecución tras ${duration}s:`, err);
+                alert('Error al guardar: ' + err.message);
             } finally {
-                btnSaveFotos.innerText = 'Guardar Evidencias';
+                btnSaveFotos.innerText = originalText;
                 btnSaveFotos.disabled = false;
             }
         };
