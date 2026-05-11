@@ -26,8 +26,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forzar la URL base y esquema HTTPS en entornos de producción (cPanel)
+        if (config('app.env') === 'production') {
+            URL::forceRootUrl(config('app.url'));
+            
+            if (str_contains(config('app.url'), 'https://')) {
+                URL::forceScheme('https');
+            }
+        }
+
         Vehiculo::observe(VehiculoObserver::class);
         Diag::observe(DiagObserver::class);
-        
     }
 }
