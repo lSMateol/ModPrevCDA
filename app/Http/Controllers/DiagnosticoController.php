@@ -575,7 +575,7 @@ class DiagnosticoController extends Controller
                 'aprobado' => null, // Inicia como pendiente
                 'idinsp' => $request->idinsp_nuevo,
                 'iding' => $request->iding_nuevo,
-                'idper' => Auth::id(), // Quien realiza la reasignación
+                'idper' => $diagnosticoAnterior->idper, // Mantener el digitador original
                 'kilomt' => $request->kilomt,
                 'dpiddia' => $diagnosticoAnterior->iddia, // Referencia al original
                 'idval_combu' => $diagnosticoAnterior->idval_combu ?? ($diagnosticoAnterior->vehiculo->combuveh ?? 43),
