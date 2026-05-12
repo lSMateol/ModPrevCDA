@@ -22,6 +22,20 @@ use Illuminate\Support\Facades\Hash;
 class MupController extends Controller
 {
     /**
+     * Obtiene el codubi por defecto (Soacha = 25754). Evita FK constraint al usar IDs inexistentes.
+     */
+    protected function getDefaultCodubi(): int
+    {
+        // Soacha (sede principal CDA Rastrillantas)
+        $soacha = DB::table('ubica')->where('codubi', 25754)->exists();
+        if ($soacha) return 25754;
+
+        // Fallback: primer registro disponible en la tabla ubica
+        $first = DB::table('ubica')->orderBy('codubi')->value('codubi');
+        return $first ?? 1;
+    }
+
+    /**
      * Validación: licencia (catcon, nliccon, fvencon) todo null o los tres informados.
      */
     protected function rulesLicenciaTriada(Request $request, $mandatory = false): array
@@ -194,7 +208,7 @@ class MupController extends Controller
                     'telper' => $request->telper ?? '',
                     'actper' => $request->actper,
                     'idpef' => $perfilConductor->idpef,
-                    'codubi' => 1,
+                    'codubi' => $this->getDefaultCodubi(),
                 ], $lic));
                 
                 $msg = "¡Registro Exitoso! El nuevo conductor ha sido incorporado correctamente al sistema y está habilitado para la operación.";
@@ -534,7 +548,7 @@ class MupController extends Controller
                 'telper' => $request->telper ?? '',
                 'idpef' => $request->idpef,
                 'idemp' => $request->idemp,
-                'codubi' => 1,
+                'codubi' => $this->getDefaultCodubi(),
                 'actper' => 1,
             ]);
 
@@ -658,7 +672,7 @@ class MupController extends Controller
                     'idpef' => !empty($lic['nliccon']) 
                         ? Perfil::firstOrCreate(['nompef' => 'Propietario / Conductor'], ['idpef' => 8])->idpef 
                         : $perfilPropietario->idpef,
-                    'codubi' => 1,
+                    'codubi' => $this->getDefaultCodubi(),
                 ], $lic));
                 
                 $msg = "¡Registro Exitoso! El nuevo propietario ha sido incorporado correctamente al sistema y está listo para la vinculación de activos.";
@@ -865,7 +879,7 @@ class MupController extends Controller
                 'emaem' => $request->emaem,
                 'nomger' => $request->nomger,
                 'idpef' => $perfilEmpresa->idpef,
-                'codubi' => 1,
+                'codubi' => $this->getDefaultCodubi(),
                 'usuaemp' => $request->username,
                 'passemp' => Hash::make($request->password), 
             ]);
@@ -1289,7 +1303,17 @@ class MupController extends Controller
 
         // Restricción de clave foránea
         if (str_contains($msg, 'foreign key constraint') || str_contains($msg, 'Cannot add or update a child row')) {
-            return 'No se pudo ' . $accion . ': verifique que el tipo de documento exista y que el código de ubicación (ciudad) sea válido en el sistema.';
+            // Intentar extraer la tabla/columna que falla para dar un mensaje específico
+            if (str_contains($msg, 'codubi')) {
+                return 'No se pudo ' . $accion . ': el código de ubicación (ciudad) por defecto no existe en el catálogo del sistema. Contacte al administrador para verificar la tabla de ubicaciones.';
+            }
+            if (str_contains($msg, 'tdocper') || str_contains($msg, 'idval')) {
+                return 'No se pudo ' . $accion . ': el tipo de documento seleccionado no es válido. Verifique que exista en el catálogo.';
+            }
+            if (str_contains($msg, 'idpef')) {
+                return 'No se pudo ' . $accion . ': el perfil seleccionado no existe en el sistema.';
+            }
+            return 'No se pudo ' . $accion . ': error de integridad referencial. Verifique que los datos seleccionados (documento, perfil, ubicación) existan en los catálogos del sistema.';
         }
 
         // Error de conexión
