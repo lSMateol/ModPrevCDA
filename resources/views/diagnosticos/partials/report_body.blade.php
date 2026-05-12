@@ -17,7 +17,7 @@
             <h1>INSPECCION PREVENTIVA</h1>
             <div class="order-info">
                 <strong>SIDAUTO</strong><br>
-                <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
+                <strong>No. Orden: {{ $vehiculo->nordveh ?? 'N/A' }}</strong>
             </div>
         </div>
         <div class="header-right">

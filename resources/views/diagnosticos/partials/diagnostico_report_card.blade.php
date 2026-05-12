@@ -19,7 +19,7 @@
                     $empresaNombre = $diagnostico->vehiculo->empresa->razsoem ?? 'PARTICULAR';
                     $esReinspeccion = !is_null($diagnostico->dpiddia);
                 @endphp
-                <strong>{{ $empresaNombre }}</strong> - <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
+                <strong>{{ $empresaNombre }}</strong> - <strong>No. Orden: {{ $diagnostico->vehiculo->nordveh ?? 'N/A' }}</strong>
             </div>
         </div>
         <div class="header-right">

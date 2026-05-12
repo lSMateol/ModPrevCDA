@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('vehiculo', function (Blueprint $table) {
             $table->id('idveh'); // codigo de vehiculo
-            $table->string('nordveh', 30)->nullable(); // numero interno del vehiculo
+            $table->string('nordveh', 30)->nullable(); // numero de orden del vehiculo
             $table->integer('tipoveh'); // tipo de vehiculo (1: automovil, 2: camioneta, 3: camión, etc.)
             $table->string('placaveh', 6)->unique(); // placa del vehiculo
             $table->unsignedBigInteger('linveh'); // linea del vehiculo (referencia a la tabla marca)
