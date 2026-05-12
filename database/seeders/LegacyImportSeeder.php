@@ -389,7 +389,12 @@ class LegacyImportSeeder extends Seeder
 
             // Inserción segura garantizada
             DB::table('diag')->updateOrInsert(['iddia' => $data['iddia']], $data);
-            $this->idsDiagImportados[$data['iddia']] = $data['idveh'];
+            
+            // Guardamos tanto idveh como idper para usar en la migración de diapar
+            $this->idsDiagImportados[$data['iddia']] = [
+                'idveh' => $data['idveh'],
+                'idper' => $data['idper']
+            ];
             $importados++;
         }
         $this->command->info("  Diagnósticos: {$importados} importados.");
@@ -423,7 +428,10 @@ class LegacyImportSeeder extends Seeder
         $this->command->info("    -> Fase 1: Generando Luces y Motor Diesel...");
         $now = now()->toDateTimeString();
 
-        foreach ($this->idsDiagImportados as $iddia => $idveh) {
+        foreach ($this->idsDiagImportados as $iddia => $info) {
+            $idveh = $info['idveh'];
+            $idperDiag = $info['idper'];
+            
             $combustible = $this->vehiculoCombustible[$idveh] ?? null;
             $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
             
@@ -434,7 +442,7 @@ class LegacyImportSeeder extends Seeder
                 $insertData[] = [
                     'iddia' => $iddia,
                     'idpar' => $idparLuces,
-                    'idper' => $idRespaldo,
+                    'idper' => $idperDiag, // Usar el idper del diagnóstico
                     'valor' => 'funciona',
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -462,7 +470,7 @@ class LegacyImportSeeder extends Seeder
                     $insertData[] = [
                         'iddia' => $iddia,
                         'idpar' => $idparDiesel,
-                        'idper' => $idRespaldo,
+                        'idper' => $idperDiag, // Usar el idper del diagnóstico
                         'valor' => $valorRand,
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -529,7 +537,8 @@ class LegacyImportSeeder extends Seeder
                     $procesados["{$dp->iddia}-{$idparDestino}"] = true;
                     
                     $idperMapeado = $this->mapaPersonas[$dp->idper] ?? $dp->idper;
-                    $idperFinal = isset($personasRealesValidas[$idperMapeado]) ? $idperMapeado : $idRespaldo;
+                    $idperDiag = $this->idsDiagImportados[$dp->iddia]['idper'] ?? $idRespaldo;
+                    $idperFinal = isset($personasRealesValidas[$idperMapeado]) ? $idperMapeado : $idperDiag;
 
                     $insertData[] = [
                         'iddia' => $dp->iddia,
@@ -539,6 +548,15 @@ class LegacyImportSeeder extends Seeder
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
+                    
+                    // Log temporal para validación
+                    if ($total % 500 === 0) {
+                        $msg = "      - Diag #{$dp->iddia}: idper {$dp->idper} -> {$idperFinal}";
+                        if ($idperFinal == $idRespaldo && $dp->idper != 0) {
+                            $msg .= " (FALLBACK a Respaldo)";
+                        }
+                        $this->command->info($msg);
+                    }
                     $total++;
                     
                     if (count($insertData) >= $batchSize) {
@@ -559,8 +577,10 @@ class LegacyImportSeeder extends Seeder
                 if (isset($procesados["$iddia-$idparDestino"])) continue;
                 $procesados["$iddia-$idparDestino"] = true;
                 
+                $idperDiag = $this->idsDiagImportados[$iddia]['idper'] ?? $idRespaldo;
+
                 $insertData[] = [
-                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idRespaldo,
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperDiag,
                     'valor' => $this->normalizarDefecto($valor), 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;
@@ -596,8 +616,11 @@ class LegacyImportSeeder extends Seeder
             foreach ($mapeoDestino as $idparDestino => $valor) {
                 if (isset($procesados["$iddia-$idparDestino"])) continue;
                 $procesados["$iddia-$idparDestino"] = true;
+                
+                $idperDiag = $this->idsDiagImportados[$iddia]['idper'] ?? $idRespaldo;
+
                 $insertData[] = [
-                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idRespaldo,
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperDiag,
                     'valor' => $valor, 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;
