@@ -434,7 +434,7 @@
 
         snap.onclick = (e) => {
             e.stopPropagation();
-            if ((existingPhotos.length + newPhotos.length) >= 2) return alert("Máximo 2 fotos");
+            if ((existingPhotos.length + newPhotos.length) >= 2) return alert('Máximo 2 fotos permitidas.');
             
             // Redimensionar para optimizar peso (Max width 1024px)
             const MAX_WIDTH = 1024;
@@ -538,9 +538,10 @@
             });
             formData.append('ids_a_eliminar', JSON.stringify(idsAEliminar));
 
+            const btnText = document.getElementById('btn-save-fotos-text');
             btnSaveFotos.disabled = true;
-            const originalText = btnSaveFotos.innerText;
-            btnSaveFotos.innerText = 'Sincronizando...';
+            const originalText = btnText ? btnText.innerText : 'Guardar Evidencias';
+            if (btnText) btnText.innerText = 'Guardando...';
 
             const startTime = Date.now();
             console.log(`[uploadFotos] Iniciando carga para ID: ${id}`, {
@@ -573,10 +574,9 @@
                 }
 
                 if (res.ok) {
-                    alert('Evidencias actualizadas correctamente.');
+                    alert('Evidencias guardadas correctamente.');
                     modalFotos.classList.add('hidden');
-                    // Opcional: recargar solo el item o la página
-                    // window.location.reload(); 
+                    stopCamera();
                 } else {
                     console.error('[uploadFotos] Error del Servidor:', data);
                     alert('Error al guardar: ' + (data.message || 'Error desconocido'));
@@ -586,7 +586,8 @@
                 console.error(`[uploadFotos] Error de red o ejecución tras ${duration}s:`, err);
                 alert('Error al guardar: ' + err.message);
             } finally {
-                btnSaveFotos.innerText = originalText;
+                const btnText2 = document.getElementById('btn-save-fotos-text');
+                if (btnText2) btnText2.innerText = originalText;
                 btnSaveFotos.disabled = false;
             }
         };
