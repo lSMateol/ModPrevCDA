@@ -371,6 +371,10 @@
                     </div>
 
                     <div class="sm:col-span-2">
+                        @include('admin.mup.partials.password-checklist')
+                    </div>
+
+                    <div class="sm:col-span-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Rol Operativo <span class="text-blue-500">*</span></label>
                         <select name="idpef" x-model="selectedIdPef" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
                             <option value="">Seleccione un perfil...</option>
@@ -393,7 +397,9 @@
 
                 <div class="mt-10 flex gap-4">
                     <button type="button" @click="createDrawer = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-[#001834] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#001834]/20 transition-all hover:scale-[1.02]" :disabled="!passwordsMatch">
+                    <button type="submit" class="flex-1 bg-[#001834] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#001834]/20 transition-all hover:scale-[1.02]" 
+                        :disabled="!passwordsMatch || (password.length > 0 && !isPasswordValid)"
+                        :class="(!passwordsMatch || (password.length > 0 && !isPasswordValid)) ? 'opacity-50 cursor-not-allowed' : ''">
                         Crear Usuario
                     </button>
                 </div>
@@ -507,11 +513,16 @@
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Confirmar Contraseña</label>
                         <input type="password" name="password_confirmation" x-model="password_confirmation" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Confirme nueva contraseña">
                     </div>
+                    <div class="sm:col-span-2">
+                        @include('admin.mup.partials.password-checklist')
+                    </div>
                 </div>
 
                 <div class="mt-10 flex gap-4">
                     <button type="button" @click="editDrawer = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-amber-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]">
+                    <button type="submit" class="flex-1 bg-amber-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]"
+                        :disabled="password.length > 0 && (!passwordsMatch || !isPasswordValid)"
+                        :class="(password.length > 0 && (!passwordsMatch || !isPasswordValid)) ? 'opacity-50 cursor-not-allowed' : ''">
                         Guardar Cambios
                     </button>
                 </div>
@@ -586,8 +597,29 @@ function usuariosManager() {
         },
 
         get passwordsMatch() {
-            if (!this.password && !this.password_confirmation) return true;
             return this.password === this.password_confirmation;
+        },
+
+        get passwordRules() {
+            const p = this.password;
+            return [
+                { id: 1, label: 'Mínimo 8 caracteres', met: p.length >= 8 },
+                { id: 2, label: 'Mayúsculas y Minúsculas', met: /[a-z]/.test(p) && /[A-Z]/.test(p) },
+                { id: 3, label: 'Números', met: /\d/.test(p) },
+                { id: 4, label: 'Símbolos (!@#$%^&*)', met: /[^A-Za-z0-9]/.test(p) }
+            ];
+        },
+
+        get isPasswordValid() {
+            return this.passwordRules.every(r => r.met);
+        },
+
+        get passwordStrength() {
+            const metCount = this.passwordRules.filter(r => r.met).length;
+            if (metCount <= 1) return { label: 'Muy Débil', color: 'bg-red-50 text-red-600' };
+            if (metCount === 2) return { label: 'Débil', color: 'bg-orange-50 text-orange-600' };
+            if (metCount === 3) return { label: 'Media', color: 'bg-yellow-50 text-yellow-600' };
+            return { label: 'Segura', color: 'bg-emerald-50 text-emerald-600' };
         },
 
         isEmpresaRole(idpef) {

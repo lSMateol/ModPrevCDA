@@ -15,6 +15,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -33,6 +34,20 @@ class MupController extends Controller
         // Fallback: primer registro disponible en la tabla ubica
         $first = DB::table('ubica')->orderBy('codubi')->value('codubi');
         return $first ?? 1;
+    }
+
+    protected function passwordRules($required = true)
+    {
+        $rules = [
+            $required ? 'required' : 'nullable',
+            'string',
+            Password::min(8)
+                ->mixedCase()
+                ->numbers()
+                ->symbols(),
+            'confirmed'
+        ];
+        return $rules;
     }
 
     /**
@@ -512,7 +527,7 @@ class MupController extends Controller
             'emaper' => 'required|email|unique:persona,emaper',
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => $this->passwordRules(true),
             'idpef' => [
                 'required',
                 'exists:perfil,idpef',
@@ -526,10 +541,7 @@ class MupController extends Controller
         ], [
             'ndocper.unique' => 'Ya existe un usuario con este número de documento.',
             'emaper.unique' => 'Ya existe un usuario con este correo electrónico.',
-            'emaper.email' => 'El formato del correo electrónico no es válido.',
             'username.unique' => 'Este nombre de usuario ya está en uso.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-            'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
         try {
@@ -854,12 +866,10 @@ class MupController extends Controller
             'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
             'emaem' => 'required|email|max:60',
             'username' => 'required|string|unique:users,username',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => $this->passwordRules(true),
         ], [
             'nonitem.unique' => 'El NIT de esta empresa ya se encuentra registrado.',
             'username.unique' => 'El nombre de usuario ya está asignado a otra entidad o usuario.',
-            'password.confirmed' => 'Las contraseñas no coinciden.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
             'telem.max' => 'El teléfono no puede superar los 20 caracteres.',
         ]);
 
@@ -925,7 +935,7 @@ class MupController extends Controller
             'telem' => 'required|string|max:20|regex:/^[0-9]+$/',
             'emaem' => 'required|email|max:60',
             'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|min:6|confirmed',
+            'password' => $this->passwordRules(false),
         ]);
 
         try {
@@ -1076,7 +1086,7 @@ class MupController extends Controller
             'emaper' => ['required', 'email', $emaUnique],
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username,' . $user->id,
-            'password' => 'nullable|string|min:6|confirmed',
+            'password' => $this->passwordRules(false),
             'idpef' => [
                 'required',
                 'exists:perfil,idpef',
@@ -1093,8 +1103,6 @@ class MupController extends Controller
             'emaper.unique' => 'Este correo electrónico ya se encuentra registrado para otro usuario.',
             'emaper.email' => 'El formato del correo electrónico no es válido.',
             'username.unique' => 'Este nombre de usuario ya está en uso.',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-            'password.confirmed' => 'Las contraseñas de confirmación no coinciden.',
         ]);
 
         try {
