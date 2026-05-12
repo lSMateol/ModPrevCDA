@@ -104,10 +104,23 @@ class MupController extends Controller
         $ids = $this->personaIdsConductorGlobal($perfilConductor);
         $conductores = $ids === []
             ? collect()
-            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'tipoDocumento'])
+            : Persona::with(['vehiculosConducidos', 'vehiculosPropios', 'vehiculos', 'tipoDocumento'])
                 ->whereIn('idper', $ids)
                 ->orderBy('idper', 'desc')
-                ->get();
+                ->get()
+                ->map(function($p) {
+                    // Unificar todos los vehículos vinculados sin duplicados
+                    $vinculos = collect()
+                        ->concat($p->vehiculosConducidos)
+                        ->concat($p->vehiculosPropios)
+                        ->concat($p->vehiculos)
+                        ->unique('idveh')
+                        ->values();
+                    
+                    // Sobreescribimos la propiedad para que el JS la lea unificada
+                    $p->vehiculos_conducidos = $vinculos;
+                    return $p;
+                });
 
         // 3. Tipos de documento y categorías fijas de licencia (texto)
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();

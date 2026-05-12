@@ -253,11 +253,11 @@
                                 </div>
 
                                 <!-- Línea Conectora Vertical -->
-                                <div x-show="selectedConductor.vehiculos_conducidos.length > 0" class="w-0.5 h-10 bg-gradient-to-b from-[#0d3b5a] to-transparent"></div>
+                                <div x-show="(selectedConductor.vehiculos_conducidos ?? []).length > 0" class="w-0.5 h-10 bg-gradient-to-b from-[#0d3b5a] to-transparent"></div>
 
                                 <!-- Lista de Vehículos Vinculados -->
                                 <div class="w-full mt-4 space-y-4">
-                                    <template x-for="veh in selectedConductor.vehiculos_conducidos" :key="veh.idveh">
+                                    <template x-for="veh in (selectedConductor.vehiculos_conducidos ?? [])" :key="veh.idveh">
                                         <div class="flex items-center gap-6 group">
                                             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-gray-200"></div>
                                             <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 min-w-[280px] hover:border-orange-200 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300">
@@ -281,7 +281,7 @@
                                         </div>
                                     </template>
 
-                                    <div x-show="selectedConductor.vehiculos_conducidos.length === 0" class="text-center py-10 opacity-40">
+                                    <div x-show="(selectedConductor.vehiculos_conducidos ?? []).length === 0" class="text-center py-10 opacity-40">
                                         <iconify-icon icon="lucide:link-2-off" class="text-4xl mb-2"></iconify-icon>
                                         <p class="text-[10px] font-black uppercase tracking-widest">Sin vehículos vinculados</p>
                                     </div>
@@ -573,8 +573,13 @@ function conductorManager() {
 
         selectConductor(con) {
             this.selectedId = con.idper;
-            this.selectedConductor = con;
-            // No reseteamos el tab a menos que sea necesario para mejorar UX
+            // Normalizar la relación de véhiculos: garantizar que siempre es un array.
+            // Si vehiculos_conducidos no existe en el objeto (relación no serializada
+            // correctamente), Alpine.js lanza un error silencioso al acceder a .length.
+            this.selectedConductor = {
+                ...con,
+                vehiculos_conducidos: Array.isArray(con.vehiculos_conducidos) ? con.vehiculos_conducidos : []
+            };
         },
 
         exportCsv() {
