@@ -20,6 +20,7 @@ use App\Http\Controllers\MarcaController;
     \Illuminate\Support\Facades\Artisan::call('config:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
     return "Caché de Laravel limpia (rutas, config, cache, vistas)";
     });
     

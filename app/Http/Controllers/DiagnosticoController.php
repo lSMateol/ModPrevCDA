@@ -71,10 +71,12 @@ class DiagnosticoController extends Controller
 
         $inspectores = Persona::select('idper', 'nomper', 'apeper')
             ->where('idpef', 5)
+            ->where('actper', 1)
             ->get(); 
 
         $ingenieros = Persona::select('idper', 'nomper', 'apeper')
             ->where('idpef', 4)
+            ->where('actper', 1)
             ->get();  
 
         return response()->json(compact('vehiculos', 'inspectores', 'ingenieros'));
@@ -488,7 +490,7 @@ class DiagnosticoController extends Controller
         }
 
         $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15);
-        $inspectores = Persona::where('idpef', 5)->get();
+        $inspectores = Persona::where('idpef', 5)->where('actper', 1)->get();
         $empresas = \App\Models\Empresa::all();
 
         return view('diagnosticos.rechazados.index', compact('rechazados', 'inspectores', 'empresas'));
@@ -497,7 +499,7 @@ class DiagnosticoController extends Controller
     public function editRechazo($id)
     {
         $diagnostico = Diag::with(['vehiculo.empresa', 'inspector', 'rechazo'])->findOrFail($id);
-        $inspectores = Persona::where('idpef', 5)->get();
+        $inspectores = Persona::where('idpef', 5)->where('actper', 1)->get();
         return view('diagnosticos.rechazados.edit', compact('diagnostico', 'inspectores'));
     }
 
@@ -536,8 +538,8 @@ class DiagnosticoController extends Controller
     public function reasignar($id)
     {
         $diagnostico = Diag::with(['vehiculo.empresa', 'inspector', 'rechazo'])->findOrFail($id);
-        $inspectores = Persona::where('idpef', 5)->get();
-        $ingenieros = Persona::where('idpef', 4)->get();
+        $inspectores = Persona::where('idpef', 5)->where('actper', 1)->get();
+        $ingenieros = Persona::where('idpef', 4)->where('actper', 1)->get();
         return view('diagnosticos.rechazados.reasignar', compact('diagnostico', 'inspectores', 'ingenieros'));
     }
 
