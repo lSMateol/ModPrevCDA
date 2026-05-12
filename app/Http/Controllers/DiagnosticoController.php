@@ -612,57 +612,57 @@ class DiagnosticoController extends Controller
 
     public function uploadFotos(Request $request, $id)
     {
-        $start = microtime(true);
         session()->save(); // Liberar el bloqueo de sesión lo antes posible
+
         try {
-
-            \Illuminate\Support\Facades\Log::debug("--- Iniciando uploadFotos ID: {$id} ---");
-
+            // Validación ligera: solo tamaño y extensión.
+            // NO se usa la regla `image` porque obliga a PHP a abrir el archivo
+            // con GD/Imagick para verificarlo, lo cual es muy lento en hosting compartido.
+            // El cliente ya garantiza formato WebP mediante canvas.toBlob().
             $request->validate([
-                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-                'ids_a_eliminar' => 'nullable|string'
+                'fotos.*'         => 'required|file|mimes:webp,jpeg,png,jpg|max:8192',
+                'ids_a_eliminar'  => 'nullable|string'
             ]);
-            \Illuminate\Support\Facades\Log::debug("Validación completada en: " . (microtime(true) - $start) . "s");
 
             $diagnostico = Diag::findOrFail($id);
-            
-            $fecha = \Carbon\Carbon::parse($diagnostico->fecdia);
+
+            $fecha    = \Carbon\Carbon::parse($diagnostico->fecdia);
             $basePath = "fotos_diagnosticos/{$fecha->format('Y')}/{$fecha->format('m')}/{$fecha->format('d')}";
 
+            // Eliminar fotos marcadas para borrar
             if ($request->has('ids_a_eliminar')) {
                 $ids = json_decode($request->ids_a_eliminar);
                 if (!empty($ids)) {
                     $fotosAEliminar = $diagnostico->fotos()->whereIn('idfot', $ids)->get();
-
                     foreach ($fotosAEliminar as $f) {
                         \Illuminate\Support\Facades\Storage::disk('public')->delete($f->rutafoto);
                         $f->delete();
                     }
                 }
             }
-            \Illuminate\Support\Facades\Log::debug("Eliminación de fotos completada en: " . (microtime(true) - $start) . "s");
 
+            // Guardar nuevas fotos
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $file) {
-                    if (!$file->isValid()) throw new \Exception("Archivo no válido: " . $file->getErrorMessage());
-                    
-                    $storeStart = microtime(true);
+                    if (!$file->isValid()) {
+                        throw new \Exception("Archivo no válido: " . $file->getErrorMessage());
+                    }
+
                     $path = $file->store($basePath, 'public');
-                    \Illuminate\Support\Facades\Log::debug("Archivo guardado en disk en: " . (microtime(true) - $storeStart) . "s");
 
-                    if (!$path) throw new \Exception("No se pudo guardar el archivo en el storage.");
+                    if (!$path) {
+                        throw new \Exception("No se pudo guardar el archivo en el storage.");
+                    }
 
-                    $dbStart = microtime(true);
                     $diagnostico->fotos()->create(['rutafoto' => $path]);
-                    \Illuminate\Support\Facades\Log::debug("Registro en DB creado en: " . (microtime(true) - $dbStart) . "s");
                 }
             }
 
-            \Illuminate\Support\Facades\Log::debug("--- uploadFotos completado en: " . (microtime(true) - $start) . "s ---");
-            return response()->json(['success' => true, 'message' => 'Fotos actualizadas correctamente'], 201);
+            return response()->json(['success' => true, 'message' => 'Fotos guardadas correctamente.'], 201);
+
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error en uploadFotos (ID {$id}) tras " . (microtime(true) - $start) . "s: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error("Error en uploadFotos (ID {$id}): " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al guardar: ' . $e->getMessage()], 500);
         }
     }
 
