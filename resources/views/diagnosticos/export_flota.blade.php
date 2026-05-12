@@ -212,9 +212,12 @@
             </div>
         </header>
 
+        @php
+            $empresaNombre = $diagnostico->vehiculo->empresa->razsoem ?? 'PARTICULAR';
+            $esReinspeccion = !is_null($diagnostico->dpiddia);
+        @endphp
         <div class="order-info">
-            <strong>SIDAUTO</strong><br>
-            <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
+            <strong>{{ $empresaNombre }}</strong> - <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
         </div>
 
         @php
@@ -367,11 +370,11 @@
                 <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['dilusion_gasolina'] ?? '-') }}</td>
             </tr>
             <tr>
-                <td class="label">CRITERIOS DE VALIDACION (MOTOR DIESEL)</td>
-                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'si' ? 'X' : '' }}</td>
-                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'no' ? 'X' : '' }}</td>
-                <td class="text-center">{{ ($paramValues['Criterios_de_validacion'] ?? '') == 'na' ? 'X' : '' }}</td>
-                <td class="text-center" style="font-weight: bold;">{{ strtoupper($paramValues['Criterios_de_validacion'] ?? '-') }}</td>
+                <td class="label">CRITERIOS DE VALIDACION ({{ $isDiesel ? 'MOTOR DIESEL' : 'OTTO' }})</td>
+                <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'X' : '' }}</td>
+                <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'no' ? 'X' : '' }}</td>
+                <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
+                <td class="text-center" style="font-weight: bold;">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'CUMPLE' : 'NO CUMPLE' }}</td>
             </tr>
             @else
             <tr>
@@ -381,7 +384,8 @@
         </table>
 
         @if($showGases)
-        <!-- 7. EMISIONES DE GASES -->
+            @if($isDiesel)
+        <!-- 7. EMISIONES DE GASES DIESEL -->
         <div class="section-title">7. EMISIONES DE GASES - VEHICULO DIESEL</div>
         <table class="mechanized-section">
             <tr>
@@ -417,6 +421,56 @@
                 <td class="text-center">%</td>
             </tr>
         </table>
+        @else
+        <!-- 7. EMISIONES DE GASES GASOLINA / GAS -->
+        <div class="section-title">7. EMISIONES DE GASES Y CICLO OTTO - VEHICULO GASOLINA/GAS</div>
+        <table class="mechanized-section">
+            <tr>
+                <td class="label" style="width: 25%;"><strong>TEMPERATURA GASES</strong></td>
+                <td class="text-center" style="width: 25%;"><strong>{{ $paramValues['temperatura_gases'] ?? '-' }} °C</strong></td>
+                <td class="label" style="width: 25%;"><strong>RPM GASES</strong></td>
+                <td class="text-center" style="width: 25%;"><strong>{{ $paramValues['rpm_gases'] ?? '-' }} rpm</strong></td>
+            </tr>
+        </table>
+        
+        <table class="mechanized-section" style="margin-top: -1px;">
+            <tr>
+                <th style="width: 20%;">PARÁMETRO</th>
+                <th colspan="2" style="width: 40%;">RESULTADO MEDICIÓN</th>
+                <th style="width: 40%;">VALORES DE REFERENCIA</th>
+            </tr>
+            <tr style="background: #f9f9f9;">
+                <td></td>
+                <th style="width: 20%;">RALENTÍ</th>
+                <th style="width: 20%;">CRUCERO</th>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="label"><strong>CO (%)</strong></td>
+                <td class="text-center">{{ $paramValues['co_ralenti'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['co_crucero'] ?? '-' }}</td>
+                <td class="text-center">[0.00 - 0.80]</td>
+            </tr>
+            <tr>
+                <td class="label"><strong>HC (ppm)</strong></td>
+                <td class="text-center">{{ $paramValues['hc_ralenti'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['hc_crucero'] ?? '-' }}</td>
+                <td class="text-center">[0.00 - 160.00]</td>
+            </tr>
+            <tr>
+                <td class="label"><strong>CO2 (%)</strong></td>
+                <td class="text-center">{{ $paramValues['co2_ralenti'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['co2_crucero'] ?? '-' }}</td>
+                <td class="text-center">[10.00 - 11.00]</td>
+            </tr>
+            <tr>
+                <td class="label"><strong>O2 (%)</strong></td>
+                <td class="text-center">{{ $paramValues['o2_ralenti'] ?? '-' }}</td>
+                <td class="text-center">{{ $paramValues['o2_crucero'] ?? '-' }}</td>
+                <td class="text-center">[0.00 - 5.00]</td>
+            </tr>
+        </table>
+            @endif
         @endif
 
         <!-- D. DEFECTOS ENCONTRADOS -->
@@ -529,6 +583,22 @@
                 <img src="{{ route('storage.fallback', ['path' => $foto->rutafoto]) }}" alt="Evidencia">
             </div>
             @endforeach
+        </div>
+        @endif
+
+        @if($esReinspeccion)
+        {{-- Bloque de reinspección: solo se renderiza cuando dpiddia tiene valor (es una reinspección) --}}
+        <div style="margin-top: 15px; border-top: 2px solid #cc0000; padding-top: 10px; border: 1px solid #cc0000; padding: 10px;">
+            <p style="margin: 0; font-weight: 900; color: #cc0000; font-size: 9.5pt; text-transform: uppercase;">
+                REVISIÓN PREVENTIVA DE REINSPECCIÓN
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 8.5pt; line-height: 1.4; text-align: justify; font-weight: 500;">
+                El presente reporte confirma que hoy {{ \Carbon\Carbon::parse($diagnostico->fecdia)->format('Y-m-d') }}
+                el automotor de placas <strong>{{ $diagnostico->vehiculo->placaveh }}</strong> realizó reinspección
+                de la revisión preventiva (referencia al diagnóstico ID-#{{ $diagnostico->dpiddia }}).
+                De acuerdo a los resultados el CDA Rastrillantas certifica que el vehículo
+                <strong>{{ $diagnostico->aprobado ? 'aprobó' : 'no aprobó' }}</strong> la revisión preventiva.
+            </p>
         </div>
         @endif
     </div>
