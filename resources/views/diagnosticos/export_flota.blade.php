@@ -198,7 +198,7 @@
         ============================================================
     --}}
     @foreach($diagnosticos as $diagnostico)
-        @include('diagnosticos.partials.diagnostico_report_card', ['diagnostico' => $diagnostico, 'showPhotos' => false])
+        @include('diagnosticos.partials.diagnostico_report_card', ['diagnostico' => $diagnostico])
         @if(!$loop->last)
             <div style="page-break-after: always;"></div>
         @endif

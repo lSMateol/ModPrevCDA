@@ -396,11 +396,28 @@
         </div>
     </div>
 
+    {{--
+        FOTOS — Estrategia dual de carga:
+        1. PRODUCCIÓN (archivo existe en disco): base64 inline → 0 requests HTTP adicionales.
+        2. LOCAL/DEV (archivo no existe en disco): URL vía route('storage.fallback') como fallback.
+        Parámetro $showPhotos (default: true) controla si se muestran o no.
+    --}}
     @if(($showPhotos ?? true) && $diagnostico->fotos->count() > 0)
     <div class="photos-container">
         @foreach($diagnostico->fotos as $foto)
+        @php
+            $filePath = storage_path('app/public/' . $foto->rutafoto);
+            if (file_exists($filePath)) {
+                // Producción: embeber como base64 (elimina requests HTTP)
+                $mime = mime_content_type($filePath) ?: 'image/jpeg';
+                $imgSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($filePath));
+            } else {
+                // Local/Dev: fallback a URL HTTP normal
+                $imgSrc = route('storage.fallback', ['path' => $foto->rutafoto]);
+            }
+        @endphp
         <div class="photo-item">
-            <img src="{{ route('storage.fallback', ['path' => $foto->rutafoto]) }}" alt="Evidencia">
+            <img src="{{ $imgSrc }}" alt="Evidencia">
         </div>
         @endforeach
     </div>
