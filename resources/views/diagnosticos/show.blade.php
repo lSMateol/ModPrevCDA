@@ -103,23 +103,31 @@
         'Criterios_de_validacion' => 'Criterios de Validación'
     ];
 
+    $tipoFormulario = $diagnostico->tipo_formulario ?? '';
+
     if ($isDiesel) {
-        $requiredParamsDict['temp_c'] = 'Temp C (V. Diesel)';
-        $requiredParamsDict['rpm'] = 'RPM (V. Diesel)';
-        $requiredParamsDict['ciclo1'] = 'Ciclo 1 (V. Diesel)';
-        $requiredParamsDict['ciclo2'] = 'Ciclo 2 (V. Diesel)';
-        $requiredParamsDict['ciclo3'] = 'Ciclo 3 (V. Diesel)';
-        $requiredParamsDict['ciclo4'] = 'Ciclo 4 (V. Diesel)';
-        $requiredParamsDict['resultado_diesel'] = 'Resultado Diesel';
+        if ($tipoFormulario != 'solo_gases') {
+            $requiredParamsDict['temp_c'] = 'Temp C (V. Diesel)';
+            $requiredParamsDict['rpm'] = 'RPM (V. Diesel)';
+            $requiredParamsDict['ciclo1'] = 'Ciclo 1 (V. Diesel)';
+            $requiredParamsDict['ciclo2'] = 'Ciclo 2 (V. Diesel)';
+            $requiredParamsDict['ciclo3'] = 'Ciclo 3 (V. Diesel)';
+            $requiredParamsDict['ciclo4'] = 'Ciclo 4 (V. Diesel)';
+            $requiredParamsDict['resultado_diesel'] = 'Resultado Diesel';
+        }
     } else {
-        $requiredParamsDict['co_ralenti'] = 'CO Ralenti';
-        $requiredParamsDict['co_crucero'] = 'CO Crucero';
-        $requiredParamsDict['hc_ralenti'] = 'HC Ralenti';
-        $requiredParamsDict['hc_crucero'] = 'HC Crucero';
-        $requiredParamsDict['o2_ralenti'] = 'O2 Ralenti';
-        $requiredParamsDict['o2_crucero'] = 'O2 Crucero';
-        $requiredParamsDict['co2_ralenti'] = 'CO2 Ralenti';
-        $requiredParamsDict['co2_crucero'] = 'CO2 Crucero';
+        if ($tipoFormulario != 'otto_sin_gases') {
+            $requiredParamsDict['co_ralenti'] = 'CO Ralenti';
+            $requiredParamsDict['co_crucero'] = 'CO Crucero';
+            $requiredParamsDict['co2_ralenti'] = 'CO2 Ralenti';
+            $requiredParamsDict['co2_crucero'] = 'CO2 Crucero';
+        }
+        if ($tipoFormulario != 'solo_gases') {
+            $requiredParamsDict['hc_ralenti'] = 'HC Ralenti';
+            $requiredParamsDict['hc_crucero'] = 'HC Crucero';
+            $requiredParamsDict['o2_ralenti'] = 'O2 Ralenti';
+            $requiredParamsDict['o2_crucero'] = 'O2 Crucero';
+        }
     }
 
     $missingFields = [];
