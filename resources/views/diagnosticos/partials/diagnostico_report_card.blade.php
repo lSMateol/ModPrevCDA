@@ -36,11 +36,12 @@
 
     @php
         $paramValues = $diagnostico->parametros->pluck('valor', 'parametro.nompar')->toArray();
-        $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
-        $isDiesel = str_contains($combuStr, 'DIESEL');
+        $combuStr = strtoupper(trim($diagnostico->vehiculo->combustible->nomval ?? ''));
+        $isDiesel = str_contains($combuStr, 'DIESEL') || str_contains($combuStr, 'ACPM') || ($diagnostico->idval_combu == 43);
 
         $formType = $diagnostico->tipo_formulario ?? '';
-        $showGases = !in_array($formType, ['diesel_basico', 'otto_sin_gases']);
+        // Solo ocultamos gases para Otto sin gases o si es un formulario de solo gases (que oculta motor)
+        $showGases = !in_array($formType, ['otto_sin_gases']); 
         $showMotor = !in_array($formType, ['solo_gases']);
     @endphp
 
@@ -183,8 +184,8 @@
             <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'na' ? 'X' : '' }}</td>
             <td class="text-center" style="font-weight: bold;">
                 @php
-                    $dilOk = in_array(strtolower($paramValues['dilusion_gasolina'] ?? ''), ['no', 'na']);
-                    $criOk = (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si';
+                    $dilOk = in_array(strtolower(trim($paramValues['dilusion_gasolina'] ?? '')), ['si', 'na']);
+                    $criOk = (strtolower(trim($paramValues['Criterios_de_validacion'] ?? ''))) == 'si';
                     $resDef = ($dilOk && $criOk) ? 'CUMPLE' : 'NO CUMPLE';
                 @endphp
                 {{ $resDef }}
@@ -204,8 +205,7 @@
         @endif
     </table>
 
-    @if($showGases)
-        @if($isDiesel)
+    @if($isDiesel)
         <!-- 7. EMISIONES DE GASES DIESEL -->
         <div class="section-title">7. EMISIONES DE GASES - VEHICULO DIESEL</div>
         <table class="mechanized-section">
@@ -243,6 +243,7 @@
             </tr>
         </table>
         @else
+        @if($showGases)
         <!-- 7. EMISIONES DE GASES GASOLINA / GAS -->
         <div class="section-title">7. EMISIONES DE GASES Y CICLO OTTO - VEHICULO GASOLINA/GAS</div>
         <table class="mechanized-section">
