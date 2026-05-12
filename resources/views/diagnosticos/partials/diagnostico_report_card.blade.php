@@ -384,7 +384,7 @@
         </div>
     </div>
 
-    <div style="margin-top: 15px; font-size: 8pt;">
+    <div style="margin-top: 5px; font-size: 8pt;">
         <table style="border: none;">
             <tr style="border: none;">
                 <td style="border: none; width: 80px;"><strong>INSPECTOR:</strong></td>
@@ -395,10 +395,17 @@
         </table>
     </div>
 
-    <div class="footer-signatures" style="margin-top: 40px;">
-        <div class="signature-box">
-            E. NOMBRE Y FIRMA AUTORIZADAS<br>
-            <span style="font-weight: bold; font-size: 9pt;">Ing. {{ $diagnostico->ingeniero->nomper ?? '' }} {{ $diagnostico->ingeniero->apeper ?? '' }}</span>
+    <div class="footer-signatures" style="margin-top: 15px;">
+        <div style="width: 40%; text-align: center;">
+            @php
+                $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+                $firmaSrc = file_exists($firmaPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($firmaPath)) : asset('assets/firmas/firma_ingeniera.png');
+            @endphp
+            <img src="{{ $firmaSrc }}" style="height: 45px; width: auto; margin-bottom: 2px;" alt="Firma">
+            <div style="border-top: 1px solid #000; padding-top: 5px; font-size: 8pt; width: 100%;">
+                E. NOMBRE Y FIRMA AUTORIZADAS<br>
+                <span style="font-weight: bold; font-size: 9pt;">Ing. {{ $diagnostico->ingeniero->nomper ?? '' }} {{ $diagnostico->ingeniero->apeper ?? '' }}</span>
+            </div>
         </div>
     </div>
 
@@ -422,7 +429,10 @@
                 $imgSrc = route('storage.fallback', ['path' => $foto->rutafoto]);
             }
         @endphp
-        <div class="photo-item">
+        @php
+            $photoStyle = $esReinspeccion ? 'width: 170px; height: 120px;' : 'width: 280px; height: 200px;';
+        @endphp
+        <div class="photo-item" style="{{ $photoStyle }}">
             <img src="{{ $imgSrc }}" alt="Evidencia">
         </div>
         @endforeach

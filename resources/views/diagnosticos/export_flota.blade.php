@@ -7,7 +7,7 @@
     <style>
         @page {
             size: letter;
-            margin: 1cm;
+            margin: 0.5cm;
         }
         body {
             font-family: 'Arial', sans-serif;
@@ -21,9 +21,9 @@
         .container {
             width: 100%;
             max-width: 850px;
-            margin: 40px auto;
+            margin: 10px auto;
             background-color: #fff;
-            padding: 2cm;
+            padding: 0.5cm;
             box-shadow: 0 0 20px rgba(0,0,0,0.15);
             border-radius: 4px;
             box-sizing: border-box;
@@ -126,8 +126,8 @@
             flex-wrap: wrap;
         }
         .photo-item {
-            width: 250px;
-            height: 180px;
+            width: 170px;
+            height: 120px;
             border: 1px solid #000;
             overflow: hidden;
             background: #f0f0f0;

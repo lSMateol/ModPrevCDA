@@ -15,7 +15,7 @@
     .container {
         width: 100%;
         max-width: 850px;
-        margin: 0 auto;
+        margin: 10px auto;
         background-color: #fff;
         padding: 0.3cm;
         box-sizing: border-box;

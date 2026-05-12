@@ -418,29 +418,31 @@
                     <i class="fa-solid fa-users"></i> Vinculación
                 </div>
 
-                <div class="veh-field">
+                <div class="veh-field" style="position: relative;" @click.away="showPropList = false">
                     <label>Propietario <span class="req" x-show="!empresaId && !isRestricted">*</span></label>
-                    <select name="prop" :required="!empresaId && !isRestricted" {!! $disabledAttr !!}>
-                        <option value="">Seleccionar</option>
-                        @foreach($propietarios as $p)
-                            <option value="{{ $p->idper }}" {{ old('prop', $vehiculo->prop ?? '') == $p->idper ? 'selected' : '' }}>
-                                {{ $p->nomper }} {{ $p->apeper ?? '' }} — {{ $p->ndocper ?? '' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="prop" :value="selectedPropId">
+                    <input type="text" x-model="searchProp" @focus="!isRestricted && (showPropList = true)" @input="selectedPropId = ''" placeholder="Escriba para buscar propietario..." autocomplete="off" :required="!empresaId && !isRestricted" {!! $readonlyAttr !!}>
+                    
+                    <div x-show="showPropList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" x-cloak>
+                        <template x-for="p in filteredProps" :key="p.idper">
+                            <div @click="selectProp(p)" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'"></div>
+                        </template>
+                        <div x-show="filteredProps.length === 0" style="padding: 10px 12px; color: #9aa6b2;">No se encontraron propietarios</div>
+                    </div>
                     @error('prop') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="veh-field">
+                <div class="veh-field" style="position: relative;" @click.away="showCondList = false">
                     <label>Conductor asignado <span class="req" x-show="!empresaId && !isRestricted">*</span></label>
-                    <select name="cond" :required="!empresaId && !isRestricted" {!! $disabledAttr !!}>
-                        <option value="">Seleccionar</option>
-                        @foreach($conductores as $p)
-                            <option value="{{ $p->idper }}" {{ old('cond', $vehiculo->cond ?? '') == $p->idper ? 'selected' : '' }}>
-                                {{ $p->nomper }} {{ $p->apeper ?? '' }} — {{ $p->ndocper ?? '' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="cond" :value="selectedCondId">
+                    <input type="text" x-model="searchCond" @focus="!isRestricted && (showCondList = true)" @input="selectedCondId = ''" placeholder="Escriba para buscar conductor..." autocomplete="off" :required="!empresaId && !isRestricted" {!! $readonlyAttr !!}>
+                    
+                    <div x-show="showCondList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" x-cloak>
+                        <template x-for="p in filteredConds" :key="p.idper">
+                            <div @click="selectCond(p)" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'"></div>
+                        </template>
+                        <div x-show="filteredConds.length === 0" style="padding: 10px 12px; color: #9aa6b2;">No se encontraron conductores</div>
+                    </div>
                     @error('cond') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
@@ -497,6 +499,62 @@
                 this.selectedMarcaId = m.idmar;
                 this.searchMarca = m.nommarlin;
                 this.showMarcaList = false;
+            },
+
+            // Propietario
+            searchProp: '{!! $vehiculo && $vehiculo->propietario ? trim($vehiculo->propietario->nomper . " " . ($vehiculo->propietario->apeper ?? "")) . " — " . $vehiculo->propietario->ndocper : "" !!}',
+            selectedPropId: '{{ old("prop", $vehiculo->prop ?? "") }}',
+            showPropList: false,
+            
+            get filteredProps() {
+                if (!this.searchProp) return this.propietarios;
+                const s = this.searchProp.toLowerCase();
+                return this.propietarios.filter(p => {
+                    const fullName = (p.nomper + ' ' + (p.apeper || '') + ' ' + (p.ndocper || '')).toLowerCase();
+                    return fullName.includes(s);
+                });
+            },
+            
+            selectProp(p) {
+                this.selectedPropId = p.idper;
+                this.searchProp = p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '');
+                this.showPropList = false;
+            },
+
+            // Conductor
+            searchCond: '{!! $vehiculo && $vehiculo->conductor ? trim($vehiculo->conductor->nomper . " " . ($vehiculo->conductor->apeper ?? "")) . " — " . $vehiculo->conductor->ndocper : "" !!}',
+            selectedCondId: '{{ old("cond", $vehiculo->cond ?? "") }}',
+            showCondList: false,
+            
+            get filteredConds() {
+                if (!this.searchCond) return this.conductores;
+                const s = this.searchCond.toLowerCase();
+                return this.conductores.filter(p => {
+                    const fullName = (p.nomper + ' ' + (p.apeper || '') + ' ' + (p.ndocper || '')).toLowerCase();
+                    return fullName.includes(s);
+                });
+            },
+            
+            selectCond(p) {
+                this.selectedCondId = p.idper;
+                this.searchCond = p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '');
+                this.showCondList = false;
+            },
+            
+            init() {
+                // Set text if old() was used but text was not hydrated properly
+                if (this.selectedMarcaId && !this.searchMarca) {
+                    let m = this.marcas.find(x => x.idmar == this.selectedMarcaId);
+                    if (m) this.searchMarca = m.nommarlin;
+                }
+                if (this.selectedPropId && !this.searchProp) {
+                    let p = this.propietarios.find(x => x.idper == this.selectedPropId);
+                    if (p) this.searchProp = p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '');
+                }
+                if (this.selectedCondId && !this.searchCond) {
+                    let c = this.conductores.find(x => x.idper == this.selectedCondId);
+                    if (c) this.searchCond = c.nomper + ' ' + (c.apeper || '') + ' — ' + (c.ndocper || '');
+                }
             }
         }
     }
