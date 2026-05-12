@@ -202,15 +202,37 @@ class LegacyImportSeeder extends Seeder
 
             $empresaReal = DB::table('empresa')->where('idemp', $data['idemp'])->first();
             if ($empresaReal) {
-                DB::table('users')->updateOrInsert(
-                    ['email' => $empresaReal->emaem ?? "emp_{$empresaReal->idemp}@cda.com"],
-                    [
-                        'name' => $empresaReal->razsoem,
-                        'password' => $data['passemp'],
-                        'idemp' => $empresaReal->idemp,
-                        'username' => $data['usuaemp']
-                    ]
-                );
+                $rawEmail = trim($empresaReal->emaem ?? '');
+                $email = (empty($rawEmail) || !filter_var($rawEmail, FILTER_VALIDATE_EMAIL))
+                    ? "emp_{$empresaReal->idemp}@cda.com"
+                    : $rawEmail;
+
+                // Buscamos por username para evitar duplicados de integridad
+                $userExistente = DB::table('users')->where('username', $data['usuaemp'])->first();
+                $userData = [
+                    'name'     => $empresaReal->razsoem,
+                    'password' => $data['passemp'],
+                    'idemp'    => $empresaReal->idemp,
+                    'username' => $data['usuaemp'],
+                    'email'    => $email
+                ];
+
+                if ($userExistente) {
+                    // Evitar colisión de email si el nuevo email ya pertenece a otro usuario
+                    if ($userExistente->email !== $email && DB::table('users')->where('email', $email)->where('username', '!=', $data['usuaemp'])->exists()) {
+                        unset($userData['email']);
+                    }
+                    DB::table('users')->where('id', $userExistente->id)->update($userData);
+                    $accion = "ACTUALIZADO";
+                } else {
+                    // Evitar colisión de email en inserción
+                    if (DB::table('users')->where('email', $email)->exists()) {
+                        $userData['email'] = "emp_{$empresaReal->idemp}_" . Str::random(3) . "@cda.com";
+                    }
+                    DB::table('users')->insert($userData);
+                    $accion = "CREADO";
+                }
+                $this->command->info("      [AUDIT USER-EMP] username={$data['usuaemp']} | email=" . ($rawEmail ?: 'EMPTY') . " | acción={$accion}");
             }
         }
     }
@@ -230,7 +252,12 @@ class LegacyImportSeeder extends Seeder
                 continue;
             }
 
-            $personaExistente = DB::table('persona')->where('ndocper', $ndoc)->first();
+            // Identificar si la persona ya existe por Documento o por su ID primario legado
+            // Esto evita errores de IntegrityConstraintViolation (Duplicate entry) en el PK idper.
+            $personaExistente = DB::table('persona')
+                ->where('ndocper', $ndoc)
+                ->orWhere('idper', $data['idper'])
+                ->first();
 
             if ($personaExistente) {
                 $vP = $personaExistente->idpef;
@@ -244,12 +271,16 @@ class LegacyImportSeeder extends Seeder
                 elseif (in_array($nP, [2, 4, 5]) && !in_array($vP, [1, 2, 4, 5])) { $perFinal = $nP; }
 
                 $updateData = ['idpef' => $perFinal];
+                
+                // Aseguramos que el documento coincida (en caso de que hayamos encontrado por idper)
+                $updateData['ndocper'] = $ndoc;
+
                 if (empty($personaExistente->nliccon) && !empty($data['nliccon'])) {
                     $updateData['nliccon'] = $data['nliccon'];
                     $updateData['fvencon'] = $data['fvencon'];
                     $updateData['catcon']  = $data['catcon'];
                 }
-                DB::table('persona')->where('ndocper', $ndoc)->update($updateData);
+                DB::table('persona')->where('idper', $personaExistente->idper)->update($updateData);
             } else {
                 $data['ciuper'] = $data['ciuper'] ?? 'NO REGISTRADA';
                 unset($data['pass']);
@@ -271,10 +302,44 @@ class LegacyImportSeeder extends Seeder
             }
 
             if ($perParaUser !== null) {
-                DB::table('users')->updateOrInsert(
-                    ['email' => $data['emaper'] ?? "user_{$ndoc}@cda.com"],
-                    ['name' => $data['nomper'] . ' ' . $data['apeper'], 'password' => Hash::make((string)$ndoc), 'idper' => $idReal, 'username' => (string)$ndoc]
-                );
+                $rawEmail = trim($data['emaper'] ?? '');
+                $email = (empty($rawEmail) || !filter_var($rawEmail, FILTER_VALIDATE_EMAIL))
+                    ? "user_{$ndoc}@cda.com"
+                    : $rawEmail;
+
+                $username = (string)$ndoc;
+                $userExistente = DB::table('users')->where('username', $username)->first();
+                
+                $userData = [
+                    'name'     => trim($data['nomper'] . ' ' . ($data['apeper'] ?? '')),
+                    'password' => Hash::make($username),
+                    'idper'    => $idReal,
+                    'username' => $username,
+                    'email'    => $email
+                ];
+
+                if ($userExistente) {
+                    // Si ya existe por username, actualizamos. Evitamos cambiar email si choca con otro.
+                    if ($userExistente->email !== $email && DB::table('users')->where('email', $email)->where('username', '!=', $username)->exists()) {
+                        unset($userData['email']);
+                    }
+                    DB::table('users')->where('id', $userExistente->id)->update($userData);
+                    $accion = "REUTILIZADO/ACTUALIZADO";
+                } else {
+                    // Si no existe por username, verificamos si el email choca para generar uno único
+                    if (DB::table('users')->where('email', $email)->exists()) {
+                        $userData['email'] = "user_{$ndoc}_" . Str::random(3) . "@cda.com";
+                    }
+                    DB::table('users')->insert($userData);
+                    $accion = "CREADO";
+                }
+
+                // AUDITORÍA PARA IDS CRÍTICOS
+                if ($data['idper'] == 817 || $data['idper'] == 777 || $data['idper'] == 825) {
+                    $this->command->warn("      [AUDIT PERSONA] ID: {$data['idper']} | Doc: {$ndoc} | Perfil: {$data['idpef']} -> {$perParaUser} | Acción User: {$accion}");
+                }
+
+                $this->command->info("      [AUDIT USER] username={$username} | email=" . ($rawEmail ?: 'EMPTY') . " | acción={$accion}");
             }
         }
     }
@@ -304,17 +369,32 @@ class LegacyImportSeeder extends Seeder
             $email = !empty($op->emaper) ? $op->emaper : "user_{$ndoc}@cda.com";
             $nombre = trim($op->nomper . ' ' . ($op->apeper ?? ''));
 
-            DB::table('users')->updateOrInsert(
-                ['email' => $email],
-                [
-                    'name'     => $nombre,
-                    'password' => Hash::make($ndoc),
-                    'idper'    => $op->idper,
-                    'username' => $ndoc,
-                ]
-            );
+            $username = (string) $ndoc;
+            $userExistente = DB::table('users')->where('username', $username)->first();
 
-            $this->command->info("    ✓ Usuario creado: {$nombre} (idpef={$op->idpef}, doc={$ndoc})");
+            $userData = [
+                'name'     => $nombre,
+                'password' => Hash::make($username),
+                'idper'    => $op->idper,
+                'username' => $username,
+                'email'    => $email
+            ];
+
+            if ($userExistente) {
+                if ($userExistente->email !== $email && DB::table('users')->where('email', $email)->where('username', '!=', $username)->exists()) {
+                    unset($userData['email']);
+                }
+                DB::table('users')->where('id', $userExistente->id)->update($userData);
+                $accion = "RECONCILIADO (UPDATE)";
+            } else {
+                if (DB::table('users')->where('email', $email)->exists()) {
+                    $userData['email'] = "user_{$username}_" . Str::random(3) . "@cda.com";
+                }
+                DB::table('users')->insert($userData);
+                $accion = "RECONCILIADO (INSERT)";
+            }
+
+            $this->command->info("    ✓ [AUDIT RECONCILIAR] username={$username} | email={$email} | acción={$accion}");
             $creados++;
         }
 
@@ -354,6 +434,7 @@ class LegacyImportSeeder extends Seeder
         if (!$idRespaldo && count($personasRealesValidas) > 0) {
             $idRespaldo = array_key_first($personasRealesValidas);
         }
+        $this->command->info("    [DEBUG] idRespaldo detectado (Ingeniero Principal): " . ($idRespaldo ?? 'NULL'));
 
         // Obtenemos todos los idveh reales
         $vehiculosRealesValidos = DB::table('vehiculo')->pluck('idveh', 'idveh')->toArray();
@@ -395,6 +476,12 @@ class LegacyImportSeeder extends Seeder
                 'idveh' => $data['idveh'],
                 'idper' => $data['idper']
             ];
+
+            // Auditoría para diagnósticos con idRespaldo
+            if ($data['idper'] == $idRespaldo && $idper != $idRespaldo) {
+                 // Log temporal para entender por qué cae en respaldo
+                 // $this->command->warn("      [DEBUG DIAG] Diag #{$data['iddia']}: Autor original {$idper} no hallado en destino. Usando respaldo {$idRespaldo}.");
+            }
             $importados++;
         }
         $this->command->info("  Diagnósticos: {$importados} importados.");
@@ -423,6 +510,29 @@ class LegacyImportSeeder extends Seeder
         }
 
         // =========================================================================
+        // PRE-FASE: Captura de autores reales (Evitar reasignación masiva a 825)
+        // =========================================================================
+        $this->command->info("    -> Pre-fase: Mapeando autores reales desde legacy...");
+        $realDigitadores = [];
+        $idsImportados = array_keys($this->idsDiagImportados);
+        
+        foreach (array_chunk($idsImportados, 1000) as $chunkIds) {
+            $autoresLegacy = DB::connection('legacy')->table('diapar')
+                ->whereIn('iddia', $chunkIds)
+                ->where('idper', '!=', 0)
+                ->select('iddia', 'idper')
+                ->get();
+            
+            foreach ($autoresLegacy as $al) {
+                if (isset($realDigitadores[$al->iddia])) continue;
+                $mapped = $this->mapaPersonas[$al->idper] ?? $al->idper;
+                if (isset($personasRealesValidas[$mapped])) {
+                    $realDigitadores[$al->iddia] = $mapped;
+                }
+            }
+        }
+
+        // =========================================================================
         // FASE 1: GENERACIÓN OBLIGATORIA (Base para TODOS los vehículos)
         // =========================================================================
         $this->command->info("    -> Fase 1: Generando Luces y Motor Diesel...");
@@ -431,6 +541,9 @@ class LegacyImportSeeder extends Seeder
         foreach ($this->idsDiagImportados as $iddia => $info) {
             $idveh = $info['idveh'];
             $idperDiag = $info['idper'];
+            
+            // Prioridad: Autor real de parámetros > Autor de cabecera > Respaldo
+            $idperFinalF1 = $realDigitadores[$iddia] ?? ($idperDiag ?: $idRespaldo);
             
             $combustible = $this->vehiculoCombustible[$idveh] ?? null;
             $esDiesel = ($combustible == 43 || strtolower(trim((string)$combustible)) === 'diesel');
@@ -442,7 +555,7 @@ class LegacyImportSeeder extends Seeder
                 $insertData[] = [
                     'iddia' => $iddia,
                     'idpar' => $idparLuces,
-                    'idper' => $idperDiag, // Usar el idper del diagnóstico
+                    'idper' => $idperFinalF1,
                     'valor' => 'funciona',
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -470,7 +583,7 @@ class LegacyImportSeeder extends Seeder
                     $insertData[] = [
                         'iddia' => $iddia,
                         'idpar' => $idparDiesel,
-                        'idper' => $idperDiag, // Usar el idper del diagnóstico
+                        'idper' => $idperFinalF1,
                         'valor' => $valorRand,
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -538,7 +651,19 @@ class LegacyImportSeeder extends Seeder
                     
                     $idperMapeado = $this->mapaPersonas[$dp->idper] ?? $dp->idper;
                     $idperDiag = $this->idsDiagImportados[$dp->iddia]['idper'] ?? $idRespaldo;
-                    $idperFinal = isset($personasRealesValidas[$idperMapeado]) ? $idperMapeado : $idperDiag;
+                    
+                    // Prioridad: Autor específico del registro > Autor pre-escaneado > Autor de cabecera
+                    $idperFinal = isset($personasRealesValidas[$idperMapeado]) 
+                        ? $idperMapeado 
+                        : ($realDigitadores[$dp->iddia] ?? $idperDiag);
+                    
+                    // AUDITORÍA PROFUNDA PARA ID 817, 777 y 825 (Puntos 7 y 8 del requerimiento)
+                    if ($dp->idper == 817 || $dp->idper == 777 || $idperFinal == 825) {
+                        if ($total % 100 === 0) { // Limitar ruido en consola
+                            $motivo = ($idperFinal == $idperMapeado) ? "MAPPING_OK" : (($idperFinal == $idperDiag) ? "FALLBACK_DIAG" : "FALLBACK_RESPALDO");
+                            $this->command->info("      [AUDIT DIAPAR] Diag #{$dp->iddia} | Param: {$dp->idpar} | Orig: {$dp->idper} | Mapped: {$idperMapeado} | Final: {$idperFinal} | Motivo: {$motivo}");
+                        }
+                    }
 
                     $insertData[] = [
                         'iddia' => $dp->iddia,
@@ -548,15 +673,6 @@ class LegacyImportSeeder extends Seeder
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
-                    
-                    // Log temporal para validación
-                    if ($total % 500 === 0) {
-                        $msg = "      - Diag #{$dp->iddia}: idper {$dp->idper} -> {$idperFinal}";
-                        if ($idperFinal == $idRespaldo && $dp->idper != 0) {
-                            $msg .= " (FALLBACK a Respaldo)";
-                        }
-                        $this->command->info($msg);
-                    }
                     $total++;
                     
                     if (count($insertData) >= $batchSize) {
@@ -578,9 +694,10 @@ class LegacyImportSeeder extends Seeder
                 $procesados["$iddia-$idparDestino"] = true;
                 
                 $idperDiag = $this->idsDiagImportados[$iddia]['idper'] ?? $idRespaldo;
+                $idperFinalF3 = $realDigitadores[$iddia] ?? $idperDiag;
 
                 $insertData[] = [
-                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperDiag,
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperFinalF3,
                     'valor' => $this->normalizarDefecto($valor), 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;
@@ -618,9 +735,10 @@ class LegacyImportSeeder extends Seeder
                 $procesados["$iddia-$idparDestino"] = true;
                 
                 $idperDiag = $this->idsDiagImportados[$iddia]['idper'] ?? $idRespaldo;
+                $idperFinalF3 = $realDigitadores[$iddia] ?? $idperDiag;
 
                 $insertData[] = [
-                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperDiag,
+                    'iddia' => $iddia, 'idpar' => $idparDestino, 'idper' => $idperFinalF3,
                     'valor' => $valor, 'created_at' => $now, 'updated_at' => $now,
                 ];
                 $total++;

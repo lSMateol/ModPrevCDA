@@ -19,6 +19,10 @@
                 @php
                     $empresaNombre = $diagnostico->vehiculo->empresa->razsoem ?? 'PARTICULAR';
                     $esReinspeccion = !is_null($diagnostico->dpiddia);
+                    
+                    // Fuente de verdad para el digitador: el autor de los parámetros técnicos (diapar)
+                    $digitadorParams = $diagnostico->parametros->whereNotNull('idper')->first();
+                    $digitadorReal = $digitadorParams ? $digitadorParams->persona : $diagnostico->persona;
                 @endphp
                 <strong>{{ $empresaNombre }}</strong> - <strong>No. Orden: {{ $diagnostico->vehiculo->nordveh ?? 'N/A' }}</strong>
             </div>
@@ -386,7 +390,7 @@
                 <td style="border: none; width: 80px;"><strong>INSPECTOR:</strong></td>
                 <td style="border: none; border-bottom: 1px solid #000; width: 220px;">{{ $diagnostico->inspector->nomper ?? '' }} {{ $diagnostico->inspector->apeper ?? '' }}</td>
                 <td style="border: none; padding-left: 20px; width: 80px;"><strong>DIGITADOR:</strong></td>
-                <td style="border: none; border-bottom: 1px solid #000; width: 200px;">{{ $diagnostico->persona->nomper ?? '' }} {{ $diagnostico->persona->apeper ?? '' }}</td>
+                <td style="border: none; border-bottom: 1px solid #000; width: 200px;">{{ $digitadorReal->nomper ?? '' }} {{ $digitadorReal->apeper ?? '' }}</td>
             </tr>
         </table>
     </div>

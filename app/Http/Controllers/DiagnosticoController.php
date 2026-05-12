@@ -698,6 +698,7 @@ class DiagnosticoController extends Controller
             'inspector', 
             'ingeniero', 
             'parametros.parametro.tippar', 
+            'parametros.persona', 
             'fotos',
             'rechazo'
         ])->findOrFail($id);
