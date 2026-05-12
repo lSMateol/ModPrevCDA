@@ -6,7 +6,7 @@
     <title>Inspección Preventiva - {{ $diagnostico->vehiculo->placaveh }}</title>
     <style>
         @page {
-            size: letter;
+            size: auto;
             margin: 0.5cm;
         }
         body {

@@ -18,7 +18,7 @@
             <div class="order-info">
                 @php
                     $empresaNombre = $diagnostico->vehiculo->empresa->razsoem ?? 'PARTICULAR';
-                    $esReinspeccion = !is_null($diagnostico->dpiddia);
+                    $esReinspeccion = !empty($diagnostico->dpiddia);
                     
                     // Fuente de verdad para el digitador: el autor de los parámetros técnicos (diapar)
                     $digitadorParams = $diagnostico->parametros->whereNotNull('idper')->first();
@@ -384,6 +384,8 @@
         </div>
     </div>
 
+
+
     <div style="margin-top: 5px; font-size: 8pt;">
         <table style="border: none;">
             <tr style="border: none;">
@@ -395,7 +397,7 @@
         </table>
     </div>
 
-    <div class="footer-signatures" style="margin-top: 15px;">
+    <div class="footer-signatures" style="margin-top: 5px;">
         <div style="width: 40%; text-align: center;">
             @php
                 $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
@@ -416,7 +418,7 @@
         Parámetro $showPhotos (default: true) controla si se muestran o no.
     --}}
     @if(($showPhotos ?? true) && $diagnostico->fotos->count() > 0)
-    <div class="photos-container">
+    <div class="photos-container" style="margin-top: 5px;">
         @foreach($diagnostico->fotos as $foto)
         @php
             $filePath = storage_path('app/public/' . $foto->rutafoto);
@@ -430,7 +432,7 @@
             }
         @endphp
         @php
-            $photoStyle = $esReinspeccion ? 'width: 170px; height: 120px;' : 'width: 280px; height: 200px;';
+            $photoStyle = $esReinspeccion ? 'width: 240px; height: 180px;' : 'width: 280px; height: 200px;';
         @endphp
         <div class="photo-item" style="{{ $photoStyle }}">
             <img src="{{ $imgSrc }}" alt="Evidencia">
@@ -439,7 +441,9 @@
     </div>
     @endif
 
-    @if($esReinspeccion)
+
+
+    @if(!empty($diagnostico->dpiddia))
     {{-- Bloque de reinspección: solo se renderiza cuando dpiddia tiene valor --}}
     <div style="margin-top: 15px; border: 1px solid #cc0000; padding: 10px;">
         <p style="margin: 0; font-weight: 900; color: #cc0000; font-size: 9.5pt; text-transform: uppercase;">

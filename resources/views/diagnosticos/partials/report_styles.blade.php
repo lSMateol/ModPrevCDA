@@ -1,6 +1,6 @@
 <style>
     @page {
-        size: letter;
+        size: auto;
         margin: 0.5cm;
     }
     body {
@@ -15,7 +15,7 @@
     .container {
         width: 100%;
         max-width: 850px;
-        margin: 10px auto;
+        margin: 0 auto;
         background-color: #fff;
         padding: 0.3cm;
         box-sizing: border-box;
@@ -62,7 +62,7 @@
         padding: 1px 5px;
         font-weight: bold;
         border: 1px solid #000;
-        margin-top: 4px;
+        margin-top: 2px;
         font-size: 7.5pt;
     }
     table {
@@ -119,6 +119,7 @@
         gap: 15px;
         justify-content: center;
         flex-wrap: wrap;
+        page-break-inside: avoid;
     }
     .photo-item {
         width: 170px;
@@ -126,6 +127,7 @@
         border: 1px solid #000;
         overflow: hidden;
         background: #f0f0f0;
+        page-break-inside: avoid;
     }
     .photo-item img {
         width: 100%;
@@ -195,7 +197,7 @@
         top: 0;
         left: 0;
         width: 150%; /* Más grande que la hoja para cubrir rotación */
-        height: 150%;
+        height: 100%;
         display: flex;
         flex-wrap: wrap;
         align-content: flex-start;

@@ -6,7 +6,7 @@
     <title>Reporte Consolidado de Flota - {{ $empresa->razsoem }}</title>
     <style>
         @page {
-            size: letter;
+            size: auto;
             margin: 0.5cm;
         }
         body {
@@ -21,7 +21,7 @@
         .container {
             width: 100%;
             max-width: 850px;
-            margin: 10px auto;
+            margin: 0 auto;
             background-color: #fff;
             padding: 0.5cm;
             box-shadow: 0 0 20px rgba(0,0,0,0.15);
@@ -67,7 +67,7 @@
             padding: 2px 5px;
             font-weight: bold;
             border: 1px solid #000;
-            margin-top: 8px;
+            margin-top: 4px;
             font-size: 8.5pt;
         }
         table {
