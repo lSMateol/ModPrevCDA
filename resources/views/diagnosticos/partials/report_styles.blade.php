@@ -182,10 +182,38 @@
             padding: 0 !important; 
             box-shadow: none !important; 
             border-radius: 0 !important;
+            background-color: transparent !important; /* Vital para que se vea la marca de agua */
         }
         .watermark {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            display: block !important;
         }
+    }
+
+    /* Estilos para la Marca de Agua (PATRÓN REPETIDO) */
+    .watermark-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 150%; /* Más grande que la hoja para cubrir rotación */
+        height: 150%;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        justify-content: center;
+        transform: rotate(-20deg) translate(-20%, -20%);
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0.06; /* Muy sutil */
+        user-select: none;
+        overflow: hidden;
+    }
+    .watermark-item {
+        font-size: 20pt;
+        font-weight: 900;
+        margin: 60px 40px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        color: #000;
+        font-family: 'Arial', sans-serif;
     }
 </style>

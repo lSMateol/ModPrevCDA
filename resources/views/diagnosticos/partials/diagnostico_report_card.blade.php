@@ -10,6 +10,7 @@
       - diagnosticos/export.blade.php       (reporte individual)
       - diagnosticos/export_flota.blade.php (reporte de flota, dentro del @foreach)
 --}}
+
 <div class="container">
     <header>
         <div class="header-left">
