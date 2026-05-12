@@ -15,6 +15,17 @@ class Diag extends Model
         'fecvig', 'kilomt', 'idinsp', 'iding', 'iddiapar', 'dpiddia', 'tipo_formulario'
     ];
 
+    /**
+     * Fuerza que 'aprobado' sea integer en JSON/serialización.
+     * Sin esto, algunos drivers MySQL/PDO devuelven TINYINT(1) como boolean PHP
+     * (true/false), lo que rompe comparaciones estrictas (===) en JavaScript.
+     * null permanece null con este cast.
+     */
+    protected $casts = [
+        'aprobado' => 'integer',
+    ];
+
+
     public function vehiculo()
     {
         return $this->belongsTo(Vehiculo::class, 'idveh', 'idveh');

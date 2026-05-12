@@ -304,11 +304,12 @@
                         }
 
                         // Estado
-                        if (this.estadoFilter) {
-                            if (this.estadoFilter === 'aprobado' && d.aprobado !== 1) match = false;
-                            if (this.estadoFilter === 'no_aprobado' && d.aprobado !== 0) match = false;
-                            if (this.estadoFilter === 'pendiente' && d.aprobado !== null) match = false;
-                        }
+                        // Se usa != (comparación flexible) en lugar de !== (estricta) para cubrir
+                        // el caso en que el hosting MySQL/PDO devuelve TINYINT(1) como boolean PHP
+                        // (true/false en vez de 1/0), lo que rompería la comparación estricta en JS.
+                        if (this.estadoFilter === 'aprobado' && d.aprobado != 1) match = false;
+                        if (this.estadoFilter === 'no_aprobado' && (d.aprobado === null || d.aprobado != 0)) match = false;
+                        if (this.estadoFilter === 'pendiente' && d.aprobado !== null) match = false;
 
                         // Empresa
                         if (this.empresaFilter) {
