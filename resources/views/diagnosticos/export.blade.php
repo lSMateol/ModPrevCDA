@@ -209,7 +209,11 @@
             <div class="header-left">
                 <h1>INSPECCION PREVENTIVA</h1>
                 <div class="order-info">
-                    <strong>SIDAUTO</strong> - <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
+                    @php
+                        $empresaNombre = $diagnostico->vehiculo->empresa->razsoem ?? 'PARTICULAR';
+                        $esReinspeccion = !is_null($diagnostico->dpiddia);
+                    @endphp
+                    <strong>{{ $empresaNombre }}</strong> - <strong>No. Registro: {{ $diagnostico->iddia }}</strong>
                 </div>
             </div>
             <div class="header-right">
@@ -599,19 +603,21 @@
         </div>
         @endif
 
-        <!-- Bloque Informativo Automatizado -->
-        <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+        @if($esReinspeccion)
+        {{-- Bloque de reinspección: solo se renderiza cuando dpiddia tiene valor (es una reinspección) --}}
+        <div style="margin-top: 15px; border-top: 2px solid #cc0000; padding-top: 10px; border: 1px solid #cc0000; padding: 10px;">
             <p style="margin: 0; font-weight: 900; color: #cc0000; font-size: 9.5pt; text-transform: uppercase;">
-                REVISIÓN PREVENTIVA DE {{ $diagnostico->dpiddia ? 'REINSPECCIÓN' : 'INSPECCIÓN' }}
+                REVISIÓN PREVENTIVA DE REINSPECCIÓN
             </p>
             <p style="margin: 4px 0 0 0; font-size: 8.5pt; line-height: 1.4; text-align: justify; font-weight: 500;">
-                El presente reporte confirma que hoy {{ \Carbon\Carbon::parse($diagnostico->fecdia)->format('Y-m-d') }} 
-                el automotor de placas <strong>{{ $diagnostico->vehiculo->placaveh }}</strong> realiza 
-                {{ $diagnostico->dpiddia ? 'reinspección de la' : 'la' }} revisión preventiva. 
-                De acuerdo a los resultados el CDA Rastrillantas certifica que el vehículo 
-                <strong>{{ $diagnostico->aprobado ? 'aprobó' : 'no aprobó' }}</strong> a la revisión preventiva.
+                El presente reporte confirma que hoy {{ \Carbon\Carbon::parse($diagnostico->fecdia)->format('Y-m-d') }}
+                el automotor de placas <strong>{{ $diagnostico->vehiculo->placaveh }}</strong> realizó reinspección
+                de la revisión preventiva (referencia al diagnóstico ID-#{{ $diagnostico->dpiddia }}).
+                De acuerdo a los resultados el CDA Rastrillantas certifica que el vehículo
+                <strong>{{ $diagnostico->aprobado ? 'aprobó' : 'no aprobó' }}</strong> la revisión preventiva.
             </p>
         </div>
+        @endif
     </div>
 
     <!-- Marca de Agua (Añadida al final para superposición suave) -->
