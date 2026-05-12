@@ -43,7 +43,7 @@ class DiagnosticoController extends Controller
             $query->where('aprobado', $request->aprobado);
         }
 
-        $diagnosticos = $query->orderBy('iddia', 'desc')->paginate(15);
+        $diagnosticos = $query->orderBy('iddia', 'desc')->paginate(15)->withQueryString();
 
         // Métricas del día
         $hoy = \Carbon\Carbon::today();
@@ -489,7 +489,7 @@ class DiagnosticoController extends Controller
             $query->whereDate('fecdia', $request->fecha);
         }
 
-        $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15);
+        $rechazados = $query->orderBy('fecdia', 'desc')->paginate(15)->withQueryString();
         $inspectores = Persona::where('idpef', 5)->where('actper', 1)->get();
         $empresas = \App\Models\Empresa::all();
 
