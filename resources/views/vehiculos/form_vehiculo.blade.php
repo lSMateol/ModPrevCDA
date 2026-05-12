@@ -216,7 +216,7 @@
 
                 <div class="veh-field">
                     <label>No. interno</label>
-                    <input type="text" name="nordveh" value="{{ old('nordveh', $vehiculo->nordveh ?? ($modo === 'crear' ? 'Autogenerado' : '')) }}" readonly style="background-color: #f8fafc; color: #9aa6b2; cursor: not-allowed;" />
+                    <input type="text" name="nordveh" value="{{ old('nordveh', $vehiculo->nordveh ?? '') }}" placeholder="Ej: 1234 (Se autogenera si se deja vacío)" maxlength="30" {!! $readonlyAttr !!} />
                     @error('nordveh') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
 
