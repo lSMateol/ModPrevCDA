@@ -162,12 +162,17 @@
                         Tendencia de Diagnóstico
                     </h2>
                     <div class="tendencia-filters">
-                        <button class="filter-btn active" @click="changeRange('semana')">Semanal</button>
-                        <button class="filter-btn" @click="changeRange('mes')">Mensual</button>
+                        <button class="filter-btn active" @click="changeRange('semana', $event)">Semanal</button>
+                        <button class="filter-btn" @click="changeRange('mes', $event)">Mensual</button>
                     </div>
                 </div>
-                <div style="flex: 1; min-height: 250px;">
-                    <canvas id="tendenciaChart"></canvas>
+                <div style="flex: 1; min-height: 250px; position: relative;">
+                    <div id="wrapper-semana" style="position: absolute; inset: 0;">
+                        <canvas id="tendenciaChartSemana"></canvas>
+                    </div>
+                    <div id="wrapper-mes" style="position: absolute; inset: 0; display: none;">
+                        <canvas id="tendenciaChartMes"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -211,7 +216,7 @@
                         <thead>
                             <tr>
                                 <th>Vehículo / Empresa</th>
-                                <th>Inspector</th>
+                                <th>Digitador</th>
                                 <th>Estado</th>
                                 <th>Fecha</th>
                             </tr>
@@ -252,7 +257,8 @@
     function dashboardData() {
         return {
             rendimientoChart: null,
-            tendenciaChart: null,
+            tendenciaChartSemana: null,
+            tendenciaChartMes: null,
             tendenciaData: @json($tendencia),
             
             init() {
@@ -289,7 +295,11 @@
             },
 
             initTendenciaChart(range) {
-                const ctx = document.getElementById('tendenciaChart').getContext('2d');
+                if (range === 'semana' && this.tendenciaChartSemana) return;
+                if (range === 'mes' && this.tendenciaChartMes) return;
+
+                const canvasId = range === 'semana' ? 'tendenciaChartSemana' : 'tendenciaChartMes';
+                const ctx = document.getElementById(canvasId).getContext('2d');
                 
                 let filteredData = [...this.tendenciaData];
                 if (range === 'semana') {
@@ -299,14 +309,12 @@
                 }
 
                 const labels = filteredData.map(d => {
-                    const date = new Date(d.fecha);
+                    const date = new Date(d.fecha + 'T00:00:00');
                     return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
                 });
                 const values = filteredData.map(d => d.total);
 
-                if (this.tendenciaChart) this.tendenciaChart.destroy();
-
-                this.tendenciaChart = new Chart(ctx, {
+                const chart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
@@ -342,12 +350,24 @@
                         }
                     }
                 });
+
+                if (range === 'semana') {
+                    this.tendenciaChartSemana = chart;
+                } else {
+                    this.tendenciaChartMes = chart;
+                }
             },
 
-            changeRange(range) {
+            changeRange(range, event) {
                 const buttons = document.querySelectorAll('.filter-btn');
                 buttons.forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add('active');
+                }
+
+                document.getElementById('wrapper-semana').style.display = range === 'semana' ? 'block' : 'none';
+                document.getElementById('wrapper-mes').style.display = range === 'mes' ? 'block' : 'none';
+
                 this.initTendenciaChart(range);
             }
         }
