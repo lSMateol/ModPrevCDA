@@ -400,8 +400,16 @@
     <div class="footer-signatures" style="margin-top: 5px;">
         <div style="width: 40%; text-align: center;">
             @php
-                $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
-                $firmaSrc = file_exists($firmaPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($firmaPath)) : asset('assets/firmas/firma_ingeniera.png');
+                $nombreCompleto = strtolower(trim($diagnostico->ingeniero->nomper ?? '') . ' ' . trim($diagnostico->ingeniero->apeper ?? ''));
+                if (str_contains($nombreCompleto, 'luis') && str_contains($nombreCompleto, 'bocanegra')) {
+                    $firmaPath = public_path('assets/firmas/Firma_Ingeniero2.png');
+                    $fallbackSrc = asset('assets/firmas/Firma_Ingeniero2.png');
+                } else {
+                    $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+                    $fallbackSrc = asset('assets/firmas/firma_ingeniera.png');
+                }
+                
+                $firmaSrc = file_exists($firmaPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($firmaPath)) : $fallbackSrc;
             @endphp
             <img src="{{ $firmaSrc }}" style="height: 45px; width: auto; margin-bottom: 2px;" alt="Firma">
             <div style="border-top: 1px solid #000; padding-top: 5px; font-size: 8pt; width: 100%;">

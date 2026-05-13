@@ -379,7 +379,13 @@
         <div class="signature-box" style="display: inline-block; text-align: center; width: 250px; margin: 0 auto;">
             <div style="height: 70px; margin-bottom: 5px;">
                 @php
-                    $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+                    $nombreCompleto = strtolower(trim($diagnostico->ingeniero->nomper ?? '') . ' ' . trim($diagnostico->ingeniero->apeper ?? ''));
+                    if (str_contains($nombreCompleto, 'luis') && str_contains($nombreCompleto, 'bocanegra')) {
+                        $firmaPath = public_path('assets/firmas/Firma_Ingeniero2.png');
+                    } else {
+                        $firmaPath = public_path('assets/firmas/firma_ingeniera.png');
+                    }
+                    
                     $firmaBase64 = '';
                     if (file_exists($firmaPath)) {
                         $type = pathinfo($firmaPath, PATHINFO_EXTENSION);
@@ -390,7 +396,7 @@
                     }
                 @endphp
                 @if($firmaBase64)
-                    <img src="{{ $firmaBase64 }}" alt="Firma Ingeniera" style="max-height: 70px; max-width: 200px; display: block; margin: 0 auto;">
+                    <img src="{{ $firmaBase64 }}" alt="Firma" style="max-height: 70px; max-width: 200px; display: block; margin: 0 auto;">
                 @endif
             </div>
             <div style="border-top: 1px solid #000; padding-top: 5px;">
