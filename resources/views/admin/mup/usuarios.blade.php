@@ -45,7 +45,7 @@
             </div>
             <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-blue-500 flex flex-col justify-center min-w-[120px]">
                 <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Activos</span>
-                <span class="text-2xl font-black text-blue-600" x-text="usuarios.filter(u => u.actper).length"></span>
+                <span class="text-2xl font-black text-blue-600" x-text="usuarios.filter(u => Number(u.actper) === 1).length"></span>
             </div>
             <div class="bg-[#001834] p-4 rounded-2xl shadow-lg flex flex-col justify-center min-w-[120px]">
                 <span class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Ingenieros</span>
@@ -93,7 +93,7 @@
                         <div class="flex items-center gap-3">
                             <!-- Avatar Circular -->
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 transition-transform group-hover:rotate-12"
-                                :class="u.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-blue-600' : 'bg-gray-300'"
+                                :class="Number(u.actper) === 1 ? 'bg-gradient-to-br from-[#0d3b5a] to-blue-600' : 'bg-gray-300'"
                                 x-text="getInitials(u.name)">
                             </div>
                             
@@ -157,8 +157,8 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                                         <h2 class="text-xl sm:text-2xl font-black tracking-tight truncate uppercase" x-text="selectedUser.name"></h2>
                                         <div class="flex gap-2">
-                                            <span x-show="selectedUser.actper" class="bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Activa</span>
-                                            <span x-show="!selectedUser.actper" class="bg-red-500/20 text-red-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-red-500/30 uppercase tracking-widest">Bloqueado</span>
+                                            <span x-show="Number(selectedUser.actper) === 1" class="bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Activa</span>
+                                            <span x-show="Number(selectedUser.actper) !== 1" class="bg-red-500/20 text-red-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-red-500/30 uppercase tracking-widest">Bloqueado</span>
                                         </div>
                                     </div>
                                     <p class="text-white/60 text-[10px] sm:text-xs font-medium mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -634,7 +634,7 @@ function usuariosManager() {
 
         getInitials(name) {
             if (!name) return '??';
-            const parts = name.trim().split(' ');
+            const parts = name.trim().split(/\s+/);
             if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
             return name.substring(0, 2).toUpperCase();
         },

@@ -72,16 +72,16 @@
                         <div class="flex items-center gap-3">
                             <!-- Avatar con iniciales -->
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 transition-transform group-hover:scale-110"
-                                :class="con.actper ? 'bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]' : 'bg-gray-300'"
+                                :class="Number(con.actper) === 1 ? 'bg-gradient-to-br from-[#0d3b5a] to-[#1a4f73]' : 'bg-gray-300'"
                                 x-text="con.nomper[0] + (con.apeper ? con.apeper[0] : '')">
                             </div>
                             
                             <div class="min-w-0 flex-1">
                                 <div class="flex justify-between items-center gap-2">
                                     <h3 class="font-bold text-[#001834] text-[13px] truncate uppercase tracking-tight" x-text="con.nomper + ' ' + (con.apeper || '')"></h3>
-                                    <span :class="con.actper ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'" 
+                                    <span :class="Number(con.actper) === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'" 
                                         class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shrink-0"
-                                        x-text="con.actper ? 'Activo' : 'Inactivo'"></span>
+                                        x-text="Number(con.actper) === 1 ? 'Activo' : 'Inactivo'"></span>
                                 </div>
                                 <div class="flex items-center gap-2 mt-0.5">
                                     <iconify-icon icon="lucide:hash" class="text-gray-400 text-[9px]"></iconify-icon>
@@ -122,7 +122,7 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                                         <h2 class="text-xl sm:text-2xl font-black tracking-tight truncate uppercase" x-text="selectedConductor.nomper + ' ' + (selectedConductor.apeper || '')"></h2>
-                                        <span x-show="selectedConductor.actper" class="w-fit bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Disponible</span>
+                                        <span x-show="Number(selectedConductor.actper) === 1" class="w-fit bg-emerald-500/20 text-emerald-300 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">Disponible</span>
                                     </div>
                                     <p class="text-white/60 text-[10px] sm:text-xs font-medium mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <span class="flex items-center gap-1.5">
