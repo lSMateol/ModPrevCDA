@@ -244,7 +244,7 @@
                                                     <p class="text-xs font-bold text-gray-700 mt-1 uppercase" x-text="veh.marveh + ' ' + (veh.modveh || '')"></p>
                                                 </div>
                                                 <div class="ml-auto">
-                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Gestionar Vehículo">
+                                                    <a :href="baseUrl + '/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Gestionar Vehículo">
                                                         <iconify-icon icon="lucide:arrow-up-right" class="text-lg"></iconify-icon>
                                                     </a>
                                                 </div>
@@ -391,7 +391,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url($mupBase . '/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+            <form :action="baseUrl + '/' + mupBase + '/entidades/mup/empresas/' + currentEmp.idemp" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_mup_empresa_form" value="edit">
@@ -481,7 +481,7 @@
             
             <div class="flex gap-4">
                 <button @click="deleteModal = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                <form :action="'{{ url($mupBase . '/entidades/mup/empresas') }}/' + currentEmp.idemp" method="POST" class="flex-1">
+                <form :action="baseUrl + '/' + mupBase + '/entidades/mup/empresas/' + currentEmp.idemp" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red-200 hover:scale-[1.05] transition-all">Sí, borrar</button>
@@ -503,6 +503,7 @@
 function empresaManager() {
     return {
         search: '',
+        baseUrl: '{{ url('') }}',
         mupBase: '{{ $mupBase }}',
         createDrawer: false,
         editDrawer: false,

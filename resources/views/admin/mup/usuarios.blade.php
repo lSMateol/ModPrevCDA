@@ -420,7 +420,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+            <form :action="baseUrl + '/' + mupBase + '/entidades/mup/usuarios/' + selectedUser?.id" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_mup_usuario_form" value="edit">
@@ -543,7 +543,7 @@
             
             <div class="flex gap-4">
                 <button @click="deleteModal = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">Cancelar</button>
-                <form :action="'{{ url($mupBase . '/entidades/mup/usuarios') }}/' + selectedUser?.id" method="POST" class="flex-1">
+                <form :action="baseUrl + '/' + mupBase + '/entidades/mup/usuarios/' + selectedUser?.id" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red-200 hover:scale-[1.05] transition-all">Confirmar Borrado</button>
@@ -565,6 +565,8 @@
 function usuariosManager() {
     return {
         search: '',
+        baseUrl: '{{ url('') }}',
+        mupBase: '{{ $mupBase }}',
         createDrawer: false,
         editDrawer: false,
         deleteModal: false,

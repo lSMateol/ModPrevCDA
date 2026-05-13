@@ -245,7 +245,7 @@
                                                     <p class="text-xs font-bold text-gray-700 mt-1" x-text="'ORD: ' + (veh.nordveh || 'S/I')"></p>
                                                 </div>
                                                 <div class="ml-auto">
-                                                    <a :href="'/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-50 hover:text-blue-600 transition-all" title="Gestionar Vehículo">
+                                                    <a :href="baseUrl + '/' + mupBase + '/vehiculos/' + veh.idveh + '/editar'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-50 hover:text-blue-600 transition-all" title="Gestionar Vehículo">
                                                         <iconify-icon icon="lucide:external-link" class="text-lg"></iconify-icon>
                                                     </a>
                                                 </div>
@@ -439,7 +439,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url($mupBase . '/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
+            <form :action="baseUrl + '/' + mupBase + '/entidades/mup/propietarios/' + currentProp.idper" method="POST" class="p-8 overflow-y-auto flex-1 custom-scrollbar">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_propietario_form" value="edit">
@@ -556,7 +556,7 @@
             
             <div class="flex gap-4">
                 <button @click="deleteModal = false" class="flex-1 py-4 text-gray-400 font-bold hover:bg-gray-50 rounded-2xl transition-all">No, volver</button>
-                <form :action="'{{ url($mupBase . '/entidades/mup/propietarios') }}/' + currentProp.idper" method="POST" class="flex-1">
+                <form :action="baseUrl + '/' + mupBase + '/entidades/mup/propietarios/' + currentProp.idper" method="POST" class="flex-1">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red-200 hover:scale-[1.05] transition-all">Sí, borrar</button>
@@ -578,6 +578,7 @@
 function propietarioManager() {
     return {
         search: '',
+        baseUrl: '{{ url('') }}',
         mupBase: '{{ $mupBase }}',
         editing: false,
         deleteModal: false,
