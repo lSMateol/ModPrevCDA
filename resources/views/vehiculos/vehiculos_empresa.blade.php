@@ -1015,7 +1015,7 @@
                                 {{-- Gerente --}}
                                 <div class="stat-row">
                                     <div class="stat-label"><i class="fa-solid fa-user-tie"></i> Gerente</div>
-                                    <div class="stat-value normal" x-text="selectedVehiculo.empresa.nomger || 'N/A'"></div>
+                                    <div class="stat-value normal" style="max-width: 160px; text-align: right; font-size: 13px; line-height: 1.3; word-break: break-word;" x-text="selectedVehiculo.empresa.nomger || 'N/A'"></div>
                                 </div>
                                 {{-- Dirección --}}
                                 <div class="stat-row">

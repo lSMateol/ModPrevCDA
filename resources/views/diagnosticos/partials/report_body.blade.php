@@ -185,7 +185,7 @@
             <td class="label">CRITERIOS DE VALIDACION ({{ $isDiesel ? 'MOTOR DIESEL' : 'OTTO' }})</td>
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'no' ? 'X' : '' }}</td>
-            <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramwwValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
             <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['Criterios_de_validacion'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
         </tr>
         @else
