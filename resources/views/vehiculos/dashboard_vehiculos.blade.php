@@ -15,6 +15,9 @@
         vinculoMode: false,
         vinculoSaving: false,
         vinculoForm: { prop: '', cond: '', idemp: '' },
+        searchProp: '', showPropList: false,
+        searchCond: '', showCondList: false,
+        searchEmp: '', showEmpList: false,
         editDocMode: false,
         docSaving: false,
         docForm: { soat: '', fecvens: '', tecmecveh: '', fecvent: '', lictraveh: '', fmatv: '', fecvenr: '', extcontveh: '', fecvene: '' },
@@ -108,6 +111,37 @@
             return map[tipo] || 'N/A';
         },
 
+        get filteredProps() {
+            if (!this.searchProp) return this.propietarios;
+            const s = this.searchProp.toLowerCase();
+            return this.propietarios.filter(p => (p.nomper + ' ' + (p.apeper || '') + ' ' + (p.ndocper || '')).toLowerCase().includes(s));
+        },
+        selectProp(p) {
+            this.vinculoForm.prop = p ? p.idper : '';
+            this.searchProp = p ? (p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')) : '';
+            this.showPropList = false;
+        },
+        get filteredConds() {
+            if (!this.searchCond) return this.conductores;
+            const s = this.searchCond.toLowerCase();
+            return this.conductores.filter(p => (p.nomper + ' ' + (p.apeper || '') + ' ' + (p.ndocper || '')).toLowerCase().includes(s));
+        },
+        selectCond(p) {
+            this.vinculoForm.cond = p ? p.idper : '';
+            this.searchCond = p ? (p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')) : '';
+            this.showCondList = false;
+        },
+        get filteredEmps() {
+            if (!this.searchEmp) return this.allEmpresas;
+            const s = this.searchEmp.toLowerCase();
+            return this.allEmpresas.filter(e => e.razsoem.toLowerCase().includes(s));
+        },
+        selectEmp(e) {
+            this.vinculoForm.idemp = e ? e.idemp : '';
+            this.searchEmp = e ? e.razsoem : '';
+            this.showEmpList = false;
+        },
+
         init() {
             if (this.vehiculos.length > 0) {
                 this.selectedVehiculo = this.vehiculos[0];
@@ -182,6 +216,16 @@
             this.vinculoForm.prop = this.selectedVehiculo.prop || '';
             this.vinculoForm.cond = this.selectedVehiculo.cond || '';
             this.vinculoForm.idemp = this.selectedVehiculo.idemp || '';
+            
+            const p = this.selectedVehiculo.propietario;
+            this.searchProp = p ? (p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')) : '';
+            
+            const c = this.selectedVehiculo.conductor;
+            this.searchCond = c ? (c.nomper + ' ' + (c.apeper || '') + ' — ' + (c.ndocper || '')) : '';
+            
+            const e = this.selectedVehiculo.empresa;
+            this.searchEmp = e ? e.razsoem : '';
+            
             this.vinculoMode = true;
         },
 
@@ -702,94 +746,89 @@
                     <div class="relation-connector"></div>
 
                     <!-- Propietario -->
-                    <div class="relation-item">
+                    <div class="relation-item" style="position: relative;" @click.away="showPropList = false">
                         <div class="relation-icon">
                             <i class="fa-solid fa-briefcase"></i>
                         </div>
-                        <div class="relation-info">
+                        <div class="relation-info" style="width: 100%;">
                             <span class="relation-label">Propietario</span>
-                            <span class="relation-value" x-text="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '')) : 'Sin asignar'" :style="!selectedVehiculo.propietario && 'color: #9ca3af; font-style: italic;'"></span>
+                            <span x-show="!vinculoMode" class="relation-value" x-text="selectedVehiculo.propietario ? (selectedVehiculo.propietario.nomper + ' ' + (selectedVehiculo.propietario.apeper || '')) : 'Sin asignar'" :style="!selectedVehiculo.propietario && 'color: #9ca3af; font-style: italic;'"></span>
+                            <div x-show="vinculoMode" x-cloak style="position: relative; margin-top: 4px;">
+                                <input type="text" x-model="searchProp" @focus="showPropList = true" @input="vinculoForm.prop = ''" placeholder="Escriba para buscar propietario..." style="height: 32px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%; background: #ffffff;">
+                                <div x-show="showPropList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                                    <div @click="selectProp(null)" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-style: italic;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'">Sin asignar</div>
+                                    <template x-for="p in filteredProps" :key="p.idper">
+                                        <div @click="selectProp(p)" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'"></div>
+                                    </template>
+                                    <div x-show="filteredProps.length === 0" style="padding: 10px 12px; color: #9aa6b2;">No encontrado</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="relation-connector"></div>
 
                     <!-- Conductor -->
-                    <div class="relation-item">
+                    <div class="relation-item" style="position: relative;" @click.away="showCondList = false">
                         <div class="relation-icon">
                             <i class="fa-solid fa-id-card"></i>
                         </div>
-                        <div class="relation-info">
+                        <div class="relation-info" style="width: 100%;">
                             <span class="relation-label">Conductor</span>
-                            <span class="relation-value" x-text="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '')) : 'Sin asignar'" :style="!selectedVehiculo.conductor && 'color: #9ca3af; font-style: italic;'"></span>
+                            <span x-show="!vinculoMode" class="relation-value" x-text="selectedVehiculo.conductor ? (selectedVehiculo.conductor.nomper + ' ' + (selectedVehiculo.conductor.apeper || '')) : 'Sin asignar'" :style="!selectedVehiculo.conductor && 'color: #9ca3af; font-style: italic;'"></span>
+                            <div x-show="vinculoMode" x-cloak style="position: relative; margin-top: 4px;">
+                                <input type="text" x-model="searchCond" @focus="showCondList = true" @input="vinculoForm.cond = ''" placeholder="Escriba para buscar conductor..." style="height: 32px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%; background: #ffffff;">
+                                <div x-show="showCondList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                                    <div @click="selectCond(null)" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-style: italic;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'">Sin asignar</div>
+                                    <template x-for="p in filteredConds" :key="p.idper">
+                                        <div @click="selectCond(p)" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'"></div>
+                                    </template>
+                                    <div x-show="filteredConds.length === 0" style="padding: 10px 12px; color: #9aa6b2;">No encontrado</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="relation-connector"></div>
 
                     <!-- Empresa -->
-                    <div class="relation-item">
+                    <div class="relation-item" style="position: relative;" @click.away="showEmpList = false">
                         <div class="relation-icon">
                             <i class="fa-solid fa-building"></i>
                         </div>
-                        <div class="relation-info">
+                        <div class="relation-info" style="width: 100%;">
                             <span class="relation-label">Empresa</span>
-                            <span class="relation-value" x-text="empresaDisplay(selectedVehiculo)" :style="!selectedVehiculo.empresa && 'color: #9ca3af; font-style: italic;'"></span>
-                        </div>
-                    </div>
-
-                    {{-- Formulario de edición de vínculos (inline) --}}
-                    @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Digitador'))
-                    <div x-show="vinculoMode" x-cloak style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.08);">
-                        <p style="font-size: 13px; font-weight: 600; color: #111827; margin: 0 0 12px 0;"><i class="fa-solid fa-link" style="color: #6b7280; margin-right: 6px;"></i>Editar vínculos</p>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div class="form-group">
-                                <label>Propietario</label>
-                                <select x-model="vinculoForm.prop" style="height: 36px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%;">
-                                    <option value="">Sin asignar</option>
-                                    <template x-for="p in propietarios" :key="p.idper">
-                                        <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
+                            <span x-show="!vinculoMode" class="relation-value" x-text="empresaDisplay(selectedVehiculo)" :style="!selectedVehiculo.empresa && 'color: #9ca3af; font-style: italic;'"></span>
+                            <div x-show="vinculoMode" x-cloak style="position: relative; margin-top: 4px;">
+                                <input type="text" x-model="searchEmp" @focus="showEmpList = true" @input="vinculoForm.idemp = ''" placeholder="Escriba para buscar empresa..." style="height: 32px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%; background: #ffffff;">
+                                <div x-show="showEmpList" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                                    <div @click="selectEmp(null)" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-style: italic;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'">Sin empresa</div>
+                                    <template x-for="e in filteredEmps" :key="e.idemp">
+                                        <div @click="selectEmp(e)" x-text="e.razsoem" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='white'"></div>
                                     </template>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Conductor</label>
-                                <select x-model="vinculoForm.cond" style="height: 36px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%;">
-                                    <option value="">Sin asignar</option>
-                                    <template x-for="p in conductores" :key="p.idper">
-                                        <option :value="p.idper" x-text="p.nomper + ' ' + (p.apeper || '') + ' — ' + (p.ndocper || '')"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Empresa</label>
-                                <select x-model="vinculoForm.idemp" style="height: 36px; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; font-size: 13px; width: 100%;">
-                                    <option value="">Sin empresa</option>
-                                    <template x-for="e in allEmpresas" :key="e.idemp">
-                                        <option :value="e.idemp" x-text="e.razsoem"></option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div style="display: flex; gap: 8px; margin-top: 4px;">
-                                <button class="vbtn vbtn-secondary" style="flex: 1; font-size: 13px; padding: 8px;" @click="cancelVinculo()" :disabled="vinculoSaving">
-                                    <i class="fa-solid fa-xmark"></i> Cancelar
-                                </button>
-                                <button class="vbtn vbtn-primary" style="flex: 1; font-size: 13px; padding: 8px;" @click="saveVinculos()" :disabled="vinculoSaving">
-                                    <i class="fa-solid fa-check" x-show="!vinculoSaving"></i>
-                                    <i class="fa-solid fa-spinner fa-spin" x-show="vinculoSaving"></i>
-                                    <span x-text="vinculoSaving ? 'Guardando...' : 'Guardar'"></span>
-                                </button>
+                                    <div x-show="filteredEmps.length === 0" style="padding: 10px 12px; color: #9aa6b2;">No encontrada</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Botones de acción --}}
+                    {{-- Controles de edición --}}
+                    <div x-show="vinculoMode" x-cloak style="display: flex; gap: 8px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.08);">
+                        <button class="vbtn vbtn-secondary" style="flex: 1; font-size: 13px; padding: 8px;" @click="cancelVinculo()" :disabled="vinculoSaving">
+                            <i class="fa-solid fa-xmark"></i> Cancelar
+                        </button>
+                        <button class="vbtn vbtn-primary" style="flex: 1; font-size: 13px; padding: 8px;" @click="saveVinculos()" :disabled="vinculoSaving">
+                            <i class="fa-solid fa-check" x-show="!vinculoSaving"></i>
+                            <i class="fa-solid fa-spinner fa-spin" x-show="vinculoSaving"></i>
+                            <span x-text="vinculoSaving ? 'Guardando...' : 'Guardar'"></span>
+                        </button>
+                    </div>
+
                     <div x-show="!vinculoMode" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(0,0,0,0.08);">
                         <button class="vbtn vbtn-outline" style="width: 100%; justify-content: center;" @click="openVinculoEdit()">
                             <i class="fa-solid fa-pen-to-square"></i> Editar vínculos
                         </button>
                     </div>
-                    @endif
                 </div>
             </div>
         </div>
