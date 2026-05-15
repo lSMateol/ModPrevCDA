@@ -136,35 +136,36 @@
                     @if(!in_array($param->nompar, ['grupo_inspeccion', 'tipo_defecto', 'desc_inspeccion']))
                     <div class="flex flex-col gap-2 {{ $param->control == 'textarea' ? 'col-span-full' : '' }}">
                         @if($param->control == 'radio')
-                            <div class="flex flex-col gap-3 p-4 {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-200' : 'bg-surface-container-low border-transparent' }} rounded-2xl border hover:border-[#001834]/5 transition-all">
+                            <div class="flex flex-col gap-3 p-4 {{ $errors->has($param->nompar) ? 'bg-red-50 border-red-200' : 'bg-surface-container-low border-transparent' }} rounded-2xl border hover:border-[#001834]/5 transition-all {{ $param->nompar == 'exploradoras' ? 'hidden exploradoras-input' : '' }}">
                                 <label class="text-[0.65rem] font-black uppercase tracking-widest {{ $errors->has($param->nompar) ? 'text-red-700' : 'text-on-surface-variant' }} opacity-60 leading-tight">
                                     {{ str_replace('_', ' ', $param->nompar) }}
                                 </label>
                                 <div class="flex flex-wrap gap-5">
                                     @php
-                                        $opciones = ($param->nompar == 'luz_izquierda' || $param->nompar == 'luz_derecha' || str_contains(strtolower($param->nompar), 'funciona')) 
-                                            ? ['funciona','no_funciona'] 
-                                            : ['si','no','na'];
-                                    @endphp
-                                    @foreach($opciones as $opc)
-                                    @php
+                                        $opciones = ['funciona','no_funciona'];
                                         $currentVal = old($param->nompar, $paramValues[$param->nompar] ?? '');
-                                        $isChecked = $currentVal === $opc;
-                                        if ($currentVal === '') {
-                                            if ($opc === 'funciona' || $opc === 'na') {
-                                                $isChecked = true;
-                                            }
+                                        
+                                        // Default to funciona if it's a mandatory field and empty
+                                        if ($currentVal === '' && in_array($param->nompar, ['reversa', 'frenos', 'direccionales'])) {
+                                            $currentVal = 'funciona';
                                         }
                                     @endphp
+                                    @foreach($opciones as $opc)
                                     <label class="flex items-center gap-2 cursor-pointer group">
                                         <input type="radio" name="{{ $param->nompar }}" value="{{ $opc }}" 
-                                            {{ $isChecked ? 'checked' : '' }} 
+                                            {{ $currentVal === $opc ? 'checked' : '' }} 
                                             class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0 cursor-pointer checked:border-[#ffba20] bg-white transition-all">
                                         <span class="text-[0.65rem] font-black uppercase tracking-tighter text-on-surface group-hover:text-[#ffba20] transition-colors">
-                                            {{ $opc == 'na' ? 'N/A' : ($opc == 'no_funciona' ? 'No funciona' : $opc) }}
+                                            {{ $opc == 'no_funciona' ? 'No funciona' : $opc }}
                                         </span>
                                     </label>
                                     @endforeach
+                                    
+                                    @if($param->nompar == 'exploradoras')
+                                        <label class="hidden">
+                                            <input type="radio" name="exploradoras" value="na" id="exploradoras_na_radio" {{ $currentVal === 'na' || $currentVal === '' ? 'checked' : '' }}>
+                                        </label>
+                                    @endif
                                 </div>
                                 @error($param->nompar)
                                     <span class="text-[10px] font-bold text-red-600 uppercase tracking-tighter">{{ $message }}</span>
@@ -214,49 +215,42 @@
                     @endif
                     @endforeach
                     @if(str_contains(strtoupper($tipo), 'LUCES'))
-                    <!-- Lógica Especial: Luces Exploradoras -->
-                    <div class="col-span-full bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10 mt-4 space-y-4">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" id="tiene_exploradoras" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 rounded focus:ring-offset-0 focus:ring-0 cursor-pointer">
-                            <label for="tiene_exploradoras" class="text-sm font-black uppercase tracking-widest text-on-surface-variant">¿Tiene luces exploradoras?</label>
+                    <!-- Lógica Especial: Luces Exploradoras y Comentarios -->
+                    <div class="col-span-full bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10 mt-4 space-y-6">
+                        <div class="flex items-center justify-between pb-4 border-b border-outline-variant/5">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-primary-fixed-dim">wb_iridescent</span>
+                                <label for="tiene_exploradoras" class="text-xs font-black uppercase tracking-widest text-on-surface-variant">¿Tiene luces exploradoras?</label>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="tiene_exploradoras" class="sr-only peer" {{ (old('exploradoras', $paramValues['exploradoras'] ?? '') != 'na' && !empty($paramValues['exploradoras'])) ? 'checked' : '' }}>
+                                <div class="w-11 h-6 bg-outline-variant/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ffba20]"></div>
+                            </label>
                         </div>
                         
-                        <div id="exploradoras_container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Exploradora Izquierda -->
-                            <div class="flex flex-col gap-3 p-4 bg-white rounded-xl border border-outline-variant/10">
-                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Exploradora Izquierda</label>
-                                <div class="flex gap-5">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="_exploradora_izquierda_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
-                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">Funciona</span>
+                        <div id="exploradoras_container" class="hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div class="bg-white p-4 rounded-xl border border-outline-variant/10">
+                                <p class="text-[0.6rem] font-black uppercase opacity-60 mb-3 tracking-widest">Estado de Exploradoras</p>
+                                <div class="flex gap-8">
+                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                        <input type="radio" name="_exploradora_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0" {{ (old('exploradoras', $paramValues['exploradoras'] ?? '') == 'funciona') ? 'checked' : '' }}>
+                                        <span class="text-xs font-bold uppercase tracking-tight text-on-surface group-hover:text-[#ffba20] transition-colors">Funciona Correctamente</span>
                                     </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="_exploradora_izquierda_ui" value="no_funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
-                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">No Funciona</span>
+                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                        <input type="radio" name="_exploradora_ui" value="no_funciona" class="w-5 h-5 text-red-500 border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0" {{ (old('exploradoras', $paramValues['exploradoras'] ?? '') == 'no_funciona') ? 'checked' : '' }}>
+                                        <span class="text-xs font-bold uppercase tracking-tight text-on-surface group-hover:text-red-500 transition-colors">No Funciona</span>
                                     </label>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Exploradora Derecha -->
-                            <div class="flex flex-col gap-3 p-4 bg-white rounded-xl border border-outline-variant/10">
-                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Exploradora Derecha</label>
-                                <div class="flex gap-5">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="_exploradora_derecha_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
-                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">Funciona</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="_exploradora_derecha_ui" value="no_funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0">
-                                        <span class="text-[0.65rem] font-black uppercase tracking-tighter">No Funciona</span>
-                                    </label>
-                                </div>
+                        <div class="space-y-2 pt-2">
+                            <div class="flex items-center gap-2 text-on-surface-variant opacity-60">
+                                <span class="material-symbols-outlined text-sm">chat_bubble</span>
+                                <label class="text-[0.65rem] font-black uppercase tracking-widest">Comentarios generales de luces</label>
                             </div>
-                            
-                            <!-- Comentario Opcional -->
-                            <div class="col-span-full flex flex-col gap-2">
-                                <label class="text-[0.65rem] font-black uppercase tracking-widest text-on-surface-variant opacity-60">Comentario Opcional (Luces Exploradoras)</label>
-                                <textarea id="comentario_exploradoras" rows="2" placeholder="Se enviará a 'Otros hallazgos'..." class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all"></textarea>
-                            </div>
+                            <textarea id="comentarios_luces" rows="3" placeholder="Ej: Faro cristal roto, intensidad baja en direccional trasera..." class="w-full bg-white border border-outline-variant/10 rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all"></textarea>
+                            <p class="text-[9px] font-bold text-on-surface-variant/40 uppercase tracking-tight italic">* Estos comentarios se guardarán automáticamente como defectos en la inspección visual.</p>
                         </div>
                     </div>
                     @endif
@@ -331,27 +325,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Lógica de Comentarios de Luces -> Inspección Visual Tipo A
+        const comentariosLuces = document.getElementById('comentarios_luces') ? document.getElementById('comentarios_luces').value.trim() : '';
+        if (comentariosLuces) {
+            list.push({
+                grupo: 'Luces',
+                tipo: 'Tipo A',
+                obs: 'HALLAZGO EN LUCES: ' + comentariosLuces
+            });
+        }
+
         const obs_general = document.getElementById('visual_obs_general') ? document.getElementById('visual_obs_general').value.trim() : '';
-        const chkExploradoras = document.getElementById('tiene_exploradoras');
-        let combined_obs = obs_general;
         
-        if (chkExploradoras && chkExploradoras.checked) {
-            const expIzq = document.querySelector('input[name="_exploradora_izquierda_ui"]:checked');
-            const expDer = document.querySelector('input[name="_exploradora_derecha_ui"]:checked');
-            const expCom = document.getElementById('comentario_exploradoras') ? document.getElementById('comentario_exploradoras').value.trim() : '';
-            
-            let extra = "LUCES EXPLORADORAS:";
-            if (expIzq) extra += " Izquierda: " + (expIzq.value == 'funciona' ? 'Funciona' : 'No funciona') + ".";
-            if (expDer) extra += " Derecha: " + (expDer.value == 'funciona' ? 'Funciona' : 'No funciona') + ".";
-            if (expCom) extra += " Obs: " + expCom;
-            
-            if (combined_obs) combined_obs += "\n\n" + extra;
-            else combined_obs = extra;
+        // Manejo de Exploradoras
+        const chkExploradoras = document.getElementById('tiene_exploradoras');
+        const radioNa = document.getElementById('exploradoras_na_radio');
+        const radioExp = document.querySelectorAll('input[name="_exploradora_ui"]');
+        const radioTarget = document.querySelectorAll('input[name="exploradoras"]');
+
+        if (chkExploradoras && !chkExploradoras.checked) {
+            // Si no tiene, forzamos NA en el parámetro real
+            if (radioNa) radioNa.checked = true;
+        } else {
+            // Si tiene, sincronizamos el valor de la UI con el parámetro real
+            const selectedUi = document.querySelector('input[name="_exploradora_ui"]:checked');
+            if (selectedUi) {
+                const targetValue = selectedUi.value;
+                radioTarget.forEach(r => {
+                    if (r.value === targetValue) r.checked = true;
+                });
+            }
         }
 
         const finalData = {
             list: list,
-            obs: combined_obs
+            obs: obs_general
         };
 
         if(hiddenJson) {
@@ -361,14 +369,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const chkExploradorasEvent = document.getElementById('tiene_exploradoras');
     if (chkExploradorasEvent) {
-        chkExploradorasEvent.addEventListener('change', function() {
+        const syncContainer = () => {
             const container = document.getElementById('exploradoras_container');
-            if (this.checked) {
+            if (chkExploradorasEvent.checked) {
                 container.classList.remove('hidden');
             } else {
                 container.classList.add('hidden');
             }
-        });
+        };
+        chkExploradorasEvent.addEventListener('change', syncContainer);
+        syncContainer(); // Estado inicial
     }
 });
 

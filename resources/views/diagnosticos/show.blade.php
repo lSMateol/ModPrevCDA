@@ -317,6 +317,10 @@
                                 @php
                                     $param = $p->parametro;
                                     $val = $p->valor;
+                                    
+                                    // Ocultar parámetros opcionales si no aplican (ej: exploradoras = na)
+                                    if ($val === 'na') continue;
+
                                     $cumple = true;
                                     $esSeccionDefectos = str_contains(strtoupper($tipo), 'DEFECTOS');
 

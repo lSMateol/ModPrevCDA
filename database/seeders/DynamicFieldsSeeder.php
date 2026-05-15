@@ -36,6 +36,12 @@ class DynamicFieldsSeeder extends Seeder
             ['idpar' => 24, 'nompar' => 'hc_crucero',             'idtip' => 5, 'rini' => 0,      'rfin' => 160,     'control' => 'number', 'nomcampo' => 'hc_crucero',       'unipar' => 'ppm', 'colum' => 1, 'actpar' => 1, 'can' => 1, 'se_mantiene' => 1],
             ['idpar' => 25, 'nompar' => 'no_ralenti',             'idtip' => 5, 'rini' => 0,      'rfin' => 0,       'control' => 'number', 'nomcampo' => 'no_ralenti',       'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 1, 'se_mantiene' => 0],
             ['idpar' => 26, 'nompar' => 'no_crucero',             'idtip' => 5, 'rini' => 0,      'rfin' => 0,       'control' => 'number', 'nomcampo' => 'no_crucero',       'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 1, 'se_mantiene' => 0],
+
+            // NUEVA LÓGICA DE LUCES (idtip=1)
+            ['idpar' => 27, 'nompar' => 'reversa',                'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'reversa',          'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
+            ['idpar' => 28, 'nompar' => 'frenos',                 'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'frenos',           'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
+            ['idpar' => 29, 'nompar' => 'direccionales',          'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'direccionales',    'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
+            ['idpar' => 30, 'nompar' => 'exploradoras',           'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'exploradoras',     'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
         ];
 
         foreach ($nuevosParametros as $param) {
@@ -48,29 +54,32 @@ class DynamicFieldsSeeder extends Seeder
         $configuraciones = [];
 
         // --- DIESEL (43) ---
-        $idsDiesel = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        $idsDiesel = [27, 28, 29, 30, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        $orden = 1;
         foreach($idsDiesel as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
             if($p) {
-                $configuraciones[] = ['idval_combu' => 43, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $idpar];
+                $configuraciones[] = ['idval_combu' => 43, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $orden++];
             }
         }
 
         // --- GASOLINA (37) ---
-        $idsGasolina = [1, 2, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $idsGasolina = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $orden = 1;
         foreach($idsGasolina as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
             if($p) {
-                $configuraciones[] = ['idval_combu' => 37, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $idpar];
+                $configuraciones[] = ['idval_combu' => 37, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $orden++];
             }
         }
 
         // --- GAS-NATURAL (40) ---
-        $idsGasNatural = [1, 2, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $idsGasNatural = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $orden = 1;
         foreach($idsGasNatural as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
             if($p) {
-                $configuraciones[] = ['idval_combu' => 40, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $idpar];
+                $configuraciones[] = ['idval_combu' => 40, 'idtip' => $p->idtip, 'idpar' => $idpar, 'orden' => $orden++];
             }
         }
 

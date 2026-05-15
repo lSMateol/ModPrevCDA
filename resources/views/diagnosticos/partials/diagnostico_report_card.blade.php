@@ -157,18 +157,34 @@
             <td class="label">RUIDO ESCAPE</td>
             <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '-' }}</td>
             <td class="text-center">dBA</td>
-            <td class="label">LUZ IZQUIERDA (BAJA)</td>
+            <td class="label">REVERSA</td>
             <td class="text-center" style="font-weight: bold;">
-                {{ isset($paramValues['luz_izquierda']) ? (strtolower($paramValues['luz_izquierda']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-' }}
+                {{ isset($paramValues['reversa']) ? (strtolower($paramValues['reversa']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : (isset($paramValues['luz_izquierda']) ? (strtolower($paramValues['luz_izquierda']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-') }}
             </td>
         </tr>
         <tr>
             <td colspan="3"></td>
-            <td class="label">LUZ DERECHA (BAJA)</td>
+            <td class="label">FRENOS</td>
             <td class="text-center" style="font-weight: bold;">
-                {{ isset($paramValues['luz_derecha']) ? (strtolower($paramValues['luz_derecha']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-' }}
+                {{ isset($paramValues['frenos']) ? (strtolower($paramValues['frenos']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : (isset($paramValues['luz_derecha']) ? (strtolower($paramValues['luz_derecha']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-') }}
             </td>
         </tr>
+        <tr>
+            <td colspan="3"></td>
+            <td class="label">DIRECCIONALES</td>
+            <td class="text-center" style="font-weight: bold;">
+                {{ isset($paramValues['direccionales']) ? (strtolower($paramValues['direccionales']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA') : '-' }}
+            </td>
+        </tr>
+        @if(isset($paramValues['exploradoras']) && strtolower($paramValues['exploradoras']) != 'na')
+        <tr>
+            <td colspan="3"></td>
+            <td class="label">EXPLORADORAS</td>
+            <td class="text-center" style="font-weight: bold;">
+                {{ strtolower($paramValues['exploradoras']) == 'funciona' ? 'FUNCIONA' : 'NO FUNCIONA' }}
+            </td>
+        </tr>
+        @endif
     </table>
 
     <!-- 6. DEFECTOS -->
