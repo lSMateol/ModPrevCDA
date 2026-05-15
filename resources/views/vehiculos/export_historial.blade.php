@@ -185,8 +185,16 @@
                                                 $isTipoA = is_array($falla) && ($falla['is_tipo_a'] ?? false);
                                                 $desc = is_array($falla) ? $falla['desc'] : $falla;
                                                 $parts = explode(' - ', $desc, 2);
-                                                $grupo = count($parts) > 1 ? ucfirst(strtolower($parts[0])) : 'General';
+                                                
+                                                $grupoRaw = count($parts) > 1 ? trim($parts[0]) : 'Otro';
+                                                if (strtoupper($grupoRaw) === 'N/A' || strtoupper($grupoRaw) === 'N/A:' || empty($grupoRaw)) {
+                                                    $grupo = 'Otro';
+                                                } else {
+                                                    $grupo = ucfirst(strtolower($grupoRaw));
+                                                }
+                                                
                                                 $obs = count($parts) > 1 ? ucfirst(strtolower($parts[1])) : ucfirst(strtolower($desc));
+                                                
                                                 if ($isTipoA) {
                                                     if (!isset($gruposTipoA[$grupo])) $gruposTipoA[$grupo] = [];
                                                     $gruposTipoA[$grupo][] = $obs;

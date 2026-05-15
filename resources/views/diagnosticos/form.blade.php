@@ -93,25 +93,18 @@
                 <div class="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10">
                     <div id="wrapper-defectos-visuales" class="space-y-4">
                         @forelse($listaDefectos as $index => $item)
-                        <div class="defecto-row grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-xl shadow-sm relative">
-                            <div class="space-y-1">
-                                <label class="text-[0.6rem] font-black uppercase opacity-60">Categoría</label>
-                                <select name="visual_defecto[]" class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
-                                    @foreach(['SPLINDERS', 'BUJES DE LOS MUELLES', 'TERMINALES BRAZO LARGO Y CORTO (2)', 'PASAMANOS SUELTOS', 'LLANTA DE REPUESTO', 'LATONERIA Y PINTURA', 'POLARIZADOS', 'ASIENTOS MAL ANCLADOS', 'TAPICERIA', 'COJINERIA', 'EXTINTOR', 'INEXISTENCIA CINTAS RETROREFLECTIVAS', 'LLANTAS LISAS', 'BUJES BARRA ESTABILIZADORA', 'GOTEO CAJA DE DIRECCION, TRANSMISION Y MOTOR', 'MAL FUNCIONAMIENTO LUCES TRASERAS', 'BOTIQUIN', 'MAL FUNCIONAMIENTO DISPOSITIVO DE VELOCIDAD', 'INEXISTENCIA DE CALCOMANIAS'] as $opc)
-                                        <option value="{{ $opc }}" {{ ($item['grupo'] ?? '') == $opc ? 'selected' : '' }}>{{ $opc }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="space-y-1">
+                        <div class="defecto-row grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-white rounded-xl shadow-sm relative items-start">
+                            <input type="hidden" name="visual_defecto[]" value="{{ $item['grupo'] ?? 'N/A' }}">
+                            <div class="space-y-1 md:col-span-3">
                                 <label class="text-[0.6rem] font-black uppercase opacity-60">Tipo</label>
                                 <select name="visual_tipo[]" class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
                                     <option value="Tipo A" {{ ($item['tipo'] ?? '') == 'Tipo A' ? 'selected' : '' }}>Tipo A</option>
                                     <option value="Tipo B" {{ ($item['tipo'] ?? '') == 'Tipo B' ? 'selected' : '' }}>Tipo B</option>
                                 </select>
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1 md:col-span-9">
                                 <label class="text-[0.6rem] font-black uppercase opacity-60">Descripción del Hallazgo</label>
-                                <input type="text" name="visual_obs[]" value="{{ $item['obs'] ?? ($item['desc'] ?? '') }}" placeholder="Especifique..." class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
+                                <textarea name="visual_obs[]" rows="2" placeholder="Especifique..." class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold resize-none">{{ $item['obs'] ?? ($item['desc'] ?? '') }}</textarea>
                             </div>
                             <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-600 hover:text-white transition-all shadow-sm">
                                 <span class="material-symbols-outlined text-sm">close</span>
@@ -122,16 +115,14 @@
                         @endforelse
                     </div>
                     
-                    <div class="mt-6 pt-6 border-t border-dashed border-outline-variant/20">
-                        <div class="flex flex-col md:flex-row gap-6 items-start">
-                            <button type="button" id="add-defecto-visual" class="flex items-center gap-2 text-[#001834] font-black text-[0.65rem] uppercase tracking-widest bg-primary-fixed-dim/20 px-4 py-2 rounded-lg hover:bg-primary-fixed-dim transition-all">
-                                <span class="material-symbols-outlined text-sm">add</span> Añadir del Listado
-                            </button>
-                            
-                            <div class="flex-1 w-full space-y-2">
-                                <label class="text-[0.7rem] font-black uppercase tracking-widest text-on-surface-variant opacity-80">Observaciones Generales / Otros Hallazgos</label>
-                                <textarea id="visual_obs_general" rows="3" placeholder="Otros defectos no incluidos en la lista o comentarios adicionales..." class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all">{{ $generalObs }}</textarea>
-                            </div>
+                    <div class="mt-6 pt-6 border-t border-dashed border-outline-variant/20 space-y-4">
+                        <button type="button" id="add-defecto-visual" class="flex w-fit items-center gap-2 text-[#001834] font-black text-[0.65rem] uppercase tracking-widest bg-primary-fixed-dim/20 px-4 py-2 rounded-lg hover:bg-primary-fixed-dim transition-all">
+                            <span class="material-symbols-outlined text-sm">add</span> Añadir Falla
+                        </button>
+                        
+                        <div class="w-full space-y-2">
+                            <label class="text-[0.7rem] font-black uppercase tracking-widest text-on-surface-variant opacity-80">Observaciones Generales / Otros Hallazgos</label>
+                            <textarea id="visual_obs_general" rows="3" placeholder="Otros defectos no incluidos en la lista o comentarios adicionales..." class="w-full bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary-fixed-dim p-4 text-sm font-semibold text-[#001834] transition-all">{{ $generalObs }}</textarea>
                         </div>
                     </div>
 
@@ -286,25 +277,18 @@
 </main>
 
 <template id="tpl-defecto-row">
-    <div class="defecto-row grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-xl shadow-sm relative">
-        <div class="space-y-1">
-            <label class="text-[0.6rem] font-black uppercase opacity-60">Categoría</label>
-            <select name="visual_defecto[]" class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
-                @foreach(['SPLINDERS', 'BUJES DE LOS MUELLES', 'TERMINALES BRAZO LARGO Y CORTO (2)', 'PASAMANOS SUELTOS', 'LLANTA DE REPUESTO', 'LATONERIA Y PINTURA', 'POLARIZADOS', 'ASIENTOS MAL ANCLADOS', 'TAPICERIA', 'COJINERIA', 'EXTINTOR', 'INEXISTENCIA CINTAS RETROREFLECTIVAS', 'LLANTAS LISAS', 'BUJES BARRA ESTABILIZADORA', 'GOTEO CAJA DE DIRECCION, TRANSMISION Y MOTOR', 'MAL FUNCIONAMIENTO LUCES TRASERAS', 'BOTIQUIN', 'MAL FUNCIONAMIENTO DISPOSITIVO DE VELOCIDAD', 'INEXISTENCIA DE CALCOMANIAS'] as $opc)
-                    <option value="{{ $opc }}">{{ $opc }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="space-y-1">
+    <div class="defecto-row grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-white rounded-xl shadow-sm relative items-start">
+        <input type="hidden" name="visual_defecto[]" value="N/A">
+        <div class="space-y-1 md:col-span-3">
             <label class="text-[0.6rem] font-black uppercase opacity-60">Tipo</label>
             <select name="visual_tipo[]" class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
                 <option value="Tipo A">Tipo A</option>
                 <option value="Tipo B">Tipo B</option>
             </select>
         </div>
-        <div class="space-y-1">
+        <div class="space-y-1 md:col-span-9">
             <label class="text-[0.6rem] font-black uppercase opacity-60">Observaciones</label>
-            <input type="text" name="visual_obs[]" placeholder="Describa el hallazgo..." class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold">
+            <textarea name="visual_obs[]" rows="2" placeholder="Describa el hallazgo..." class="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs font-bold resize-none"></textarea>
         </div>
         <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-600 hover:text-white transition-all shadow-sm">
             <span class="material-symbols-outlined text-sm">close</span>
@@ -335,11 +319,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const list = [];
         
         rows.forEach(row => {
-            const grupo = row.querySelector('[name="visual_defecto[]"]').value;
-            const tipo = row.querySelector('[name="visual_tipo[]"]').value;
-            const obs = row.querySelector('[name="visual_obs[]"]').value;
+            const grupoEl = row.querySelector('[name="visual_defecto[]"]');
+            const grupo = grupoEl ? grupoEl.value : 'N/A';
+            const tipoEl = row.querySelector('[name="visual_tipo[]"]');
+            const tipo = tipoEl ? tipoEl.value : '';
+            const obsEl = row.querySelector('[name="visual_obs[]"]');
+            const obs = obsEl ? obsEl.value : '';
             
-            if(grupo) {
+            if(tipo || obs) {
                 list.push({ grupo, tipo, obs });
             }
         });

@@ -280,8 +280,7 @@
                                 @forelse($lista as $def)
                                 <tr class="group hover:bg-surface-container-low/30 transition-colors">
                                     <td class="py-4 md:py-5 pr-4">
-                                        <p class="font-bold text-sm text-[#001834]">{{ $def['grupo'] ?? '-' }}</p>
-                                        <p class="text-[0.65rem] font-medium text-on-surface-variant opacity-60">{{ $def['obs'] ?? ($def['desc'] ?? '') }}</p>
+                                        <p class="text-sm font-medium text-on-surface-variant opacity-80">{{ $def['obs'] ?? ($def['desc'] ?? '') }}</p>
                                     </td>
                                     <td class="py-4 md:py-5 font-black text-sm text-[#001834]/80">
                                         {{ $def['tipo'] ?? '-' }}

@@ -289,15 +289,13 @@
     <div class="section-title">D. DEFECTOS ENCONTRADOS EN LA INSPECCIÓN VISUAL Y SENSORIAL</div>
     <table>
         <tr>
-            <th style="width: 50%;">Descripción (Observaciones)</th>
-            <th style="width: 30%;">Grupo / Categoría</th>
+            <th style="width: 70%;">Descripción (Observaciones)</th>
             <th colspan="2" class="text-center">Tipo de defecto</th>
         </tr>
         <tr>
             <th></th>
-            <th></th>
-            <th class="text-center" style="width: 40px;">A</th>
-            <th class="text-center" style="width: 40px;">B</th>
+            <th class="text-center" style="width: 15%;">A</th>
+            <th class="text-center" style="width: 15%;">B</th>
         </tr>
         @php
             $descRaw = $paramValues['desc_inspeccion'] ?? '';
@@ -318,7 +316,6 @@
             @foreach($listaDefectos as $defecto)
             <tr>
                 <td style="font-size: 8pt;">{{ $defecto['obs'] ?? ($defecto['desc'] ?? 'Sin observaciones') }}</td>
-                <td class="text-center">{{ $defecto['grupo'] ?? '-' }}</td>
                 <td class="text-center">{{ ($defecto['tipo'] ?? '') == 'Tipo A' ? 'X' : '' }}</td>
                 <td class="text-center">{{ ($defecto['tipo'] ?? '') == 'Tipo B' ? 'X' : '' }}</td>
             </tr>
@@ -326,13 +323,12 @@
         @elseif(!empty($descRaw) && !is_array($data))
             <tr>
                 <td style="font-size: 8pt;">{{ $descRaw }}</td>
-                <td class="text-center">{{ $paramValues['grupo_inspeccion'] ?? 'N/A' }}</td>
                 <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo A' ? 'X' : '' }}</td>
                 <td class="text-center">{{ ($paramValues['tipo_defecto'] ?? '') == 'Tipo B' ? 'X' : '' }}</td>
             </tr>
         @else
             <tr>
-                <td colspan="4" class="text-center" style="color: #666; font-style: italic; height: 30px; vertical-align: middle;">No se encontraron defectos del listado base</td>
+                <td colspan="3" class="text-center" style="color: #666; font-style: italic; height: 30px; vertical-align: middle;">No se encontraron defectos del listado base</td>
             </tr>
         @endif
     </table>
