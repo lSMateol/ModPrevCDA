@@ -97,8 +97,9 @@
     $isDiesel = str_contains($combuStr, 'DIESEL');
 
     $requiredParamsDict = [
-        'luz_izquierda' => 'Luz Izquierda',
-        'luz_derecha' => 'Luz Derecha',
+        'reversa' => 'Reversa',
+        'frenos' => 'Frenos',
+        'direccionales' => 'Direccionales',
         'dilusion_gasolina' => 'Dilución Gasolina',
         'Criterios_de_validacion' => 'Criterios de Validación'
     ];
@@ -502,10 +503,15 @@
                         <li>{{ $field }}</li>
                     @endforeach
                 </ul>
-                <div class="mt-4">
+                <div class="mt-4 flex flex-wrap gap-3">
                     <a href="{{ route($prefix . '.diagnosticos.edit', $diagnostico->iddia) }}" class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm">
                         <span class="material-symbols-outlined text-sm">edit</span> Completar Información
                     </a>
+                    @if($fotosCount < 2)
+                        <button type="button" class="inline-flex items-center gap-2 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-sm btn-foto" data-id="{{ $diagnostico->iddia }}">
+                            <span class="material-symbols-outlined text-sm">photo_camera</span> Cargar Fotos
+                        </button>
+                    @endif
                 </div>
             </div>
         @else
@@ -552,4 +558,227 @@
         </div>
     </div>
 </div>
+
+@include('diagnosticos.modal-fotos')
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const routeFotosBase = document.querySelector('meta[name="url-prefix"]').content;
+        const modalFotos = document.getElementById('modal-fotos');
+        const closeFotos = document.getElementById('close-fotos');
+        const fotoDiagId = document.getElementById('foto-diag-id');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const stopCameraBtn = document.getElementById('stop-camera');
+        const cameraPreview = document.getElementById('camera-preview');
+        const fileInput = document.getElementById('file-input');
+        const photoList = document.getElementById('photo-list');
+        const photoCount = document.getElementById('photo-count');
+        const btnSaveFotos = document.getElementById('btn-save-fotos');
+        const template = document.getElementById('photo-item-template');
+
+        let stream = null;
+        let existingPhotos = []; 
+        let newPhotos = [];      
+        let idsAEliminar = [];   
+
+        document.querySelectorAll('.btn-foto').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                fotoDiagId.innerText = id;
+                modalFotos.classList.remove('hidden');
+                
+                try {
+                    const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`);
+                    existingPhotos = await res.json();
+                    newPhotos = [];
+                    idsAEliminar = [];
+                    updatePhotoUI();
+                } catch (err) {
+                    console.error("Error cargando fotos:", err);
+                    resetFotos();
+                }
+            });
+        });
+
+        function resetFotos() {
+            stopCamera();
+            existingPhotos = [];
+            newPhotos = [];
+            idsAEliminar = [];
+            updatePhotoUI();
+        }
+
+        cameraPreview.addEventListener('click', () => {
+            if (!stream) startCamera();
+            else fileInput.click();
+        });
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" },
+                    audio: false 
+                });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                document.getElementById('upload-placeholder').classList.add('hidden');
+                document.getElementById('camera-controls').classList.remove('hidden');
+            } catch (err) {
+                fileInput.click();
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.classList.add('hidden');
+            document.getElementById('camera-controls').classList.add('hidden');
+            if (existingPhotos.length === 0 && newPhotos.length === 0) {
+                document.getElementById('upload-placeholder').classList.remove('hidden');
+            }
+        }
+
+        if(stopCameraBtn) stopCameraBtn.onclick = (e) => { e.stopPropagation(); stopCamera(); };
+
+        if(snap) snap.onclick = (e) => {
+            e.stopPropagation();
+            if ((existingPhotos.length + newPhotos.length) >= 2) return alert('Máximo 2 fotos permitidas.');
+            
+            const MAX_WIDTH = 1024;
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+            
+            canvas.toBlob((blob) => {
+                newPhotos.push(blob);
+                updatePhotoUI();
+            }, 'image/webp', 0.6);
+        };
+
+        if(fileInput) fileInput.onchange = (e) => {
+            Array.from(e.target.files).forEach(file => {
+                if ((existingPhotos.length + newPhotos.length) >= 2) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX_WIDTH = 1024;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = width; 
+                        tempCanvas.height = height;
+                        tempCanvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        tempCanvas.toBlob((blob) => {
+                            newPhotos.push(blob);
+                            updatePhotoUI();
+                        }, 'image/webp', 0.6);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        };
+
+        function updatePhotoUI() {
+            const total = existingPhotos.length + newPhotos.length;
+            photoCount.innerText = total;
+            btnSaveFotos.disabled = (total === 0 && idsAEliminar.length === 0);
+            
+            if (total >= 2) stopCamera();
+            if (total > 0) document.getElementById('upload-placeholder').classList.add('hidden');
+            else if (!stream) document.getElementById('upload-placeholder').classList.remove('hidden');
+
+            photoList.innerHTML = '';
+            
+            existingPhotos.forEach((foto, i) => {
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = foto.url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    idsAEliminar.push(foto.id);
+                    existingPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+
+            newPhotos.forEach((blob, i) => {
+                const url = URL.createObjectURL(blob);
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    newPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+        }
+
+        if(btnSaveFotos) btnSaveFotos.onclick = async () => {
+            const id = fotoDiagId.innerText;
+            if (!id) return alert('ID de diagnóstico no encontrado.');
+
+            const formData = new FormData();
+            newPhotos.forEach((blob, i) => {
+                formData.append(`fotos[]`, blob, `evid_${id}_new_${i}.webp`);
+            });
+            formData.append('ids_a_eliminar', JSON.stringify(idsAEliminar));
+
+            const btnText = document.getElementById('btn-save-fotos-text');
+            btnSaveFotos.disabled = true;
+            const originalText = btnText ? btnText.innerText : 'Guardar Evidencias';
+            if (btnText) btnText.innerText = 'Guardando...';
+
+            try {
+                const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    alert('Evidencias guardadas correctamente.');
+                    window.location.reload();
+                } else {
+                    const data = await res.json();
+                    alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error al guardar: ' + err.message);
+            } finally {
+                if (btnText) btnText.innerText = originalText;
+                btnSaveFotos.disabled = false;
+            }
+        };
+
+        if(closeFotos) closeFotos.onclick = () => { modalFotos.classList.add('hidden'); stopCamera(); };
+        if(modalFotos) modalFotos.onclick = (e) => { if (e.target === modalFotos) { modalFotos.classList.add('hidden'); stopCamera(); } };
+    });
+</script>
+@endpush
