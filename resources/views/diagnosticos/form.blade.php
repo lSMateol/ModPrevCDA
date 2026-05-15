@@ -142,12 +142,19 @@
                                 </label>
                                 <div class="flex flex-wrap gap-5">
                                     @php
-                                        $opciones = ['funciona','no_funciona'];
+                                        $esLuces = str_contains(strtoupper($tipo), 'LUCES');
+                                        $opciones = $esLuces ? ['funciona','no_funciona'] : ['si','no','na'];
+                                        
                                         $currentVal = old($param->nompar, $paramValues[$param->nompar] ?? '');
                                         
                                         // Default to funciona if it's a mandatory field and empty
                                         if ($currentVal === '' && in_array($param->nompar, ['reversa', 'frenos', 'direccionales'])) {
                                             $currentVal = 'funciona';
+                                        }
+                                        
+                                        // Default to NO or NA for defects if empty
+                                        if ($currentVal === '' && !$esLuces) {
+                                            $currentVal = str_contains(strtolower($param->nompar), 'criterios') ? 'si' : 'no';
                                         }
                                     @endphp
                                     @foreach($opciones as $opc)
@@ -156,7 +163,7 @@
                                             {{ $currentVal === $opc ? 'checked' : '' }} 
                                             class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0 cursor-pointer checked:border-[#ffba20] bg-white transition-all">
                                         <span class="text-[0.65rem] font-black uppercase tracking-tighter text-on-surface group-hover:text-[#ffba20] transition-colors">
-                                            {{ $opc == 'no_funciona' ? 'No funciona' : $opc }}
+                                            {{ $opc == 'na' ? 'N/A' : ($opc == 'no_funciona' ? 'No funciona' : $opc) }}
                                         </span>
                                     </label>
                                     @endforeach
