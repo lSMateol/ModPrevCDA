@@ -151,7 +151,7 @@
                                         $currentVal = old($param->nompar, $paramValues[$param->nompar] ?? '');
                                         $isChecked = $currentVal === $opc;
                                         if ($currentVal === '') {
-                                            if ($opc === 'funciona' || $opc === 'si') {
+                                            if ($opc === 'funciona' || $opc === 'na') {
                                                 $isChecked = true;
                                             }
                                         }

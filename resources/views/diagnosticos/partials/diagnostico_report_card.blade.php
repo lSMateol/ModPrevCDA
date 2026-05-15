@@ -190,7 +190,7 @@
             <td class="text-center" style="font-weight: bold;">
                 @php
                     $dilOk = in_array(strtolower(trim($paramValues['dilusion_gasolina'] ?? '')), ['si', 'na']);
-                    $criOk = (strtolower(trim($paramValues['Criterios_de_validacion'] ?? ''))) == 'si';
+                    $criOk = in_array(strtolower(trim($paramValues['Criterios_de_validacion'] ?? '')), ['si', 'na']);
                     $resDef = ($dilOk && $criOk) ? 'CUMPLE' : 'NO CUMPLE';
                 @endphp
                 {{ $resDef }}
@@ -201,7 +201,7 @@
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'no' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
-            <td class="text-center" style="font-weight: bold;">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'si' ? 'CUMPLE' : 'NO CUMPLE' }}</td>
+            <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['Criterios_de_validacion'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
         </tr>
         @else
         <tr>
