@@ -407,12 +407,6 @@ class DiagnosticoController extends Controller
             // Tecnomecánica
             if ($d = $procesarDoc($v->fecvent, 'tecno')) $docs['tecno'] = $d;
 
-            // Responsabilidad Contractual
-            if ($d = $procesarDoc($v->fecvenc, 'contractual')) $docs['contractual'] = $d;
-
-            // Tarjeta de Operación (Opcional, pero útil para alertas)
-            if ($d = $procesarDoc($v->fecvenr, 'operacion')) $docs['operacion'] = $d;
-
             // Filtrar por Rango de Vencimiento
             if ($fechaInicio || $fechaFin) {
                 $tieneDocEnRango = collect($docs)->some(function($d) use ($fechaInicio, $fechaFin) {
