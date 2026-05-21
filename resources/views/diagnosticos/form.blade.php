@@ -48,8 +48,7 @@
             $showSection = true;
 
             if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showSection = false;
-            elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showSection = false;
-            elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showSection = false;
+            elseif ($formType == 'otto_sin_gases' && (str_contains($t, 'GASES') || str_contains($t, 'OTTO') || str_contains($t, 'CICLO OTTO'))) $showSection = false;
         @endphp
 
         @if($showSection)

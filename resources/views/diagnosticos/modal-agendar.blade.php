@@ -154,8 +154,7 @@
                             selectForm.innerHTML += '<option value="diesel_con_gases">Diésel con Gases</option>';
                         } else {
                             selectForm.innerHTML += '<option value="otto_completo">Otto Completo (Con Gases)</option>';
-                            selectForm.innerHTML += '<option value="otto_sin_gases">Otto Sin Gases</option>';
-                            selectForm.innerHTML += '<option value="solo_gases">Solo Gases</option>';
+                            selectForm.innerHTML += '<option value="otto_sin_gases">Ni Otto ni gases</option>';
                         }
                         containerForm.classList.remove('hidden');
                     } else {

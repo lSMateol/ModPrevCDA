@@ -205,8 +205,7 @@ class DiagnosticoController extends Controller
             $skip = false;
             
             if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) $skip = true;
-            elseif ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) $skip = true;
-            elseif ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) $skip = true;
+            elseif ($formType == 'otto_sin_gases' && (str_contains($nomTip, 'GASES') || str_contains($nomTip, 'OTTO') || str_contains($nomTip, 'CICLO OTTO'))) $skip = true;
             
             if (!$skip) {
                 $parametros->push($param);
@@ -723,8 +722,7 @@ class DiagnosticoController extends Controller
             $nomTip = strtoupper($p->parametro->tippar->nomtip ?? '');
             $formType = $diagnostico->tipo_formulario ?? '';
             if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) return false;
-            if ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) return false;
-            if ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) return false;
+            if ($formType == 'otto_sin_gases' && (str_contains($nomTip, 'GASES') || str_contains($nomTip, 'OTTO') || str_contains($nomTip, 'CICLO OTTO'))) return false;
             return true;
         })->groupBy(function($p) {
             return $p->parametro->tippar->nomtip;

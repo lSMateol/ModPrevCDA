@@ -35,8 +35,7 @@
                                     <option value="diesel_con_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'diesel_con_gases' ? 'selected' : '' }}>Diésel con Gases</option>
                                 @else
                                     <option value="otto_completo" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_completo' ? 'selected' : '' }}>Otto Completo (Con Gases)</option>
-                                    <option value="otto_sin_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_sin_gases' ? 'selected' : '' }}>Otto Sin Gases</option>
-                                    <option value="solo_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'solo_gases' ? 'selected' : '' }}>Solo Gases</option>
+                                    <option value="otto_sin_gases" {{ ($diagnostico->tipo_formulario ?? '') == 'otto_sin_gases' ? 'selected' : '' }}>Ni Otto ni gases</option>
                                 @endif
                             </select>
                             <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant opacity-40">assignment</span>
