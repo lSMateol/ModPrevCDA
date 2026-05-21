@@ -153,7 +153,11 @@
                                         
                                         // Default to NO or NA for defects if empty
                                         if ($currentVal === '' && !$esLuces) {
-                                            $currentVal = str_contains(strtolower($param->nompar), 'criterios') ? 'si' : 'no';
+                                            if (in_array($param->nompar, ['dilusion_gasolina', 'Criterios_de_validacion'])) {
+                                                $currentVal = 'na';
+                                            } else {
+                                                $currentVal = str_contains(strtolower($param->nompar), 'criterios') ? 'si' : 'no';
+                                            }
                                         }
                                     @endphp
                                     @foreach($opciones as $opc)
@@ -386,6 +390,22 @@ document.addEventListener('DOMContentLoaded', function() {
         chkExploradorasEvent.addEventListener('change', syncContainer);
         syncContainer(); // Estado inicial
     }
+
+    // Auto-expandir textareas de observaciones en inspección visual
+    function autoExpand(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.name === 'visual_obs[]') {
+            autoExpand(e.target);
+        }
+    });
+
+    document.querySelectorAll('textarea[name="visual_obs[]"]').forEach(function(textarea) {
+        autoExpand(textarea);
+    });
 });
 
 function fillSimulacion(tipo) {
