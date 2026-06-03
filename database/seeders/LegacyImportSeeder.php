@@ -640,8 +640,12 @@ class LegacyImportSeeder extends Seeder
                     $omitidos++;
                     continue;
                 } else {
+                    // Evitar parámetros que se generan dinámicamente o se consolidan en Fase 3
                     if ($dp->idpar >= 3 && $dp->idpar <= 9) continue;
                     if ($dp->idpar == 1 || $dp->idpar == 2) continue;
+                    
+                    // IDs 10-14 en destino están reservados para Defectos e Inspección Visual Consolidada
+                    if ($dp->idpar >= 10 && $dp->idpar <= 14) continue; 
                     
                     $idparDestino = $dp->idpar;
                     if (!isset($parametrosValidos[$idparDestino])) continue;

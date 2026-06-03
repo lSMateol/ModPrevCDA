@@ -138,13 +138,10 @@
                             $label = match($tipo) {
                                 'soat' => 'SOAT',
                                 'tecno' => 'Tecnomecánica',
-                                'contractual' => 'Responsabilidad Contractual',
-                                'operacion' => 'Licencia de Tránsito',
                                 default => ucfirst($tipo)
                             };
                             $borderColor = match($tipo) {
                                 'soat', 'tecno' => 'border-[#ffba20]',
-                                'contractual', 'operacion' => 'border-blue-500',
                                 default => 'border-gray-300'
                             };
                             if ($doc['estado'] === 'vencido') $borderColor = 'border-red-500';

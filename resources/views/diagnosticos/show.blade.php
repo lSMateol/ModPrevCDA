@@ -4,20 +4,37 @@
 @php
     $prefix = Auth::user()->hasRole('Administrador') ? 'admin' : 'digitador';
     
-    // Agrupar parámetros por tipo para las pestañas
-    $groupedParams = $diagnostico->parametros->groupBy(function($p) {
-        return $p->parametro->tippar->nomtip;
+    // Obtener parámetros activos de forma limpia y centralizada
+    $activeParams = $diagnostico->getActiveParameters();
+    $activeParamIds = $activeParams->pluck('idpar')->toArray();
+    $savedParamValues = $diagnostico->parametros->keyBy('idpar');
+
+    // Construir una colección de diapar virtuales/reales para la vista
+    $activeDiapars = $activeParams->map(function($param) use ($savedParamValues, $diagnostico) {
+        $diapar = $savedParamValues->get($param->idpar);
+        if (!$diapar) {
+            $diapar = new \App\Models\Diapar();
+            $diapar->idpar = $param->idpar;
+            $diapar->iddia = $diagnostico->iddia;
+            $diapar->valor = null;
+        }
+        $diapar->setRelation('parametro', $param);
+        return $diapar;
+    });
+
+    // Agrupar los parámetros activos por el tipo (tippar)
+    $groupedParams = $activeDiapars->groupBy(function($dp) {
+        return $dp->parametro->tippar->nomtip;
     });
 
     $fallasTipoA = 0;
     $fallasTipoB = 0;
     $fallasTecnicas = 0;
 
-    foreach($diagnostico->parametros as $p) {
+    foreach($activeDiapars as $p) {
         $param = $p->parametro;
         $val = $p->valor;
         $nomTip = strtoupper($param->tippar->nomtip ?? '');
-        $esVisual = str_contains($nomTip, 'VISUAL') || str_contains($nomTip, 'SENSORIAL');
 
         if ($param->nompar == 'desc_inspeccion') {
             // Conteo de defectos visuales (Único origen permitido para A y B)
@@ -28,10 +45,12 @@
                 elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
             }
         } else {
-            // Validación de otros parámetros (Gases, Luces, etc.)
+            // Validación de otros parámetros activos (Gases, Luces, etc.)
             $failed = false;
             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                if ($val < $param->rini || $val > $param->rfin) $failed = true;
+                if ($val !== null && $val !== '') {
+                    if ($val < $param->rini || $val > $param->rfin) $failed = true;
+                }
             } elseif ($param->control == 'radio') {
                 if ($param->nompar == 'dilusion_gasolina') {
                     if (strtolower($val) == 'no') $failed = true;
@@ -88,59 +107,9 @@
 
     $allCumple = count($causalesRechazo) === 0;
 
-    // Verificar campos requeridos
-    $answeredParams = $diagnostico->parametros->filter(function($p) {
-        return !is_null($p->valor) && $p->valor !== '';
-    })->pluck('parametro.nompar')->toArray();
-
-    $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
-    $isDiesel = str_contains($combuStr, 'DIESEL');
-
-    $requiredParamsDict = [
-        'luz_izquierda' => 'Luz Izquierda',
-        'luz_derecha' => 'Luz Derecha',
-        'dilusion_gasolina' => 'Dilución Gasolina',
-        'Criterios_de_validacion' => 'Criterios de Validación'
-    ];
-
-    $tipoFormulario = $diagnostico->tipo_formulario ?? '';
-
-    if ($isDiesel) {
-        if ($tipoFormulario != 'solo_gases') {
-            $requiredParamsDict['temp_c'] = 'Temp C (V. Diesel)';
-            $requiredParamsDict['rpm'] = 'RPM (V. Diesel)';
-            $requiredParamsDict['ciclo1'] = 'Ciclo 1 (V. Diesel)';
-            $requiredParamsDict['ciclo2'] = 'Ciclo 2 (V. Diesel)';
-            $requiredParamsDict['ciclo3'] = 'Ciclo 3 (V. Diesel)';
-            $requiredParamsDict['ciclo4'] = 'Ciclo 4 (V. Diesel)';
-            $requiredParamsDict['resultado_diesel'] = 'Resultado Diesel';
-        }
-    } else {
-        if ($tipoFormulario != 'otto_sin_gases') {
-            $requiredParamsDict['co_ralenti'] = 'CO Ralenti';
-            $requiredParamsDict['co_crucero'] = 'CO Crucero';
-            $requiredParamsDict['co2_ralenti'] = 'CO2 Ralenti';
-            $requiredParamsDict['co2_crucero'] = 'CO2 Crucero';
-        }
-        if ($tipoFormulario != 'solo_gases') {
-            $requiredParamsDict['hc_ralenti'] = 'HC Ralenti';
-            $requiredParamsDict['hc_crucero'] = 'HC Crucero';
-            $requiredParamsDict['o2_ralenti'] = 'O2 Ralenti';
-            $requiredParamsDict['o2_crucero'] = 'O2 Crucero';
-        }
-    }
-
-    $missingFields = [];
-    foreach($requiredParamsDict as $key => $label) {
-        if(!in_array($key, $answeredParams)) {
-            $missingFields[] = $label;
-        }
-    }
-
+    // Obtener campos faltantes/incompletos de forma centralizada
+    $missingFields = $diagnostico->getMissingFields();
     $fotosCount = $diagnostico->fotos->count();
-    if ($fotosCount < 2) {
-        $missingFields[] = 'Evidencia Fotográfica (Se requieren al menos 2 fotos. Actual: ' . $fotosCount . ')';
-    }
 @endphp
 
 <div class="px-4 sm:px-6 lg:px-10 pb-20 max-w-[1400px] mx-auto" x-data="{ activeTab: '{{ $groupedParams->keys()->first() }}' }">
@@ -224,17 +193,6 @@
             <!-- Pestañas -->
             <div class="flex border-b border-outline-variant/10 bg-surface-container-low/30 overflow-x-auto no-scrollbar scroll-smooth">
                 @foreach($groupedParams as $tipo => $params)
-                @php
-                    $t = strtoupper($tipo);
-                    $formType = $diagnostico->tipo_formulario ?? '';
-                    $showTab = true;
-
-                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showTab = false;
-                    elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showTab = false;
-                    elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showTab = false;
-                    
-                    if (!$showTab) continue;
-                @endphp
                 <button 
                     @click="activeTab = '{{ $tipo }}'"
                     :class="activeTab === '{{ $tipo }}' ? 'border-[#001834] text-[#001834] bg-white opacity-100' : 'border-transparent text-on-surface-variant opacity-40 hover:opacity-80 font-bold'"
@@ -248,17 +206,6 @@
             <!-- Contenido de Tablas -->
             <div class="p-4 md:p-8 overflow-x-auto">
                 @foreach($groupedParams as $tipo => $params)
-                @php
-                    $t = strtoupper($tipo);
-                    $formType = $diagnostico->tipo_formulario ?? '';
-                    $showSection = true;
-
-                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showSection = false;
-                    elseif ($formType == 'otto_sin_gases' && str_contains($t, 'GASES')) $showSection = false;
-                    elseif ($formType == 'solo_gases' && (str_contains($t, 'CICLO OTTO') || str_contains($t, 'DIESEL') || str_contains($t, 'MOTOR'))) $showSection = false;
-                    
-                    if (!$showSection) continue;
-                @endphp
                 <div x-show="activeTab === '{{ $tipo }}'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" class="min-w-[600px] md:min-w-0">
                     <table class="w-full">
                         <thead>
@@ -317,6 +264,10 @@
                                 @php
                                     $param = $p->parametro;
                                     $val = $p->valor;
+                                    
+                                    // Ocultar parámetros opcionales si no aplican (ej: exploradoras = na)
+                                    if ($val === 'na') continue;
+
                                     $cumple = true;
                                     $esSeccionDefectos = str_contains(strtoupper($tipo), 'DEFECTOS');
 
@@ -393,9 +344,11 @@
                             $param = $p->parametro;
                             $val = $p->valor;
                             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                                if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
+                                if ($val === null || $val === '' || $val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
-                                if ($param->nompar == 'dilusion_gasolina') {
+                                if ($val === null || $val === '') {
+                                    $sectionCumple = false;
+                                } elseif ($param->nompar == 'dilusion_gasolina') {
                                     if (strtolower($val) == 'no') $sectionCumple = false;
                                 } elseif (str_contains(strtoupper($tipo), 'DEFECTOS')) {
                                     if (str_contains(strtolower($param->nompar), 'criterios')) {
@@ -498,10 +451,15 @@
                         <li>{{ $field }}</li>
                     @endforeach
                 </ul>
-                <div class="mt-4">
+                <div class="mt-4 flex flex-wrap gap-3">
                     <a href="{{ route($prefix . '.diagnosticos.edit', $diagnostico->iddia) }}" class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm">
                         <span class="material-symbols-outlined text-sm">edit</span> Completar Información
                     </a>
+                    @if($fotosCount < 2)
+                        <button type="button" class="inline-flex items-center gap-2 bg-[#ffba20] text-[#001834] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-sm btn-foto" data-id="{{ $diagnostico->iddia }}">
+                            <span class="material-symbols-outlined text-sm">photo_camera</span> Cargar Fotos
+                        </button>
+                    @endif
                 </div>
             </div>
         @else
@@ -548,4 +506,227 @@
         </div>
     </div>
 </div>
+
+@include('diagnosticos.modal-fotos')
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const routeFotosBase = document.querySelector('meta[name="url-prefix"]').content;
+        const modalFotos = document.getElementById('modal-fotos');
+        const closeFotos = document.getElementById('close-fotos');
+        const fotoDiagId = document.getElementById('foto-diag-id');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const stopCameraBtn = document.getElementById('stop-camera');
+        const cameraPreview = document.getElementById('camera-preview');
+        const fileInput = document.getElementById('file-input');
+        const photoList = document.getElementById('photo-list');
+        const photoCount = document.getElementById('photo-count');
+        const btnSaveFotos = document.getElementById('btn-save-fotos');
+        const template = document.getElementById('photo-item-template');
+
+        let stream = null;
+        let existingPhotos = []; 
+        let newPhotos = [];      
+        let idsAEliminar = [];   
+
+        document.querySelectorAll('.btn-foto').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                fotoDiagId.innerText = id;
+                modalFotos.classList.remove('hidden');
+                
+                try {
+                    const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`);
+                    existingPhotos = await res.json();
+                    newPhotos = [];
+                    idsAEliminar = [];
+                    updatePhotoUI();
+                } catch (err) {
+                    console.error("Error cargando fotos:", err);
+                    resetFotos();
+                }
+            });
+        });
+
+        function resetFotos() {
+            stopCamera();
+            existingPhotos = [];
+            newPhotos = [];
+            idsAEliminar = [];
+            updatePhotoUI();
+        }
+
+        cameraPreview.addEventListener('click', () => {
+            if (!stream) startCamera();
+            else fileInput.click();
+        });
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" },
+                    audio: false 
+                });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                document.getElementById('upload-placeholder').classList.add('hidden');
+                document.getElementById('camera-controls').classList.remove('hidden');
+            } catch (err) {
+                fileInput.click();
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.classList.add('hidden');
+            document.getElementById('camera-controls').classList.add('hidden');
+            if (existingPhotos.length === 0 && newPhotos.length === 0) {
+                document.getElementById('upload-placeholder').classList.remove('hidden');
+            }
+        }
+
+        if(stopCameraBtn) stopCameraBtn.onclick = (e) => { e.stopPropagation(); stopCamera(); };
+
+        if(snap) snap.onclick = (e) => {
+            e.stopPropagation();
+            if ((existingPhotos.length + newPhotos.length) >= 2) return alert('Máximo 2 fotos permitidas.');
+            
+            const MAX_WIDTH = 1024;
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+            
+            canvas.toBlob((blob) => {
+                newPhotos.push(blob);
+                updatePhotoUI();
+            }, 'image/webp', 0.6);
+        };
+
+        if(fileInput) fileInput.onchange = (e) => {
+            Array.from(e.target.files).forEach(file => {
+                if ((existingPhotos.length + newPhotos.length) >= 2) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX_WIDTH = 1024;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = width; 
+                        tempCanvas.height = height;
+                        tempCanvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        tempCanvas.toBlob((blob) => {
+                            newPhotos.push(blob);
+                            updatePhotoUI();
+                        }, 'image/webp', 0.6);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        };
+
+        function updatePhotoUI() {
+            const total = existingPhotos.length + newPhotos.length;
+            photoCount.innerText = total;
+            btnSaveFotos.disabled = (total === 0 && idsAEliminar.length === 0);
+            
+            if (total >= 2) stopCamera();
+            if (total > 0) document.getElementById('upload-placeholder').classList.add('hidden');
+            else if (!stream) document.getElementById('upload-placeholder').classList.remove('hidden');
+
+            photoList.innerHTML = '';
+            
+            existingPhotos.forEach((foto, i) => {
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = foto.url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    idsAEliminar.push(foto.id);
+                    existingPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+
+            newPhotos.forEach((blob, i) => {
+                const url = URL.createObjectURL(blob);
+                const clone = template.content.cloneNode(true);
+                clone.querySelector('img').src = url;
+                clone.querySelector('.remove-photo').onclick = () => {
+                    newPhotos.splice(i, 1);
+                    updatePhotoUI();
+                };
+                photoList.appendChild(clone);
+            });
+        }
+
+        if(btnSaveFotos) btnSaveFotos.onclick = async () => {
+            const id = fotoDiagId.innerText;
+            if (!id) return alert('ID de diagnóstico no encontrado.');
+
+            const formData = new FormData();
+            newPhotos.forEach((blob, i) => {
+                formData.append(`fotos[]`, blob, `evid_${id}_new_${i}.webp`);
+            });
+            formData.append('ids_a_eliminar', JSON.stringify(idsAEliminar));
+
+            const btnText = document.getElementById('btn-save-fotos-text');
+            btnSaveFotos.disabled = true;
+            const originalText = btnText ? btnText.innerText : 'Guardar Evidencias';
+            if (btnText) btnText.innerText = 'Guardando...';
+
+            try {
+                const res = await fetch(`${routeFotosBase}/diagnosticos/${id}/fotos`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    alert('Evidencias guardadas correctamente.');
+                    window.location.reload();
+                } else {
+                    const data = await res.json();
+                    alert('Error al guardar: ' + (data.message || 'Error desconocido'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error al guardar: ' + err.message);
+            } finally {
+                if (btnText) btnText.innerText = originalText;
+                btnSaveFotos.disabled = false;
+            }
+        };
+
+        if(closeFotos) closeFotos.onclick = () => { modalFotos.classList.add('hidden'); stopCamera(); };
+        if(modalFotos) modalFotos.onclick = (e) => { if (e.target === modalFotos) { modalFotos.classList.add('hidden'); stopCamera(); } };
+    });
+</script>
+@endpush

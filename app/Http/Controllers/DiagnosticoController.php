@@ -168,22 +168,50 @@ class DiagnosticoController extends Controller
             $paramValues[$p->parametro->nompar] = $p->valor;
         }
 
-        // Filtrar parámetros según la configuración del tipo de vehículo
-        $idval_combu = $diagnostico->idval_combu ?? ($diagnostico->vehiculo->combuveh ?? 43); 
-        $config = \App\Models\TipoVehiculoConfig::with(['parameter.tippar'])
-            ->where('idval_combu', $idval_combu)
-            ->orderBy('orden')
-            ->get();
+        $activeParams = $diagnostico->getActiveParameters();
 
         $parametrosPorTipo = [];
-        foreach ($config as $item) {
-            if (!$item->parameter) continue;
-            $domainName = $item->parameter->tippar->nomtip;
+        foreach ($activeParams as $param) {
+            $domainName = $param->tippar->nomtip;
             if (!isset($parametrosPorTipo[$domainName])) {
                 $parametrosPorTipo[$domainName] = collect();
             }
-            $parametrosPorTipo[$domainName]->push($item->parameter);
+            $parametrosPorTipo[$domainName]->push($param);
         }
+
+        // Sort the sections by requested order
+        uksort($parametrosPorTipo, function($a, $b) {
+            $orderPriority = [
+                'LUCES' => 1,
+                'LUCES BAJAS' => 1,
+                'MOTOR DIESEL' => 2,
+                'V. DIESEL' => 2,
+                'V. CICLO OTTO' => 2,
+                'EMISIÓN DE GASES' => 2.1,
+                'EMISIONES AUDIBLES' => 2.2,
+                'DEFECTOS' => 3,
+                'INSPECCION VISUAL' => 4,
+                'DEFECTOS INSPECCION VISUAL Y SENSORIAL' => 4,
+            ];
+            
+            $priorityA = 99;
+            foreach ($orderPriority as $key => $priority) {
+                if (str_contains(strtoupper($a), $key)) {
+                    $priorityA = $priority;
+                    break;
+                }
+            }
+            
+            $priorityB = 99;
+            foreach ($orderPriority as $key => $priority) {
+                if (str_contains(strtoupper($b), $key)) {
+                    $priorityB = $priority;
+                    break;
+                }
+            }
+            
+            return $priorityA <=> $priorityB;
+        });
 
         return view('diagnosticos.form', compact('diagnostico', 'paramValues', 'parametrosPorTipo'));
     }
@@ -192,39 +220,19 @@ class DiagnosticoController extends Controller
     {
         $diagnostico = Diag::findOrFail($id);
         
-        // Obtener solo los parámetros configurados para este tipo de vehículo
-        $idval_combu = $diagnostico->idval_combu ?? 43; // Fallback a Diesel
-        $configIds = \App\Models\TipoVehiculoConfig::where('idval_combu', $idval_combu)->pluck('idpar');
-        $parametrosRaw = Param::with('tippar')->whereIn('idpar', $configIds)->where('actpar', 1)->get();
-        
-        // Filtrar según tipo_formulario
-        $parametros = collect();
-        $formType = $diagnostico->tipo_formulario ?? '';
-        foreach ($parametrosRaw as $param) {
-            $nomTip = strtoupper($param->tippar->nomtip ?? '');
-            $skip = false;
-            
-            if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) $skip = true;
-            elseif ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) $skip = true;
-            elseif ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) $skip = true;
-            
-            if (!$skip) {
-                $parametros->push($param);
-            }
-        }
+        // Obtener solo los parámetros activos configurados para este diagnóstico
+        $parametros = $diagnostico->getActiveParameters();
         
         $rules = [];
         $messages = [];
         foreach ($parametros as $param) {
-            // El parámetro es requerido si no es opcional (se puede definir lógica aquí)
-            // Por ahora, asumimos que los que tienen rango o son radio son importantes
+            // El parámetro es requerido si no es opcional
             $regla = 'nullable';
 
             if ($param->control === 'number') {
                 $regla = 'required|numeric';
                 if (!is_null($param->rini) && !is_null($param->rfin)) {
                     // Si se_mantiene es true, forzamos el rango. Si no, solo validamos que sea numérico 
-                    // (o permitimos fuera de rango pero marcamos en el cálculo de aprobación)
                     if ($param->se_mantiene) {
                         $regla .= "|between:{$param->rini},{$param->rfin}";
                     }
@@ -256,9 +264,16 @@ class DiagnosticoController extends Controller
             $fallasTipoA = 0;
             $fallasTipoB = 0;
             $fallasTecnicas = 0;
+            
+            $activeParamIds = $parametros->pluck('idpar')->toArray();
             $diagnosticoFresh = $diagnostico->fresh('parametros.parametro.tippar', 'vehiculo');
             
             foreach($diagnosticoFresh->parametros as $p) {
+                // Solo evaluar parámetros que estén activos actualmente
+                if (!in_array($p->idpar, $activeParamIds)) {
+                    continue;
+                }
+
                 $pMeta = $p->parametro;
                 $v = $p->valor;
                 $nomTip = strtoupper($pMeta->tippar->nomtip ?? '');
@@ -406,12 +421,6 @@ class DiagnosticoController extends Controller
             
             // Tecnomecánica
             if ($d = $procesarDoc($v->fecvent, 'tecno')) $docs['tecno'] = $d;
-
-            // Responsabilidad Contractual
-            if ($d = $procesarDoc($v->fecvenc, 'contractual')) $docs['contractual'] = $d;
-
-            // Tarjeta de Operación (Opcional, pero útil para alertas)
-            if ($d = $procesarDoc($v->fecvenr, 'operacion')) $docs['operacion'] = $d;
 
             // Filtrar por Rango de Vencimiento
             if ($fechaInicio || $fechaFin) {
@@ -671,6 +680,11 @@ class DiagnosticoController extends Controller
     public function approve($id)
     {
         $diagnostico = Diag::findOrFail($id);
+        
+        if (count($diagnostico->getMissingFields()) > 0) {
+            return redirect()->back()->with('error', 'No se puede aprobar el diagnóstico porque tiene información incompleta.');
+        }
+
         $diagnostico->update(['aprobado' => 1]);
         
         $prefix = $this->getPrefix();
@@ -729,8 +743,7 @@ class DiagnosticoController extends Controller
             $nomTip = strtoupper($p->parametro->tippar->nomtip ?? '');
             $formType = $diagnostico->tipo_formulario ?? '';
             if ($formType == 'diesel_basico' && str_contains($nomTip, 'GASES')) return false;
-            if ($formType == 'otto_sin_gases' && str_contains($nomTip, 'GASES')) return false;
-            if ($formType == 'solo_gases' && (str_contains($nomTip, 'CICLO OTTO') || str_contains($nomTip, 'DIESEL') || str_contains($nomTip, 'MOTOR'))) return false;
+            if ($formType == 'otto_sin_gases' && (str_contains($nomTip, 'GASES') || str_contains($nomTip, 'OTTO') || str_contains($nomTip, 'CICLO OTTO'))) return false;
             return true;
         })->groupBy(function($p) {
             return $p->parametro->tippar->nomtip;
