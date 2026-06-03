@@ -179,6 +179,40 @@ class DiagnosticoController extends Controller
             $parametrosPorTipo[$domainName]->push($param);
         }
 
+        // Sort the sections by requested order
+        uksort($parametrosPorTipo, function($a, $b) {
+            $orderPriority = [
+                'LUCES' => 1,
+                'LUCES BAJAS' => 1,
+                'MOTOR DIESEL' => 2,
+                'V. DIESEL' => 2,
+                'V. CICLO OTTO' => 2,
+                'EMISIÓN DE GASES' => 2.1,
+                'EMISIONES AUDIBLES' => 2.2,
+                'DEFECTOS' => 3,
+                'INSPECCION VISUAL' => 4,
+                'DEFECTOS INSPECCION VISUAL Y SENSORIAL' => 4,
+            ];
+            
+            $priorityA = 99;
+            foreach ($orderPriority as $key => $priority) {
+                if (str_contains(strtoupper($a), $key)) {
+                    $priorityA = $priority;
+                    break;
+                }
+            }
+            
+            $priorityB = 99;
+            foreach ($orderPriority as $key => $priority) {
+                if (str_contains(strtoupper($b), $key)) {
+                    $priorityB = $priority;
+                    break;
+                }
+            }
+            
+            return $priorityA <=> $priorityB;
+        });
+
         return view('diagnosticos.form', compact('diagnostico', 'paramValues', 'parametrosPorTipo'));
     }
 
