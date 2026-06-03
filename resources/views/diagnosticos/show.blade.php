@@ -4,20 +4,37 @@
 @php
     $prefix = Auth::user()->hasRole('Administrador') ? 'admin' : 'digitador';
     
-    // Agrupar parámetros por tipo para las pestañas
-    $groupedParams = $diagnostico->parametros->groupBy(function($p) {
-        return $p->parametro->tippar->nomtip;
+    // Obtener parámetros activos de forma limpia y centralizada
+    $activeParams = $diagnostico->getActiveParameters();
+    $activeParamIds = $activeParams->pluck('idpar')->toArray();
+    $savedParamValues = $diagnostico->parametros->keyBy('idpar');
+
+    // Construir una colección de diapar virtuales/reales para la vista
+    $activeDiapars = $activeParams->map(function($param) use ($savedParamValues, $diagnostico) {
+        $diapar = $savedParamValues->get($param->idpar);
+        if (!$diapar) {
+            $diapar = new \App\Models\Diapar();
+            $diapar->idpar = $param->idpar;
+            $diapar->iddia = $diagnostico->iddia;
+            $diapar->valor = null;
+        }
+        $diapar->setRelation('parametro', $param);
+        return $diapar;
+    });
+
+    // Agrupar los parámetros activos por el tipo (tippar)
+    $groupedParams = $activeDiapars->groupBy(function($dp) {
+        return $dp->parametro->tippar->nomtip;
     });
 
     $fallasTipoA = 0;
     $fallasTipoB = 0;
     $fallasTecnicas = 0;
 
-    foreach($diagnostico->parametros as $p) {
+    foreach($activeDiapars as $p) {
         $param = $p->parametro;
         $val = $p->valor;
         $nomTip = strtoupper($param->tippar->nomtip ?? '');
-        $esVisual = str_contains($nomTip, 'VISUAL') || str_contains($nomTip, 'SENSORIAL');
 
         if ($param->nompar == 'desc_inspeccion') {
             // Conteo de defectos visuales (Único origen permitido para A y B)
@@ -28,10 +45,12 @@
                 elseif (($def['tipo'] ?? '') == 'Tipo B') $fallasTipoB++;
             }
         } else {
-            // Validación de otros parámetros (Gases, Luces, etc.)
+            // Validación de otros parámetros activos (Gases, Luces, etc.)
             $failed = false;
             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                if ($val < $param->rini || $val > $param->rfin) $failed = true;
+                if ($val !== null && $val !== '') {
+                    if ($val < $param->rini || $val > $param->rfin) $failed = true;
+                }
             } elseif ($param->control == 'radio') {
                 if ($param->nompar == 'dilusion_gasolina') {
                     if (strtolower($val) == 'no') $failed = true;
@@ -88,59 +107,9 @@
 
     $allCumple = count($causalesRechazo) === 0;
 
-    // Verificar campos requeridos
-    $answeredParams = $diagnostico->parametros->filter(function($p) {
-        return !is_null($p->valor) && $p->valor !== '';
-    })->pluck('parametro.nompar')->toArray();
-
-    $combuStr = strtoupper($diagnostico->vehiculo->combustible->nomval ?? '');
-    $isDiesel = str_contains($combuStr, 'DIESEL');
-
-    $requiredParamsDict = [
-        'reversa' => 'Reversa',
-        'frenos' => 'Frenos',
-        'direccionales' => 'Direccionales',
-    ];
-
-    $tipoFormulario = $diagnostico->tipo_formulario ?? '';
-
-    if ($tipoFormulario != 'otto_sin_gases') {
-        $requiredParamsDict['dilusion_gasolina'] = 'Dilución Gasolina';
-        $requiredParamsDict['Criterios_de_validacion'] = 'Criterios de Validación';
-    }
-
-    if ($isDiesel) {
-        $requiredParamsDict['temp_c'] = 'Temp C (V. Diesel)';
-        $requiredParamsDict['rpm'] = 'RPM (V. Diesel)';
-        $requiredParamsDict['ciclo1'] = 'Ciclo 1 (V. Diesel)';
-        $requiredParamsDict['ciclo2'] = 'Ciclo 2 (V. Diesel)';
-        $requiredParamsDict['ciclo3'] = 'Ciclo 3 (V. Diesel)';
-        $requiredParamsDict['ciclo4'] = 'Ciclo 4 (V. Diesel)';
-        $requiredParamsDict['resultado_diesel'] = 'Resultado Diesel';
-    } else {
-        if ($tipoFormulario != 'otto_sin_gases') {
-            $requiredParamsDict['co_ralenti'] = 'CO Ralenti';
-            $requiredParamsDict['co_crucero'] = 'CO Crucero';
-            $requiredParamsDict['co2_ralenti'] = 'CO2 Ralenti';
-            $requiredParamsDict['co2_crucero'] = 'CO2 Crucero';
-        }
-        $requiredParamsDict['hc_ralenti'] = 'HC Ralenti';
-        $requiredParamsDict['hc_crucero'] = 'HC Crucero';
-        $requiredParamsDict['o2_ralenti'] = 'O2 Ralenti';
-        $requiredParamsDict['o2_crucero'] = 'O2 Crucero';
-    }
-
-    $missingFields = [];
-    foreach($requiredParamsDict as $key => $label) {
-        if(!in_array($key, $answeredParams)) {
-            $missingFields[] = $label;
-        }
-    }
-
+    // Obtener campos faltantes/incompletos de forma centralizada
+    $missingFields = $diagnostico->getMissingFields();
     $fotosCount = $diagnostico->fotos->count();
-    if ($fotosCount < 2) {
-        $missingFields[] = 'Evidencia Fotográfica (Se requieren al menos 2 fotos. Actual: ' . $fotosCount . ')';
-    }
 @endphp
 
 <div class="px-4 sm:px-6 lg:px-10 pb-20 max-w-[1400px] mx-auto" x-data="{ activeTab: '{{ $groupedParams->keys()->first() }}' }">
@@ -224,16 +193,6 @@
             <!-- Pestañas -->
             <div class="flex border-b border-outline-variant/10 bg-surface-container-low/30 overflow-x-auto no-scrollbar scroll-smooth">
                 @foreach($groupedParams as $tipo => $params)
-                @php
-                    $t = strtoupper($tipo);
-                    $formType = $diagnostico->tipo_formulario ?? '';
-                    $showTab = true;
-
-                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showTab = false;
-                    elseif ($formType == 'otto_sin_gases' && (str_contains($t, 'GASES') || str_contains($t, 'OTTO') || str_contains($t, 'CICLO OTTO'))) $showTab = false;
-                    
-                    if (!$showTab) continue;
-                @endphp
                 <button 
                     @click="activeTab = '{{ $tipo }}'"
                     :class="activeTab === '{{ $tipo }}' ? 'border-[#001834] text-[#001834] bg-white opacity-100' : 'border-transparent text-on-surface-variant opacity-40 hover:opacity-80 font-bold'"
@@ -247,16 +206,6 @@
             <!-- Contenido de Tablas -->
             <div class="p-4 md:p-8 overflow-x-auto">
                 @foreach($groupedParams as $tipo => $params)
-                @php
-                    $t = strtoupper($tipo);
-                    $formType = $diagnostico->tipo_formulario ?? '';
-                    $showSection = true;
-
-                    if ($formType == 'diesel_basico' && str_contains($t, 'GASES')) $showSection = false;
-                    elseif ($formType == 'otto_sin_gases' && (str_contains($t, 'GASES') || str_contains($t, 'OTTO') || str_contains($t, 'CICLO OTTO'))) $showSection = false;
-                    
-                    if (!$showSection) continue;
-                @endphp
                 <div x-show="activeTab === '{{ $tipo }}'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" class="min-w-[600px] md:min-w-0">
                     <table class="w-full">
                         <thead>
@@ -395,9 +344,11 @@
                             $param = $p->parametro;
                             $val = $p->valor;
                             if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
-                                if ($val < $param->rini || $val > $param->rfin) $sectionCumple = false;
+                                if ($val === null || $val === '' || $val < $param->rini || $val > $param->rfin) $sectionCumple = false;
                             } elseif ($param->control == 'radio') {
-                                if ($param->nompar == 'dilusion_gasolina') {
+                                if ($val === null || $val === '') {
+                                    $sectionCumple = false;
+                                } elseif ($param->nompar == 'dilusion_gasolina') {
                                     if (strtolower($val) == 'no') $sectionCumple = false;
                                 } elseif (str_contains(strtoupper($tipo), 'DEFECTOS')) {
                                     if (str_contains(strtolower($param->nompar), 'criterios')) {
