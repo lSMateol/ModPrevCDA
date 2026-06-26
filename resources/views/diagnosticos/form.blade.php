@@ -153,7 +153,7 @@
                                         
                                         // Default to NO or NA for defects if empty
                                         if ($currentVal === '' && !$esLuces) {
-                                            if (in_array($param->nompar, ['dilusion_gasolina', 'Criterios_de_validacion'])) {
+                                            if (in_array($param->nompar, ['dilusion_gasolina', 'Criterios_de_validacion', 'funcionamiento_velocidad'])) {
                                                 $currentVal = 'na';
                                             } else {
                                                 $currentVal = str_contains(strtolower($param->nompar), 'criterios') ? 'si' : 'no';
@@ -244,7 +244,7 @@
                                 <div class="flex gap-8">
                                     <label class="flex items-center gap-3 cursor-pointer group">
                                         <input type="radio" name="_exploradora_ui" value="funciona" class="w-5 h-5 text-[#ffba20] border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0" {{ (old('exploradoras', $paramValues['exploradoras'] ?? '') == 'funciona') ? 'checked' : '' }}>
-                                        <span class="text-xs font-bold uppercase tracking-tight text-on-surface group-hover:text-[#ffba20] transition-colors">Funciona Correctamente</span>
+                                        <span class="text-xs font-bold uppercase tracking-tight text-on-surface group-hover:text-[#ffba20] transition-colors">Funciona</span>
                                     </label>
                                     <label class="flex items-center gap-3 cursor-pointer group">
                                         <input type="radio" name="_exploradora_ui" value="no_funciona" class="w-5 h-5 text-red-500 border-2 border-outline-variant/30 focus:ring-offset-0 focus:ring-0" {{ (old('exploradoras', $paramValues['exploradoras'] ?? '') == 'no_funciona') ? 'checked' : '' }}>

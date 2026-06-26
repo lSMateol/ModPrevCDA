@@ -289,7 +289,7 @@ class DiagnosticoController extends Controller
                 } else {
                     // Otros parámetros (Luces, Gases, etc.) se cuentan como fallas técnicas
                     $failed = false;
-                    if ($pMeta->nompar == 'dilusion_gasolina') {
+                    if (in_array($pMeta->nompar, ['dilusion_gasolina', 'funcionamiento_velocidad'])) {
                         if (strtolower($v) == 'no') $failed = true;
                     } elseif ($pMeta->control == 'number' && ($pMeta->rini !== null && $pMeta->rfin !== null)) {
                         if ($v < $pMeta->rini || $v > $pMeta->rfin) $failed = true;

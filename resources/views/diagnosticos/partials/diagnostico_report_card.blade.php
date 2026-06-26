@@ -155,7 +155,7 @@
         </tr>
         <tr>
             <td class="label">RUIDO ESCAPE</td>
-            <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '-' }}</td>
+            <td class="text-center">{{ $paramValues['RUIDO ESCAPE'] ?? '1' }}</td>
             <td class="text-center">dBA</td>
             <td class="label">REVERSA</td>
             <td class="text-center" style="font-weight: bold;">
@@ -204,12 +204,7 @@
             <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'no' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['dilusion_gasolina'] ?? '')) == 'na' ? 'X' : '' }}</td>
             <td class="text-center" style="font-weight: bold;">
-                @php
-                    $dilOk = in_array(strtolower(trim($paramValues['dilusion_gasolina'] ?? '')), ['si', 'na']);
-                    $criOk = in_array(strtolower(trim($paramValues['Criterios_de_validacion'] ?? '')), ['si', 'na']);
-                    $resDef = ($dilOk && $criOk) ? 'CUMPLE' : 'NO CUMPLE';
-                @endphp
-                {{ $resDef }}
+                {{ in_array(strtolower(trim($paramValues['dilusion_gasolina'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}
             </td>
         </tr>
         <tr>
@@ -218,6 +213,13 @@
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'no' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['Criterios_de_validacion'] ?? '')) == 'na' ? 'X' : '' }}</td>
             <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['Criterios_de_validacion'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
+        </tr>
+        <tr>
+            <td class="label">FUNCIONAMIENTO DISPOSITIVO DE VELOCIDAD</td>
+            <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'si' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'no' ? 'X' : '' }}</td>
+            <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'na' ? 'X' : '' }}</td>
+            <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['funcionamiento_velocidad'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
         </tr>
         @else
         <tr>

@@ -141,6 +141,7 @@ class Diag extends Model
             'exploradoras' => 'Exploradoras',
             'dilusion_gasolina' => 'Dilución Gasolina',
             'Criterios_de_validacion' => 'Criterios de Validación',
+            'funcionamiento_velocidad' => 'Funcionamiento dispositivo de velocidad',
             'temp_c' => 'Temp C (V. Diesel)',
             'rpm' => 'RPM (V. Diesel)',
             'ciclo1' => 'Ciclo 1 (V. Diesel)',

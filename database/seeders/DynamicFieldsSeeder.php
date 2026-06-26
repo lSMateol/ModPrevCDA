@@ -42,6 +42,9 @@ class DynamicFieldsSeeder extends Seeder
             ['idpar' => 28, 'nompar' => 'frenos',                 'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'frenos',           'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
             ['idpar' => 29, 'nompar' => 'direccionales',          'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'direccionales',    'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
             ['idpar' => 30, 'nompar' => 'exploradoras',           'idtip' => 1, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'exploradoras',     'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 0, 'se_mantiene' => 0],
+
+            // DEFECTOS ADICIONALES (idtip=3)
+            ['idpar' => 31, 'nompar' => 'funcionamiento_velocidad', 'idtip' => 3, 'rini' => null,   'rfin' => null,    'control' => 'radio',  'nomcampo' => 'defecto_func_velocidad', 'unipar' => null,  'colum' => 1, 'actpar' => 1, 'can' => 1, 'se_mantiene' => 0],
         ];
 
         foreach ($nuevosParametros as $param) {
@@ -54,7 +57,7 @@ class DynamicFieldsSeeder extends Seeder
         $configuraciones = [];
 
         // --- DIESEL (43) ---
-        $idsDiesel = [27, 28, 29, 30, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        $idsDiesel = [27, 28, 29, 30, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 12, 13, 14, 15, 16, 17, 18, 19, 20];
         $orden = 1;
         foreach($idsDiesel as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
@@ -64,7 +67,7 @@ class DynamicFieldsSeeder extends Seeder
         }
 
         // --- GASOLINA (37) ---
-        $idsGasolina = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $idsGasolina = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 31, 12, 13, 14];
         $orden = 1;
         foreach($idsGasolina as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();
@@ -74,7 +77,7 @@ class DynamicFieldsSeeder extends Seeder
         }
 
         // --- GAS-NATURAL (40) ---
-        $idsGasNatural = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 12, 13, 14];
+        $idsGasNatural = [27, 28, 29, 30, 21, 22, 23, 24, 25, 26, 15, 16, 17, 18, 19, 20, 10, 11, 31, 12, 13, 14];
         $orden = 1;
         foreach($idsGasNatural as $idpar) {
             $p = DB::table('param')->where('idpar', $idpar)->first();

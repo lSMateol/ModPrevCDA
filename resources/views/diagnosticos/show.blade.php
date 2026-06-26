@@ -52,7 +52,7 @@
                     if ($val < $param->rini || $val > $param->rfin) $failed = true;
                 }
             } elseif ($param->control == 'radio') {
-                if ($param->nompar == 'dilusion_gasolina') {
+                if (in_array($param->nompar, ['dilusion_gasolina', 'funcionamiento_velocidad'])) {
                     if (strtolower($val) == 'no') $failed = true;
                 } elseif (str_contains($nomTip, 'DEFECTOS') && !str_contains($nomTip, 'VISUAL')) {
                     // Sección "Defectos" (No visual)
@@ -274,7 +274,7 @@
                                     if ($param->control == 'number' && ($param->rini !== null && $param->rfin !== null)) {
                                         $cumple = ($val >= $param->rini && $val <= $param->rfin);
                                     } elseif ($param->control == 'radio') {
-                                        if ($param->nompar == 'dilusion_gasolina') {
+                                        if (in_array($param->nompar, ['dilusion_gasolina', 'funcionamiento_velocidad'])) {
                                             $cumple = in_array(strtolower($val), ['si', 'na']);
                                         } elseif ($esSeccionDefectos) {
                                             if (str_contains(strtolower($param->nompar), 'criterios')) {
@@ -348,7 +348,7 @@
                             } elseif ($param->control == 'radio') {
                                 if ($val === null || $val === '') {
                                     $sectionCumple = false;
-                                } elseif ($param->nompar == 'dilusion_gasolina') {
+                                } elseif (in_array($param->nompar, ['dilusion_gasolina', 'funcionamiento_velocidad'])) {
                                     if (strtolower($val) == 'no') $sectionCumple = false;
                                 } elseif (str_contains(strtoupper($tipo), 'DEFECTOS')) {
                                     if (str_contains(strtolower($param->nompar), 'criterios')) {
