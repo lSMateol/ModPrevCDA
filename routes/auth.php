@@ -25,10 +25,16 @@ Route::middleware('guest')->group(function () {
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    Route::post('forgot-password/find-question', [PasswordResetLinkController::class, 'findQuestion'])
+        ->name('password.find-question');
+
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    // El formulario de nueva contraseña ya no requiere token:
+    // el email del usuario se recupera de la sesión establecida
+    // por PasswordResetLinkController tras verificar la pregunta secreta.
+    Route::get('reset-password', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])

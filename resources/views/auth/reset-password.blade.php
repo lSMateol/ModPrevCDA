@@ -51,20 +51,11 @@
                         <p class="text-on-surface-variant text-sm leading-relaxed">Crea una nueva contraseña para acceder a tu cuenta.</p>
                     </div>
 
-                    <!-- Password Reset Form -->
+                    <!-- Formulario de restablecimiento de contraseña -->
+                    <!-- El email del usuario se recupera de la sesión establecida
+                         por PasswordResetLinkController (ya no se necesita token). -->
                     <form method="POST" action="{{ route('password.store') }}" class="w-full space-y-6">
                         @csrf
-                        
-                        <!-- Password Reset Token -->
-                        <input type="hidden" name="token" value="{{ $request->route('token') }}">
-                        <input type="hidden" name="email" value="{{ old('email', $request->email) }}">
-                        
-                        @error('email')
-                        <div class="flex items-center gap-2 mb-4 px-1">
-                            <span class="material-symbols-outlined text-error text-[18px]">error</span>
-                            <p class="text-error text-xs font-medium">{{ $message }}</p>
-                        </div>
-                        @enderror
 
                         <!-- New Password Field -->
                         <div class="space-y-1.5">

@@ -25,6 +25,7 @@
             'nomdoc' => $u->persona->tipoDocumento->nomval ?? ($u->idemp ? 'NIT' : 'C.C.'),
             'idemp' => $u->idemp ?? $u->persona->idemp ?? '',
             'nomemp' => $u->empresa->razsoem ?? $u->persona->empresa->razsoem ?? '',
+            'secret_question' => $u->secret_question ?? '',
         ];
     });
 @endphp
@@ -393,6 +394,28 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">
+                            Pregunta de Seguridad
+                            <span class="text-blue-500">*</span>
+                        </label>
+                        <select name="secret_question" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" required>
+                            <option value="">Seleccione una pregunta...</option>
+                            @foreach($preguntas as $key => $pregunta)
+                                <option value="{{ $key }}" {{ old('secret_question') == $key ? 'selected' : '' }}>{{ $pregunta }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">
+                            Respuesta Secreta
+                            <span class="text-blue-500">*</span>
+                            <span class="ml-2 text-[9px] text-gray-300 normal-case tracking-normal font-medium">(Se guarda cifrada. No se puede recuperar.)</span>
+                        </label>
+                        <input type="password" name="secret_answer" class="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Respuesta a la pregunta de seguridad" required>
+                    </div>
                 </div>
 
                 <div class="mt-10 flex gap-4">
@@ -496,7 +519,7 @@
                         </select>
                     </div>
 
-                    <div class="sm:col-span-2" x-show="isEmpresaRole(selectedUser.idpef)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                    <div x-show="isEmpresaRole(selectedUser.idpef)" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="sm:col-span-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Empresa Asociada <span class="text-amber-600">*</span></label>
                         <select name="idemp" x-model="selectedUser.idemp" class="w-full bg-amber-50/50 border-2 border-amber-100 focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" :required="isEmpresaRole(selectedUser.idpef)">
                             <option value="">Seleccione la empresa...</option>
@@ -515,6 +538,24 @@
                     </div>
                     <div class="sm:col-span-2">
                         @include('admin.mup.partials.password-checklist')
+                    </div>
+
+                    <div class="sm:col-span-2 pt-4 border-t border-gray-50 mt-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Pregunta de Seguridad</label>
+                        <select name="secret_question" x-model="selectedUser.secret_question" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all">
+                            <option value="">Seleccione una pregunta...</option>
+                            @foreach($preguntas as $key => $pregunta)
+                                <option value="{{ $key }}">{{ $pregunta }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">
+                            Nueva Respuesta Secreta
+                            <span class="ml-2 text-[9px] text-gray-300 normal-case tracking-normal font-medium">(Vacío para no cambiar. Se guarda cifrada.)</span>
+                        </label>
+                        <input type="password" name="secret_answer" class="w-full bg-gray-50 border-2 border-transparent focus:border-amber-500/20 focus:ring-0 rounded-2xl p-4 text-sm font-semibold transition-all" placeholder="Dejar vacío para no modificar">
                     </div>
                 </div>
 

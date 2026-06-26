@@ -1,5 +1,56 @@
 <!DOCTYPE html>
-<html lang="es" x-data="{ loading: false, loaded: false, isFocus: false }" x-init="setTimeout(() => loaded = true, 100)">
+<html lang="es" x-data="{ 
+    loading: false, 
+    loaded: false, 
+    isFocus: false,
+    step: 1,
+    email: '{{ old('email') }}',
+    secretQuestion: '',
+    errorMessage: '',
+    findQuestion() {
+        if (!this.email) {
+            this.errorMessage = 'Por favor ingresa tu usuario o correo.';
+            return;
+        }
+        this.loading = true;
+        this.errorMessage = '';
+        fetch('{{ route('password.find-question') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ email: this.email })
+        })
+        .then(response => {
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.message || 'Error al buscar la pregunta.');
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            this.loading = false;
+            if (data.success) {
+                this.secretQuestion = data.question;
+                this.step = 2;
+            } else {
+                this.errorMessage = data.message || 'No se pudo recuperar la pregunta.';
+            }
+        })
+        .catch(err => {
+            this.loading = false;
+            this.errorMessage = err.message || 'Error de conexión. Intente de nuevo.';
+        });
+    }
+}" x-init="
+    setTimeout(() => loaded = true, 100);
+    @if(old('email') && $errors->any())
+        findQuestion();
+    @endif
+">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -114,7 +165,7 @@
              :class="loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
             
             <!-- Logo con Breathing Aura -->
-            <div class="flex flex-col items-center text-center mb-12">
+            <div class="flex flex-col items-center text-center mb-10">
                 <div class="relative group mb-8">
                     <!-- Aura Animada -->
                     <div class="absolute -inset-4 bg-blue-500 rounded-full blur-2xl opacity-20 animate-breathing"></div>
@@ -129,67 +180,107 @@
                 <p class="text-slate-400 text-xs mt-4 font-bold uppercase tracking-[2px]">Seguridad de Diagnóstico</p>
             </div>
 
-            <!-- Success Message State -->
+            <!-- Estado: Identidad verificada (paso 1 completado) -->
             @if (session('status'))
-                <div class="mb-10 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex flex-col items-center text-center gap-4 text-emerald-400 animate-pulse-slow transition-all duration-700">
-                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
-                        <iconify-icon icon="lucide:mail-check" class="text-3xl"></iconify-icon>
+                <div class="mb-8 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex flex-col items-center text-center gap-3 text-emerald-400 transition-all duration-700">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                        <iconify-icon icon="lucide:shield-check" class="text-3xl"></iconify-icon>
                     </div>
                     <p class="text-xs font-black uppercase tracking-widest leading-relaxed">
                         {{ session('status') }}
                     </p>
-                    <p class="text-[10px] text-slate-500 font-bold">Por favor revisa tu bandeja de entrada.</p>
                 </div>
             @else
-                <p class="text-slate-500 text-[10px] font-bold text-center uppercase tracking-widest mb-10 max-w-xs mx-auto">
-                    Ingresa tu correo institucional para validar tu identidad.
+                <p class="text-slate-500 text-[10px] font-bold text-center uppercase tracking-widest mb-8 max-w-xs mx-auto">
+                    Ingresa tu usuario o correo y responde la pregunta de seguridad.
                 </p>
             @endif
 
-            <form method="POST" action="{{ route('password.email') }}" class="space-y-8" @submit="loading = true">
+            <form method="POST" action="{{ route('password.email') }}" id="recovery-form" class="space-y-6" @submit="if(step === 1) { $event.preventDefault(); findQuestion(); } else { loading = true; }">
                 @csrf
 
-                <!-- Input Email -->
+                <!-- Input: Usuario o Correo -->
                 <div class="space-y-3" @focusin="isFocus = true" @focusout="isFocus = false">
                     <label for="email" class="block text-[10px] font-black text-slate-500 uppercase tracking-[2px] ml-2">
-                        Correo Institucional
+                        Usuario o Correo Institucional
                     </label>
-                    <div class="relative input-glow transition-all duration-500 rounded-3xl group overflow-hidden bg-white/5 border border-white/10">
-                        <input type="email" name="email" id="email" value="{{ old('email') }}" required autofocus
+                    <div class="relative input-glow transition-all duration-500 rounded-3xl group overflow-hidden bg-white/5 border border-white/10" :class="step === 2 ? 'opacity-60' : ''">
+                        <input type="text" name="email" id="email" x-model="email" :readonly="step === 2" required autofocus
                             class="w-full bg-transparent px-8 py-5 text-white font-bold outline-none placeholder-slate-700 transition-all text-sm"
-                            placeholder="usuario@rastrillantas.com">
+                            placeholder="usuario o correo@rastrillantas.com">
                         <div class="absolute right-8 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                            <iconify-icon icon="lucide:shield-check" class="text-2xl transition-transform group-focus-within:rotate-12"></iconify-icon>
+                            <iconify-icon icon="lucide:user" class="text-2xl transition-transform group-focus-within:scale-110"></iconify-icon>
                         </div>
                     </div>
                     @error('email')
                         <p class="text-red-400 text-[10px] font-black uppercase tracking-widest px-4 mt-3 flex items-center gap-2">
-                            <iconify-icon icon="lucide:shield-alert" class="text-xl"></iconify-icon>
+                            <iconify-icon icon="lucide:shield-alert" class="text-xl shrink-0"></iconify-icon>
                             {{ $message }}
                         </p>
                     @enderror
                 </div>
 
+                <!-- Pregunta Secreta + Respuesta (Paso 2) -->
+                <div x-show="step === 2" x-cloak class="space-y-6" x-transition>
+                    <div class="space-y-3" @focusin="isFocus = true" @focusout="isFocus = false">
+                        <!-- Pregunta (mostrada como etiqueta destacada) -->
+                        <div class="flex items-start gap-2 px-2">
+                            <iconify-icon icon="lucide:help-circle" class="text-blue-400/60 text-lg shrink-0 mt-0.5"></iconify-icon>
+                            <div>
+                                <span class="block text-[10px] font-black text-slate-500 uppercase tracking-[2px] mb-0.5">Pregunta de Seguridad</span>
+                                <span class="text-[11px] font-bold text-slate-300" x-text="secretQuestion"></span>
+                            </div>
+                        </div>
+                        <!-- Campo de respuesta -->
+                        <div class="relative input-glow transition-all duration-500 rounded-3xl group overflow-hidden bg-white/5 border border-white/10">
+                            <input type="password" name="secret_answer" id="secret_answer" :required="step === 2"
+                                class="w-full bg-transparent px-8 py-5 text-white font-bold outline-none placeholder-slate-700 transition-all text-sm"
+                                placeholder="Tu respuesta secreta">
+                            <div class="absolute right-8 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                <iconify-icon icon="lucide:lock-keyhole" class="text-2xl transition-transform group-focus-within:rotate-12"></iconify-icon>
+                            </div>
+                        </div>
+                        @error('secret_answer')
+                            <p class="text-red-400 text-[10px] font-black uppercase tracking-widest px-4 mt-3 flex items-center gap-2">
+                                <iconify-icon icon="lucide:shield-alert" class="text-xl shrink-0"></iconify-icon>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Mensaje de Error Ajax Dinámico -->
+                <div x-show="errorMessage" x-cloak class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400">
+                    <iconify-icon icon="lucide:shield-alert" class="text-2xl shrink-0"></iconify-icon>
+                    <p class="text-[10px] font-black uppercase tracking-widest leading-relaxed" x-text="errorMessage"></p>
+                </div>
+
                 <!-- Action Button -->
-                <div class="pt-4">
+                <div class="pt-2">
                     <button type="submit" 
                         :disabled="loading"
                         class="relative overflow-hidden w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-6 rounded-[2rem] font-black text-xs uppercase tracking-[3px] shadow-[0_20px_40px_-10px_rgba(59,130,246,0.3)] transform active:scale-[0.98] transition-all flex items-center justify-center gap-4 group btn-scanner">
                         
                         <span x-show="!loading" class="flex items-center gap-3">
-                            Validar Acceso
+                            <span x-text="step === 1 ? 'Continuar' : 'Validar Identidad'"></span>
                             <iconify-icon icon="lucide:key-round" class="text-xl group-hover:rotate-45 transition-transform duration-500"></iconify-icon>
                         </span>
                         
                         <span x-show="loading" class="flex items-center gap-3" x-cloak>
                             <iconify-icon icon="lucide:loader-2" class="text-2xl animate-spin"></iconify-icon>
-                            Iniciando Protocolo...
+                            Verificando...
                         </span>
+                    </button>
+
+                    <!-- Botón para modificar usuario -->
+                    <button type="button" x-show="step === 2 && !loading" @click="step = 1; secretQuestion = ''; errorMessage = '';"
+                        class="w-full text-center text-slate-500 hover:text-white transition-colors text-[9px] font-black uppercase tracking-[2px] mt-4">
+                        Modificar Usuario
                     </button>
                 </div>
 
                 <!-- Footer Links -->
-                <div class="flex flex-col items-center gap-8 pt-8">
+                <div class="flex flex-col items-center gap-8 pt-4">
                     <a href="{{ route('login') }}" class="group flex items-center gap-3 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[3px]">
                         <iconify-icon icon="lucide:arrow-left" class="text-lg group-hover:-translate-x-2 transition-transform duration-500"></iconify-icon>
                         Regresar al Portal

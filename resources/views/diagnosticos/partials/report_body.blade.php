@@ -188,7 +188,7 @@
             <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'si' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'no' ? 'X' : '' }}</td>
             <td class="text-center">{{ (strtolower($paramValues['funcionamiento_velocidad'] ?? '')) == 'na' ? 'X' : '' }}</td>
-            <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['funcionamiento_velocidad'] ?? '')), ['si', 'na']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
+            <td class="text-center" style="font-weight: bold;">{{ in_array(strtolower(trim($paramValues['funcionamiento_velocidad'] ?? '')), ['si', 'na','']) ? 'CUMPLE' : 'NO CUMPLE' }}</td>
         </tr>
         @else
         <tr>

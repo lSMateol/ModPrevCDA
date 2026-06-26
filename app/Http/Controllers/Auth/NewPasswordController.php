@@ -8,56 +8,76 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Controlador para establecer la nueva contraseña tras validar la pregunta secreta.
+ *
+ * Reemplaza el mecanismo anterior basado en token de email.
+ * El email del usuario se obtiene de la sesión (guardado por PasswordResetLinkController
+ * tras verificar exitosamente la respuesta secreta).
+ */
 class NewPasswordController extends Controller
 {
     /**
-     * Display the password reset view.
+     * Muestra el formulario para establecer la nueva contraseña.
+     * Redirige al formulario de recuperación si no hay sesión de recuperación activa.
      */
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
-        return view('auth.reset-password', ['request' => $request]);
+        // Verificar que existe una sesión de recuperación válida
+        if (!$request->session()->has('password_recovery_email')) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'La sesión de recuperación ha expirado. Por favor, inicia el proceso nuevamente.']);
+        }
+
+        return view('auth.reset-password');
     }
 
     /**
-     * Handle an incoming new password request.
-     *
-     * @throws ValidationException
+     * Procesa el formulario de nueva contraseña.
+     * Actualiza la contraseña del usuario y limpia la sesión de recuperación.
      */
     public function store(Request $request): RedirectResponse
     {
+        // Verificar que existe una sesión de recuperación válida
+        $email = $request->session()->get('password_recovery_email');
+
+        if (!$email) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'La sesión de recuperación ha expirado. Por favor, inicia el proceso nuevamente.']);
+        }
+
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'password.required'  => 'La nueva contraseña es obligatoria.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $user = User::where('email', $email)->first();
 
-                event(new PasswordReset($user));
-            }
-        );
+        if (!$user) {
+            // Limpiar sesión y redirigir al inicio
+            $request->session()->forget('password_recovery_email');
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'No se encontró el usuario asociado. Por favor, intente nuevamente.']);
+        }
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // Actualizar contraseña (el cast 'hashed' del modelo la hashea automáticamente)
+        $user->forceFill([
+            'password'       => Hash::make($request->password),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        event(new PasswordReset($user));
+
+        // Limpiar sesión de recuperación
+        $request->session()->forget('password_recovery_email');
+
+        return redirect()->route('login')
+            ->with('status', '¡Contraseña actualizada exitosamente! Ya puedes iniciar sesión con tu nueva contraseña.');
     }
 }

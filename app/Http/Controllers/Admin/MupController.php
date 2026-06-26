@@ -19,6 +19,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use App\Support\SecretQuestions;
 
 class MupController extends Controller
 {
@@ -511,8 +512,9 @@ class MupController extends Controller
 
         $tiposDoc = Valor::where('iddom', 4)->where('actval', 1)->get();
         $empresas = Empresa::orderBy('razsoem')->get();
+        $preguntas = SecretQuestions::all();
 
-        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas'));
+        return view('admin.mup.usuarios', compact('usuarios', 'perfiles', 'tiposDoc', 'empresas', 'preguntas'));
     }
 
     /**
@@ -528,6 +530,8 @@ class MupController extends Controller
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username',
             'password' => $this->passwordRules(true),
+            'secret_question' => ['required', 'string', Rule::in(array_keys(SecretQuestions::all()))],
+            'secret_answer' => ['required', 'string', 'max:255'],
             'idpef' => [
                 'required',
                 'exists:perfil,idpef',
@@ -542,6 +546,9 @@ class MupController extends Controller
             'ndocper.unique' => 'Ya existe un usuario con este número de documento.',
             'emaper.unique' => 'Ya existe un usuario con este correo electrónico.',
             'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'secret_question.required' => 'La pregunta secreta es obligatoria.',
+            'secret_question.in' => 'La pregunta secreta seleccionada no es válida.',
+            'secret_answer.required' => 'La respuesta secreta es obligatoria para la recuperación de contraseña.',
         ]);
 
         try {
@@ -571,6 +578,9 @@ class MupController extends Controller
                 'password' => Hash::make($request->password),
                 'idper' => $persona->idper,
                 'idemp' => $request->idemp,
+                'secret_question' => $request->secret_question,
+                // Hashear la respuesta secreta antes de guardar (nunca texto plano)
+                'secret_answer' => Hash::make(strtolower(trim($request->secret_answer))),
             ]);
 
             $perfil = Perfil::find($request->idpef);
@@ -1087,6 +1097,8 @@ class MupController extends Controller
             'telper' => 'nullable|string|max:20|regex:/^[0-9]+$/',
             'username' => 'required|string|unique:users,username,' . $user->id,
             'password' => $this->passwordRules(false),
+            'secret_question' => ['nullable', 'string', Rule::in(array_keys(SecretQuestions::all()))],
+            'secret_answer' => ['nullable', 'string', 'max:255'],
             'idpef' => [
                 'required',
                 'exists:perfil,idpef',
@@ -1103,6 +1115,7 @@ class MupController extends Controller
             'emaper.unique' => 'Este correo electrónico ya se encuentra registrado para otro usuario.',
             'emaper.email' => 'El formato del correo electrónico no es válido.',
             'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'secret_question.in' => 'La pregunta secreta seleccionada no es válida.',
         ]);
 
         try {
@@ -1147,6 +1160,13 @@ class MupController extends Controller
             ];
             if ($request->filled('password')) {
                 $userData['password'] = Hash::make($request->password);
+            }
+            // Actualizar pregunta y respuesta secreta si se proporcionan
+            if ($request->filled('secret_question')) {
+                $userData['secret_question'] = $request->secret_question;
+            }
+            if ($request->filled('secret_answer')) {
+                $userData['secret_answer'] = Hash::make(strtolower(trim($request->secret_answer)));
             }
             $user->update($userData);
 
