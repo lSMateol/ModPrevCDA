@@ -274,7 +274,7 @@ class VehiculoEmpresaController extends Controller
         $empresaId = $request->empresa_id;
 
         // Seguridad: Empresa solo puede ver los suyos
-        if ($user->hasRole('Empresa') && $user->idemp !== (int) $empresaId) {
+        if ($user->hasRole('Empresa') && (int) $user->idemp !== (int) $empresaId) {
             abort(403, 'No autorizado para ver esta empresa.');
         }
 
