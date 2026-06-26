@@ -44,7 +44,7 @@
                 this.peCondCurrentPage = 1;
                 this.pePropCurrentPage = 1;
                 this.peRepCurrentPage = 1;
-                if (val === 'reporte') this.loadReporteFlota();
+                if (val === 'reporte' || val === 'perfil') this.loadReporteFlota();
             });
 
             // Lógica de inicialización de vista y auto-selección
