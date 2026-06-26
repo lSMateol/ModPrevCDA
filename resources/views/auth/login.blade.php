@@ -160,14 +160,14 @@
                 <div class="mt-12 flex gap-8 reveal-delay-3">
                     <div class="flex flex-col group cursor-default">
                         <span class="text-white font-bold text-2xl tracking-tighter uppercase drop-shadow-lg group-hover:text-blue-400 transition-colors">Rastrillantas</span>
-                        <span class="text-blue-400 text-[10px] font-black uppercase tracking-[3px]">Diagnostic System</span>
+                        <span class="text-blue-400 text-[10px] font-black uppercase tracking-[3px]">Sistema de Diagnostico Preventivo</span>
                     </div>
                 </div>
             </div>
 
             <!-- Footer Left -->
             <div class="absolute bottom-10 left-12 xl:left-24 opacity-50">
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">© 2024 CDA Rastrillantas LTDA. Todos los derechos reservados.</p>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">© 2026 CDA Rastrillantas LTDA. Todos los derechos reservados.</p>
             </div>
         </div>
 

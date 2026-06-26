@@ -288,7 +288,7 @@
                     
                     <div class="flex items-center gap-3 w-full">
                         <div class="h-px flex-1 bg-white/5"></div>
-                        <span class="text-[8px] text-slate-700 font-black uppercase tracking-[5px]">Safe Access</span>
+                        <span class="text-[8px] text-slate-700 font-black uppercase tracking-[5px]">Acceso Seguro</span>
                         <div class="h-px flex-1 bg-white/5"></div>
                     </div>
                 </div>
