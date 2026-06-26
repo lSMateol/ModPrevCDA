@@ -95,14 +95,14 @@
         getVehiculoEstadoPerfil(idveh) {
             // Si no hay reporte de flota cargado, mostramos el estado basado en el último diagnóstico del vehículo si está disponible
             if (!this.detailData || !this.detailData.reporte_flota) {
-                if (this.detailData?.ultimo_diag?.idveh === idveh) {
+                if (Number(this.detailData?.ultimo_diag?.idveh) === Number(idveh)) {
                     const d = this.detailData.ultimo_diag;
                     if (d.aprobado === 1) return { texto: 'Aprobado', clase: 'success' };
                     if (d.aprobado === 0) return { texto: 'No Aprobado', clase: 'danger' };
                 }
                 return { texto: 'Pendiente', clase: 'inactive' };
             }
-            const diags = this.detailData.reporte_flota.filter(d => d.idveh === idveh);
+            const diags = this.detailData.reporte_flota.filter(d => Number(d.idveh) === Number(idveh));
             if (diags.length === 0) return { texto: 'Pendiente', clase: 'inactive' };
             const lastDiag = diags[0];
             if (lastDiag.aprobado === 1) return { texto: 'Aprobado', clase: 'success' };
