@@ -593,6 +593,30 @@ class DiagnosticoController extends Controller
                 'tipo_formulario' => $request->tipo_formulario,
             ]);
 
+            // 3. Copiar las fotos físicas y sus registros si existen
+            if ($diagnosticoAnterior->fotos) {
+                foreach ($diagnosticoAnterior->fotos as $foto) {
+                    $originalPath = $foto->rutafoto;
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($originalPath)) {
+                        $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+                        $directory = dirname($originalPath);
+                        $filename = pathinfo($originalPath, PATHINFO_FILENAME);
+                        // Generar nombre único para la nueva copia
+                        $newFilename = $filename . '_reasig_' . $nuevo->iddia . '_' . uniqid() . '.' . $extension;
+                        $newPath = $directory . '/' . $newFilename;
+                        
+                        // Copiar el archivo físicamente
+                        \Illuminate\Support\Facades\Storage::disk('public')->copy($originalPath, $newPath);
+                        
+                        // Crear el nuevo registro de foto ligado al nuevo diagnóstico
+                        \App\Models\Foto::create([
+                            'iddia' => $nuevo->iddia,
+                            'rutafoto' => $newPath
+                        ]);
+                    }
+                }
+            }
+
             return $nuevo;
         });
 
